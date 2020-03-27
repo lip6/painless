@@ -1,0 +1,4 @@
+*.o
+painless-mcomsps
+mapleCOMSPS/build/
+mapleCOMSPS/m4ri-20140914/
