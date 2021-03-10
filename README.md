@@ -1,8 +1,8 @@
 ##### PaInleSS: A Framework for Parallel SAT Solving #####
 
-Authors:  Ludovic LE FRIOUX, Vincent VALLADE
+Authors:  Ludovic LE FRIOUX, Vincent VALLADE, Souheib Baarir
 
-Contacts: ludovic@lrde.epita.fr, vincent.vallade@lip6.fr
+Contacts:  vincent.vallade@lip6.fr, Souheib.baarir@lip6.fr
 
 ===== Content =====
 
