@@ -2,7 +2,7 @@
 
 Authors:  Ludovic LE FRIOUX, Vincent VALLADE, Souheib Baarir
 
-Contacts:  vincent.vallade@lip6.fr, Souheib.baarir@lip6.fr
+Contacts: ludovic@lefrioux.fr, vincent.vallade@lip6.fr, Souheib.baarir@lip6.fr
 
 ===== Content =====
 
