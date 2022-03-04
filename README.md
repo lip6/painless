@@ -41,8 +41,11 @@ To run the solvers
 * painless-mcomsps
 
 Exemple: 
-Run a solver with 26 sequential solver, 2 Sharer, all-to-all sharing, and BMM inprocessing:
-./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -pol-init=1 -act-init=1 -restart-gap=50
 
-Run a solver with half SLIME/half SLIME-BMM Sequential Worker:
-./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -slime=2
+- Run a solver with 26 sequential solver, 2 Sharer, all-to-all sharing, and BMM inprocessing:
+
+  ./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -pol-init=1 -act-init=1 -restart-gap=50
+
+- Run a solver with half SLIME/half SLIME-BMM Sequential Worker:
+
+  ./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -slime=2
