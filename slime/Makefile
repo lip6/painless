@@ -49,8 +49,8 @@ datarootdir ?= $(prefix)/share
 mandir      ?= $(datarootdir)/man
 
 # Target file names
-MAPLE      = mapleCOMSPS#       Name of MiniSat main executable.
-MAPLE_CORE = mapleCOMSPS_core#  Name of simplified MiniSat executable (only core solver support).
+MAPLE      = slime#       Name of MiniSat main executable.
+MAPLE_CORE = slime_core#  Name of simplified MiniSat executable (only core solver support).
 MAPLE_SLIB = lib$(MAPLE).a#  Name of MiniSat static library.
 MAPLE_DLIB = lib$(MAPLE).so# Name of MiniSat shared library.
 
@@ -59,8 +59,9 @@ SOMAJOR=2
 SOMINOR=1
 SORELEASE?=.0#   Declare empty to leave out from library file name.
 
-MAPLE_CXXFLAGS = -I. -Im4ri-20140914 -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -Wall -Wno-parentheses -Wextra -std=c++11
-MAPLE_LDFLAGS  = -Wall -lz -Lm4ri-20140914/.libs -lm4ri
+MAPLE_CXXFLAGS = -I. -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -Wall -Wno-parentheses \
+				-std=c++11 -O3 -s -mtune=generic -Wno-unused-value -D NDEBUG
+MAPLE_LDFLAGS  = -Wall -lz
 
 ECHO=@echo
 ifeq ($(VERB),)
@@ -69,8 +70,8 @@ else
 VERB=
 endif
 
-SRCS = $(wildcard mapleCOMSPS/core/*.cc) $(wildcard mapleCOMSPS/simp/*.cc) $(wildcard mapleCOMSPS/utils/*.cc)
-HDRS = $(wildcard mapleCOMSPS/mtl/*.h) $(wildcard mapleCOMSPS/core/*.h) $(wildcard mapleCOMSPS/simp/*.h) $(wildcard mapleCOMSPS/utils/*.h)
+SRCS = $(wildcard slime/core/*.cc) $(wildcard slime/simp/*.cc) $(wildcard slime/utils/*.cc)
+HDRS = $(wildcard slime/mtl/*.h) $(wildcard slime/core/*.h) $(wildcard slime/simp/*.h) $(wildcard slime/utils/*.h)
 OBJS = $(filter-out %Main.o, $(SRCS:.cc=.o))
 
 r:	$(BUILD_DIR)/release/bin/$(MAPLE)
@@ -101,18 +102,18 @@ $(BUILD_DIR)/profile/bin/$(MAPLE_CORE):	MAPLE_LDFLAGS += -pg
 $(BUILD_DIR)/release/bin/$(MAPLE_CORE):	MAPLE_LDFLAGS += --static $(MAPLE_RELSYM)
 
 ## Executable dependencies
-$(BUILD_DIR)/release/bin/$(MAPLE):	 	$(BUILD_DIR)/release/mapleCOMSPS/simp/Main.o $(BUILD_DIR)/release/lib/$(MAPLE_SLIB)
-$(BUILD_DIR)/debug/bin/$(MAPLE):	 	$(BUILD_DIR)/debug/mapleCOMSPS/simp/Main.o $(BUILD_DIR)/debug/lib/$(MAPLE_SLIB)
-$(BUILD_DIR)/profile/bin/$(MAPLE):	 	$(BUILD_DIR)/profile/mapleCOMSPS/simp/Main.o $(BUILD_DIR)/profile/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/release/bin/$(MAPLE):	 	$(BUILD_DIR)/release/slime/simp/Main.o $(BUILD_DIR)/release/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/debug/bin/$(MAPLE):	 	$(BUILD_DIR)/debug/slime/simp/Main.o $(BUILD_DIR)/debug/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/profile/bin/$(MAPLE):	 	$(BUILD_DIR)/profile/slime/simp/Main.o $(BUILD_DIR)/profile/lib/$(MAPLE_SLIB)
 # need the main-file be compiled with fpic?
-$(BUILD_DIR)/dynamic/bin/$(MAPLE):	 	$(BUILD_DIR)/dynamic/mapleCOMSPS/simp/Main.o $(BUILD_DIR)/dynamic/lib/$(MAPLE_DLIB)
+$(BUILD_DIR)/dynamic/bin/$(MAPLE):	 	$(BUILD_DIR)/dynamic/slime/simp/Main.o $(BUILD_DIR)/dynamic/lib/$(MAPLE_DLIB)
 
 ## Executable dependencies (core-version)
-$(BUILD_DIR)/release/bin/$(MAPLE_CORE):	$(BUILD_DIR)/release/mapleCOMSPS/core/Main.o $(BUILD_DIR)/release/lib/$(MAPLE_SLIB)
-$(BUILD_DIR)/debug/bin/$(MAPLE_CORE):	 	$(BUILD_DIR)/debug/mapleCOMSPS/core/Main.o $(BUILD_DIR)/debug/lib/$(MAPLE_SLIB)
-$(BUILD_DIR)/profile/bin/$(MAPLE_CORE):	$(BUILD_DIR)/profile/mapleCOMSPS/core/Main.o $(BUILD_DIR)/profile/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/release/bin/$(MAPLE_CORE):	$(BUILD_DIR)/release/slime/core/Main.o $(BUILD_DIR)/release/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/debug/bin/$(MAPLE_CORE):	 	$(BUILD_DIR)/debug/slime/core/Main.o $(BUILD_DIR)/debug/lib/$(MAPLE_SLIB)
+$(BUILD_DIR)/profile/bin/$(MAPLE_CORE):	$(BUILD_DIR)/profile/slime/core/Main.o $(BUILD_DIR)/profile/lib/$(MAPLE_SLIB)
 # need the main-file be compiled with fpic?
-$(BUILD_DIR)/dynamic/bin/$(MAPLE_CORE): 	$(BUILD_DIR)/dynamic/mapleCOMSPS/core/Main.o $(BUILD_DIR)/dynamic/lib/$(MAPLE_DLIB)
+$(BUILD_DIR)/dynamic/bin/$(MAPLE_CORE): 	$(BUILD_DIR)/dynamic/slime/core/Main.o $(BUILD_DIR)/dynamic/lib/$(MAPLE_DLIB)
 
 ## Library dependencies
 $(BUILD_DIR)/release/lib/$(MAPLE_SLIB):	$(foreach o,$(OBJS),$(BUILD_DIR)/release/$(o))
@@ -171,9 +172,9 @@ install-debug:	install-headers install-lib-debug
 
 install-headers:
 #       Create directories
-	$(INSTALL) -d $(DESTDIR)$(includedir)/mapleCOMSPS
+	$(INSTALL) -d $(DESTDIR)$(includedir)/slime
 	for dir in mtl utils core simp; do \
-	  $(INSTALL) -d $(DESTDIR)$(includedir)/mapleCOMSPS/$$dir ; \
+	  $(INSTALL) -d $(DESTDIR)$(includedir)/slime/$$dir ; \
 	done
 #       Install headers
 	for h in $(HDRS) ; do \

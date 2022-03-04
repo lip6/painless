@@ -18,12 +18,14 @@
 // -----------------------------------------------------------------------------
 
 #include "../solvers/MapleCOMSPSSolver.h"
-#include "../solvers/Reducer.h"
+#include "../solvers/SlimeSolver.h"
 #include "../solvers/SolverFactory.h"
+#include "../solvers/Reducer.h"
 #include "../utils/Parameters.h"
 #include "../utils/System.h"
 
-#include <math.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 void
 SolverFactory::sparseRandomDiversification(
@@ -34,7 +36,8 @@ SolverFactory::sparseRandomDiversification(
 
    int vars = solvers[0]->getVariablesCount();
 
-   for (int sid = 0; sid < solvers.size(); sid++) {
+   // The first solver of the group (1 LRB/1 VSIDS) keeps polarity = false for all vars
+   for (int sid = 1; sid < solvers.size(); sid++) {
       srand(sid);
       for (int var = 1; var <= vars; var++) {
          if (rand() % solvers.size() == 0) {
@@ -65,13 +68,23 @@ SolverFactory::createMapleCOMSPSSolver()
 }
 
 SolverInterface *
+SolverFactory::createSlimeSolver()
+{
+   int id = currentIdSolver.fetch_add(1);
+
+   SolverInterface * solver = new SlimeSolver(id);
+
+   solver->loadFormula(Parameters::getFilename());
+
+   return solver;
+}
+
+SolverInterface *
 SolverFactory::createReducerSolver(SolverInterface* _solver)
 {
    int id = currentIdSolver.fetch_add(1);
 
    SolverInterface * solver = new Reducer(id, _solver);
-
-   solver->loadFormula(Parameters::getFilename());
 
    return solver;
 }
@@ -83,7 +96,7 @@ SolverFactory::createMapleCOMSPSSolvers(int maxSolvers,
    solvers.push_back(createMapleCOMSPSSolver());
 
    double memoryUsed    = getMemoryUsed();
-   int maxMemorySolvers = Parameters::getIntParam("max-memory", 62) * 1024 *
+   int maxMemorySolvers = Parameters::getIntParam("max-memory", 240) * 1024 *
                           1024 / memoryUsed;
 
    if (maxSolvers > maxMemorySolvers) {
@@ -92,6 +105,26 @@ SolverFactory::createMapleCOMSPSSolvers(int maxSolvers,
 
    for (int i = 1; i < maxSolvers; i++) {
       solvers.push_back(cloneSolver(solvers[0]));
+   }
+}
+
+void
+SolverFactory::createSlimeSolvers(int nbSolvers,
+                           vector<SolverInterface *> & solvers)
+{
+   unsigned int seed = 0;
+   int fd = open("/dev/urandom", O_RDONLY);
+   for (size_t i = 0; i < nbSolvers; i++) {
+      SlimeSolver* slime = (SlimeSolver*) createSlimeSolver();
+      solvers.push_back(slime);
+      while (seed == 0) {
+         if (fd == -1 || read(fd, &seed, sizeof(seed)) == -1) {
+            perror("pick seed");
+         }
+         seed = seed % 91648253;
+      }
+      slime->setSeed(seed);
+      seed = 0;
    }
 }
 

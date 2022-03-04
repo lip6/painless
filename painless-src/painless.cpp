@@ -23,12 +23,9 @@
 #include "utils/SatUtils.h"
 
 #include "solvers/SolverFactory.h"
-#include "solvers/Reducer.h"
 
 #include "clauses/ClauseManager.h"
 
-#include "sharing/StrengtheningSharing.h"
-#include "sharing/SimpleSharing.h"
 #include "sharing/HordeSatSharing.h"
 #include "sharing/Sharer.h"
 
@@ -56,16 +53,6 @@ SatResult finalResult = UNKNOWN;
 
 vector<int> finalModel;
 
-vector<SolverInterface *> solvers;
-
-void redefine_sig_handler(int num, void (*handler)(int))
-{
-   struct sigaction signal;
-   signal.sa_handler = handler;
-   signal.sa_flags = 0;
-   sigemptyset(&signal.sa_mask);
-   sigaction(num, &signal, NULL);
-}
 
 // -------------------------------------------
 // Main of the framework
@@ -80,7 +67,7 @@ int main(int argc, char ** argv)
       cout << "USAGE: " << argv[0] << " [options] input.cnf" << endl;
       cout << "Options:" << endl;
       cout << "\t-c=<INT>\t\t number of cpus, default is 24" << endl;
-      cout << "\t-max-memory=<INT>\t memory limit in GB, default is 51" << \
+      cout << "\t-max-memory=<INT>\t memory limit in GB, default is 200" << \
 	      endl;
       cout << "\t-t=<INT>\t\t timeout in seconds, default is no limit" << endl;
       cout << "\t-lbd-limit=<INT>\t LBD limit of exported clauses, default is" \
@@ -93,75 +80,97 @@ int main(int argc, char ** argv)
       return 0;
    }
 
-   Parameters::printParams();
+   // Parameters::printParams();
 
-   int cpus = Parameters::getIntParam("c", 23);
+   int cpus = Parameters::getIntParam("c", 30);
    setVerbosityLevel(Parameters::getIntParam("v", 0));
 
+
    // Create and init solvers
-   vector<SolverInterface *> solvers_LRB_recto;
-   vector<SolverInterface *> solvers_LRB_verso;
-   vector<SolverInterface *> solvers_VSIDS_recto;
-   vector<SolverInterface *> solvers_VSIDS_verso;
+   vector<SolverInterface *> solvers;
+   vector<SolverInterface *> solvers_VSIDS;
+   vector<SolverInterface *> solvers_LRB;
 
-   if (Parameters::getBoolParam("strength") && cpus >= 2) {
-      SolverFactory::createMapleCOMSPSSolvers(cpus - 1, solvers);
+   SolverFactory::createSlimeSolvers(cpus, solvers);
+   if (cpus > 1) {
       solvers.push_back(SolverFactory::createReducerSolver(SolverFactory::createMapleCOMSPSSolver()));
-   } else {
-      SolverFactory::createMapleCOMSPSSolvers(cpus, solvers);
+      solvers.push_back(SolverFactory::createReducerSolver(SolverFactory::createMapleCOMSPSSolver()));
    }
-
    int nSolvers = solvers.size();
-
-   cout << "c " << nSolvers << " solvers are used, with IDs in [|0, "
-        << nSolvers - 1 << "|]." << endl;
-   cout << "c solvers with odd (even) IDs used LRB (VSIDS)." << endl;
-   cout << "c solver " << ID_XOR
-        << " uses Gaussian Elimination (GE) at preprocessing" << endl;
 
    SolverFactory::nativeDiversification(solvers);
 
+   /* Random Polarity
    for (int id = 0; id < nSolvers; id++) {
-      if (id % 2 == 0) {
-         if (id % 4 == 0) {
-            solvers_LRB_verso.push_back(solvers[id]);
-         } else {
-            solvers_LRB_recto.push_back(solvers[id]);
-         }
+      if (id % 2) {
+         solvers_LRB.push_back(solvers[id]);
       } else {
-         if ((id - 1) % 4 == 0) {
-            solvers_VSIDS_verso.push_back(solvers[id]);
-         } else {
-            solvers_VSIDS_recto.push_back(solvers[id]);
-         }
+         solvers_VSIDS.push_back(solvers[id]);
       }
    }
+   SolverFactory::sparseRandomDiversification(solvers_LRB);
+   SolverFactory::sparseRandomDiversification(solvers_VSIDS); */
 
-   SolverFactory::sparseRandomDiversification(solvers_LRB_recto);
-   SolverFactory::sparseRandomDiversification(solvers_LRB_verso);
-   SolverFactory::sparseRandomDiversification(solvers_VSIDS_recto);
-   SolverFactory::sparseRandomDiversification(solvers_VSIDS_verso);
+   // Init Sharing
+   // 15 CDCL, 1 Reducer producers by Sharer
+   vector<SolverInterface* > prod1;
+   vector<SolverInterface* > prod2;
+   vector<SolverInterface *> reducerCons1;
+   vector<SolverInterface *> reducerCons2;
+   vector<SolverInterface* > cons1;
+   vector<SolverInterface* > cons2;
+   vector<SolverInterface*> consCDCL;
 
+   switch (Parameters::getIntParam("shr-strat", 0))
+   {
+   case 1:
+      prod1.insert(prod1.end(), solvers.begin(), solvers.begin() + (cpus/2 - 1));
+      prod1.push_back(solvers[solvers.size() - 2]);
+      prod2.insert(prod2.end(), solvers.begin() + (cpus/2 - 1), solvers.end() - 2);
+      prod2.push_back(solvers[solvers.size() - 1]);
+      // 30 CDCL, 1 Reducer consumers by Sharer
+      cons1.insert(cons1.end(), solvers.begin(), solvers.end() - 1);
+      cons2.insert(cons2.end(), solvers.begin(), solvers.end() - 2);
+      cons2.push_back(solvers[solvers.size() - 1]);
 
-   vector<SolverInterface *> from;
-   switch(Parameters::getIntParam("shr-strat", 0)) {
-      // Init Sharing
-      case 1 :
-         nSharers   = 1;
-         sharers    = new Sharer*[nSharers];
-         sharers[0] = new Sharer(0, new SimpleSharing(), solvers, solvers);
-         break;
-      case 2 :
-         nSharers = cpus;
-         sharers  = new Sharer*[nSharers];
+      nSharers = 2;
+      sharers  = new Sharer*[nSharers];
+      sharers[0] = new Sharer(1, new HordeSatSharing(), prod1, cons1);
+      sharers[1] = new Sharer(2, new HordeSatSharing(), prod2, cons2);
+      break;
+   case 2:
+      prod1.insert(prod1.end(), solvers.begin(), solvers.begin() + (cpus/2 - 1));
+      prod2.insert(prod2.end(), solvers.begin() + (cpus/2 - 1), solvers.end() - 2);
+      reducerCons1.push_back(solvers[solvers.size() - 2]);
+      reducerCons2.push_back(solvers[solvers.size() - 1]);
 
-         for (size_t i = 0; i < nSharers; i++) {
-            from.clear();
-            from.push_back(solvers[i]);
-            sharers[i] = new Sharer(i, new HordeSatSharing(), from,
-                                    solvers);
-         }
-         break;
+      cons1.insert(cons1.end(), prod1.begin(), prod1.end());
+      cons1.push_back(solvers[solvers.size() - 2]);
+      cons2.insert(cons2.end(), prod2.begin(), prod2.end());
+      cons2.push_back(solvers[solvers.size() - 1]);
+      consCDCL.insert(consCDCL.end(), prod1.begin(), prod1.end());
+      consCDCL.insert(consCDCL.end(), prod2.begin(), prod2.end());
+
+      nSharers = 4;
+      sharers  = new Sharer*[nSharers];
+      sharers[0] = new Sharer(1, new HordeSatSharing(), prod1, cons1);
+      sharers[1] = new Sharer(2, new HordeSatSharing(), prod2, cons2);
+      sharers[2] = new Sharer(3, new HordeSatSharing(), reducerCons1, consCDCL);
+      sharers[3] = new Sharer(4, new HordeSatSharing(), reducerCons2, consCDCL);
+      break;
+   case 3:
+      prod1.insert(prod1.end(), solvers.begin(), solvers.begin() + cpus/2);
+      prod1.push_back(solvers[solvers.size() - 2]);
+      prod2.insert(prod2.end(), solvers.begin() + cpus/2, solvers.end() - 2);
+      prod2.push_back(solvers[solvers.size() - 1]);
+
+      nSharers = 2;
+      sharers  = new Sharer*[nSharers];
+      sharers[0] = new Sharer(1, new HordeSatSharing(), prod1, prod1);
+      sharers[1] = new Sharer(2, new HordeSatSharing(), prod2, prod2);
+      break;
+   default:
+      break;
    }
 
    // Init working
@@ -193,27 +202,28 @@ int main(int argc, char ** argv)
    }
 
 
-  // Delete sharers
-  for (int id = 0; id < nSharers; id++) {
-     sharers[id]->printStats();
-     delete sharers[id];
-  }
-  delete sharers;
-
-  // Print solver stats
-  SolverFactory::printStats(solvers);
+   // Delete sharers
+   // for (int id = 0; id < nSharers; id++) {
+   //    sharers[id]->printStats();
+   //    delete sharers[id];
+   // }
+   // delete sharers;
 
 
-  // Delete working strategy
-  delete working;
+   // Print solver stats
+   // SolverFactory::printStats(solvers);
 
 
-  // Delete shared clauses
-  ClauseManager::joinClauseManager();
+   // Delete working strategy
+   // delete working;
+
+
+   // Delete shared clauses
+   ClauseManager::joinClauseManager();
 
 
    // Print the result and the model if SAT
-   cout << "c Resolution time: " << getRelativeTime() << "s" << endl;
+   // cout << "c Resolution time: " << getRelativeTime() << "s" << endl;
 
    if (finalResult == SAT) {
       cout << "s SATISFIABLE" << endl;
@@ -227,5 +237,5 @@ int main(int argc, char ** argv)
       cout << "s UNKNOWN" << endl;
    }
 
-   return finalResult;
+   return 0;
 }

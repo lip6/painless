@@ -64,7 +64,7 @@ Portfolio::join(WorkingStrategy * strat, SatResult res,
          finalModel = model;
       }
       SequentialWorker *winner = (SequentialWorker*)strat;
-      log(0, "The winner is thread %d \\o/ !!!\n", winner->solver->id);
+      // log(0, "The winner is thread %d \\o/ !!!\n", winner->solver->id);
    } else { // Else forward the information to the parent strategy
       parent->join(this, res, model);  
    }

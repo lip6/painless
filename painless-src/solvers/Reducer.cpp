@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// Copyright (C) 2019  Ludovic LE FRIOUX
+// Copyright (C) 2017  Ludovic LE FRIOUX
 //
 // This file is part of PaInleSS.
 //
@@ -56,9 +56,7 @@ Reducer::~Reducer()
 
 bool
 Reducer::loadFormula(const char* filename)
-{
-   return solver->loadFormula(filename);
-}
+{}
 
 //Get the number of variables of the formula
 int
@@ -121,8 +119,11 @@ Reducer::solve(const vector<int> & cube)
       if (clausesToImport.getClause(&cls) == false) {
          continue;
       }
-      if (strengthed(cls, &strengthenedCls))
+      if (strengthened(cls, &strengthenedCls))
       {
+         if (strengthenedCls->size == 0) {
+            return UNSAT;
+         }
          ClauseManager::increaseClause(strengthenedCls);
          clausesToExport.addClause(strengthenedCls);
       }
@@ -132,7 +133,7 @@ Reducer::solve(const vector<int> & cube)
 
 
 bool
-Reducer::strengthed(ClauseExchange * cls,
+Reducer::strengthened(ClauseExchange * cls,
                                ClauseExchange ** outCls)
 {
    vector<int> assumps;
@@ -224,6 +225,15 @@ Reducer::getStatistics()
    return solver->getStatistics();
 }
 
+void
+Reducer::printStatsStrengthening()
+{
+   // log(0, "count,min,max,average,stdDeviation,sum\n");
+   // log(0, "cls_in,%s\n", cls_in.valueString().c_str());
+   // log(0, "cls_out,%s\n", cls_out.valueString().c_str());
+   // log(0, "strengthened,%s\n", strengthened.valueString().c_str());
+}
+
 vector<int>
 Reducer::getModel()
 {
@@ -234,4 +244,10 @@ vector<int>
 Reducer::getFinalAnalysis()
 {
    return solver->getFinalAnalysis();
+}
+
+vector<int>
+Reducer::getSatAssumptions()
+{
+   return solver->getSatAssumptions();
 }

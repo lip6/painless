@@ -1,45 +1,48 @@
-##### PaInleSS: A Framework for Parallel SAT Solving #####
+Painless: a Framework for Parallel SAT Solving 
+==============================================
 
-Authors:  Ludovic LE FRIOUX, Vincent VALLADE, Souheib Baarir
+* Ludovic LE FRIOUX (ludovic@lefrioux.fr)
+* Vincent VALLADE (vincent.vallade@lip6.fr) 
+* Saeed Nejati
+* Souheib Baarir
 
-Contacts: ludovic@lefrioux.fr, vincent.vallade@lip6.fr, Souheib.baarir@lip6.fr
-
-===== Content =====
-
-- painless-src:
+Content
+-------
+* painless-src/:
    Contains the code of the framework.
-   - clauses:
+   * clauses/:
       Contains the code to manage shared clauses.
-   - working:
+   * working/:
       Code links to the worker organization.
-   - sharing:
+   * sharing/:
       Code links to the learnt clause sharing management.
-   - solvers:
+   * solvers/:
       Contains wrapper for the sequential solvers.
-   - utils:
+   * utils/:
       Contains code for clauses management. But also useful data structures.
 
-- mapleCOMSPS:
-   Contains the code of MapleCOMSPS from the SAT Competition 17 with some little
-   changes.
+* mapleCOMSPS/:
+   Contains the code of MapleCOMSPS from the SAT Competition 17 with some little changes.
+
+* slime/:
+   Contains the code of Slime from the SAT Competition 2021 with our Bayesian Moment Matching algorithm.
 
 
-===== To compile the project =====
+To compile the project
+----------------------
 
-- In the painless-mcomsps home directory use 'make' to compile.
+* In the painless-mcomsps home directory use 'make' to compile the code.
 
-- In the painless-mcomsps home directory use 'make clean' to clean.
+* In the painless-mcomsps home directory use 'make clean' to clean.
 
 
-===== To run the solvers =====
+To run the solvers
+------------------
+* painless-mcomsps
 
-- P-MCOMSPS-AI :
-   ./painless-mcomsps -c=#cpus -shr-strat=2 -shr-sleep=1500000 -lbd-limit=2 dimacs_filename
+Exemple: 
+Run a solver with 26 sequential solver, 2 Sharer, all-to-all sharing, and BMM inprocessing:
+./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -pol-init=1 -act-init=1 -restart-gap=50
 
-- P-MCOMSPS-L2:
-   ./painless-mcomsps -c=#cpus -shr-strat=1 -shr-sleep=500000 -lbd-limit=2 dimacs_filename
-
-- P-MCOMSPS-L4:
-   ./painless-mcomsps -c=#cpus -shr-strat=1 -shr-sleep=500000 -lbd-limit=4 dimacs_filename
-
-To use these solvers with strengthening add -strength flag and -c must be >= 2.
+Run a solver with half SLIME/half SLIME-BMM Sequential Worker:
+./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -slime=2

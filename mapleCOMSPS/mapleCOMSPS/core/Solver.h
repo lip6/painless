@@ -185,7 +185,7 @@ public:
     double    random_var_freq;
     double    random_seed;
     bool      VSIDS;
-    bool      recto;
+    bool      verso;
     int       ccmin_mode;         // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
     int       phase_saving;       // Controls the level of phase saving (0=none, 1=limited, 2=full).
     bool      rnd_pol;            // Use random polarities for branching heuristics.
@@ -232,15 +232,14 @@ protected:
     };
 
     struct VarOrderLt {
-        const vec<double> & activity;
-        const bool & recto;
+        const vec<double>&  activity;
+        const bool & verso;
         bool operator () (Var x, Var y) const {
-           if (recto) return activity[x] > activity[y];
-           return activity[x] >= activity[y]; // Verso
+            if (verso) return activity[x] > activity[y];
+            return activity[x] >= activity[y];
         }
-        VarOrderLt(const vec<double> & act, const bool & rect) :
-             activity(act)
-           , recto(rect) { }
+        VarOrderLt(const vec<double>&  act, const bool & v) : activity(act), verso(v) {
+        }
     };
 
     // Solver state:
@@ -448,7 +447,7 @@ inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
 inline int  Solver::level (Var x) const { return vardata[x].level; }
 
 inline void Solver::insertVarOrder(Var x) {
-    Heap<VarOrderLt> & order_heap = VSIDS ? order_heap_VSIDS : order_heap_CHB;
+    Heap<VarOrderLt>& order_heap = VSIDS ? order_heap_VSIDS : order_heap_CHB;
     if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); }
 
 inline void Solver::varDecayActivity() {

@@ -34,11 +34,16 @@ public:
    /// Instantiate and return a MapleCOMSPS solver.
    static SolverInterface * createMapleCOMSPSSolver();
 
-   static SolverInterface * createReducerSolver(SolverInterface *solver);
+   static SolverInterface * createSlimeSolver();
 
    /// Instantiate and return a group of MapleCOMSPS solvers.
    static void createMapleCOMSPSSolvers(int groupSize,
                                         vector<SolverInterface *> & solvers);
+
+   static void createSlimeSolvers(int groupSize,
+                           vector<SolverInterface *> & solvers);
+
+   static SolverInterface * createReducerSolver(SolverInterface *solver);
 
    /// Clone and return a new solver.
    static SolverInterface * cloneSolver(SolverInterface * other);

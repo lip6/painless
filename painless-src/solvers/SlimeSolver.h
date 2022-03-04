@@ -25,16 +25,16 @@
 
 using namespace std;
 
-// Some forward declatarations for MapleCOMSPS
-namespace MapleCOMSPS
+// Some forward declatarations for Slime
+namespace SLIME
 {
 	class SimpSolver;
 	class Lit;
 	template<class T> class vec;
 }
 
-/// Instance of a MapleCOMSPS solver
-class MapleCOMSPSSolver : public SolverInterface
+/// Instance of a Slime solver
+class SlimeSolver : public SolverInterface
 {
 public:
    /// Load formula from a given dimacs file, return false if failed.
@@ -95,22 +95,23 @@ public:
    void diversify(int id);
 
    /// Constructor.
-   MapleCOMSPSSolver(int id);
+   SlimeSolver(int id);
    
    /// Copy constructor.
-   MapleCOMSPSSolver(const MapleCOMSPSSolver & other, int id);
+   // SlimeSolver(const SlimeSolver & other, int id);
    
    /// Destructor.
-   virtual ~MapleCOMSPSSolver();
+   virtual ~SlimeSolver();
 
    vector<int> getFinalAnalysis();
 
    vector<int> getSatAssumptions();
 
+   void setSeed(int seed);
 
 protected:
-   /// Pointer to a MapleCOMSPS solver.
-   MapleCOMSPS::SimpSolver * solver;
+   /// Pointer to a Slime solver.
+   SLIME::SimpSolver * solver;
 
    /// Buffer used to import clauses (units included).
    ClauseBuffer clausesToImport;
@@ -129,7 +130,7 @@ protected:
    atomic<bool> stopSolver;
    
    /// Callback to export/import clauses.
-   friend MapleCOMSPS::Lit cbkMapleCOMSPSImportUnit(void *);
-   friend bool cbkMapleCOMSPSImportClause(void *, int *, MapleCOMSPS::vec<MapleCOMSPS::Lit> &);
-   friend void cbkMapleCOMSPSExportClause(void *, int, MapleCOMSPS::vec<MapleCOMSPS::Lit> &);
+   friend SLIME::Lit cbkSlimeImportUnit(void *);
+   friend bool cbkSlimeImportClause(void *, int *, SLIME::vec<SLIME::Lit> &);
+   friend void cbkSlimeExportClause(void *, int, SLIME::vec<SLIME::Lit> &);
 };

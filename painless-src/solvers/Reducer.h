@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// Copyright (C) 2019  Ludovic LE FRIOUX
+// Copyright (C) 2017  Ludovic LE FRIOUX
 //
 // This file is part of PaInleSS.
 //
@@ -22,7 +22,6 @@
 #include "../clauses/ClauseBuffer.h"
 #include "../solvers/SolverInterface.h"
 #include "../utils/Threading.h"
-#include "../solvers/Stats.h"
 
 using namespace std;
 
@@ -100,9 +99,11 @@ public:
    /// Native diversification.
    void diversify(int id);
 
-   bool strengthed(ClauseExchange * cls, ClauseExchange ** outCls);
+   bool strengthened(ClauseExchange * cls, ClauseExchange ** outCls);
 
    void printStatsStrengthening();
+
+   vector<int> getSatAssumptions();
 
    /// Constructor.
    Reducer(int id, SolverInterface* solver);

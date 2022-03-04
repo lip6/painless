@@ -53,6 +53,7 @@ ClauseBuffer::addClause(ClauseExchange * clause)
       if (tail == buffer.tail) {
          if (next == NULL) {
             if (tail->next.compare_exchange_strong(next, node)) {
+               buffer.size++;
                break;
             } 
          } else {
@@ -62,7 +63,6 @@ ClauseBuffer::addClause(ClauseExchange * clause)
    }
 
    buffer.tail.compare_exchange_strong(tail, node);
-   buffer.size++;
 }
 
 void
@@ -128,5 +128,5 @@ ClauseBuffer::getClauses(vector<ClauseExchange *> & clauses)
 int
 ClauseBuffer::size()
 {
-   return buffer.size.load();
+   return buffer.size;
 }

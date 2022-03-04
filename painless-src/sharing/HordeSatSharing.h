@@ -23,6 +23,7 @@
 #include "../sharing/SharingStrategy.h"
 #include "../solvers/SolverInterface.h"
 
+#include <unordered_map>
 #include <vector>
 
 /// This strategy is a hordesat like sharing strategy.
@@ -43,15 +44,21 @@ public:
    SharingStatistics getStatistics();
 
 protected:
-   /// Number of shared literals per round
+   /// Number of shared literals per round.
    int literalPerRound;
 
+   /// Are we in init phase.
+   bool initPhase;
+
+   /// Number of round before forcing an increase in production
+   int roundBeforeIncrease;
+
    /// Databse used to store the clauses.
-   ClauseDatabase database;
+   unordered_map<int, ClauseDatabase *> databases;
 
    /// Sharing statistics.
    SharingStatistics stats;
 
    /// Used to manipulate clauses.
-   vector<ClauseExchange *> tmp;   
+   vector<ClauseExchange *> tmp;
 };

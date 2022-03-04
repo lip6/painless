@@ -26,7 +26,8 @@
 #include <vector>
 
 
-#define ID_XOR 0
+#define ID_SYM 0
+#define ID_XOR 1
 
 
 using namespace std;
@@ -44,7 +45,10 @@ enum SatResult
 /// Code  for the type of solvers
 enum SolverType
 {
-	MAPLE = 0
+	GLUCOSE   = 0,
+	LINGELING = 1,
+	MAPLE     = 2,
+	MINISAT   = 3
 };
 
 
@@ -127,13 +131,14 @@ public:
    /// Return the model in case of SAT result.
    virtual vector<int> getModel() = 0;
 
+   /// Native diversification.
+   virtual void diversify(int id) = 0;
+
    /// Return the final analysis in case of UNSAT result.
    virtual vector<int> getFinalAnalysis() = 0;
 
-   virtual vector<int> getSatAssumptions() { return vector<int>(); };
+   virtual vector<int> getSatAssumptions() = 0;
 
-   /// Native diversification.
-   virtual void diversify(int id) = 0;
 
    /// Constructor.
    SolverInterface(int solverId, SolverType solverType)
@@ -163,6 +168,8 @@ public:
          delete this;
       }
    }
+
+   void setSeed(int seed) {}
 
    /// Id of this solver.
    int id;

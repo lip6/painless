@@ -18,17 +18,18 @@
 // -----------------------------------------------------------------------------
 
 // MapleCOMSPS includes
-#include "mapleCOMSPS/utils/System.h"
-#include "mapleCOMSPS/core/Dimacs.h"
-#include "mapleCOMSPS/simp/SimpSolver.h"
+#include "slime/utils/System.h"
+#include "slime/core/Dimacs.h"
+#include "slime/simp/SimpSolver.h"
 
 #include "../utils/Logger.h"
 #include "../utils/System.h"
 #include "../utils/Parameters.h"
 #include "../clauses/ClauseManager.h"
-#include "../solvers/MapleCOMSPSSolver.h"
+#include "../solvers/SlimeSolver.h"
 
-using namespace MapleCOMSPS;
+
+using namespace SLIME;
 
 // Macros for minisat literal representation conversion
 #define MINI_LIT(lit) lit > 0 ? mkLit(lit - 1, false) : mkLit((-lit) - 1, true)
@@ -44,9 +45,9 @@ static void makeMiniVec(ClauseExchange * cls, vec<Lit> & mcls)
 }
 
 
-void cbkMapleCOMSPSExportClause(void * issuer, int lbd, vec<Lit> & cls)
+void cbkSlimeExportClause(void * issuer, int lbd, vec<Lit> & cls)
 {
-	MapleCOMSPSSolver* mp = (MapleCOMSPSSolver*)issuer;
+	SlimeSolver* mp = (SlimeSolver*)issuer;
 
 	if (lbd > mp->lbdLimit)
 		return;
@@ -63,9 +64,9 @@ void cbkMapleCOMSPSExportClause(void * issuer, int lbd, vec<Lit> & cls)
    mp->clausesToExport.addClause(ncls);
 }
 
-Lit cbkMapleCOMSPSImportUnit(void * issuer)
+Lit cbkSlimeImportUnit(void * issuer)
 {
-   MapleCOMSPSSolver * mp = (MapleCOMSPSSolver*)issuer;
+   SlimeSolver * mp = (SlimeSolver*)issuer;
 
    Lit l = lit_Undef;
 
@@ -81,9 +82,9 @@ Lit cbkMapleCOMSPSImportUnit(void * issuer)
    return l;
 }
 
-bool cbkMapleCOMSPSImportClause(void * issuer, int * lbd, vec<Lit> & mcls)
+bool cbkSlimeImportClause(void * issuer, int * lbd, vec<Lit> & mcls)
 {
-   MapleCOMSPSSolver* mp = (MapleCOMSPSSolver*)issuer;
+   SlimeSolver* mp = (SlimeSolver*)issuer;
 
    ClauseExchange * cls = NULL;
 
@@ -99,78 +100,70 @@ bool cbkMapleCOMSPSImportClause(void * issuer, int * lbd, vec<Lit> & mcls)
    return true;
 }
 
-MapleCOMSPSSolver::MapleCOMSPSSolver(int id) : SolverInterface(id, MAPLE)
+SlimeSolver::SlimeSolver(int id) : SolverInterface(id, MAPLE)
 {
 	lbdLimit = Parameters::getIntParam("lbd-limit", 2);
 
 	solver = new SimpSolver();
+	solver->id = id;
 
-	solver->cbkExportClause = cbkMapleCOMSPSExportClause;
-	solver->cbkImportClause = cbkMapleCOMSPSImportClause;
-	solver->cbkImportUnit   = cbkMapleCOMSPSImportUnit;
+   if (Parameters::getIntParam("shr-strat", 0) > 0) {
+	   solver->cbkExportClause = cbkSlimeExportClause;
+	   solver->cbkImportClause = cbkSlimeImportClause;
+	   solver->cbkImportUnit   = cbkSlimeImportUnit;
+   }
 	solver->issuer          = this;
 }
 
-MapleCOMSPSSolver::MapleCOMSPSSolver(const MapleCOMSPSSolver & other, int id) :
-   SolverInterface(id, MAPLE)
-{
-	lbdLimit = Parameters::getIntParam("lbd-limit", 2);
-
-	solver = new SimpSolver(*(other.solver));
-
-	solver->cbkExportClause = cbkMapleCOMSPSExportClause;
-	solver->cbkImportClause = cbkMapleCOMSPSImportClause;
-	solver->cbkImportUnit   = cbkMapleCOMSPSImportUnit;
-	solver->issuer          = this;
-}
-
-MapleCOMSPSSolver::~MapleCOMSPSSolver()
+SlimeSolver::~SlimeSolver()
 {
 	delete solver;
 }
 
 bool
-MapleCOMSPSSolver::loadFormula(const char* filename)
+SlimeSolver::loadFormula(const char* filename)
 {
-    gzFile in = gzopen(filename, "rb");
 
+    FILE *in = fopen(filename, "rb");
+    if (in == NULL) {
+        std::cout << "c ERROR! Could not open file: " << filename << std::endl;
+        return EXIT_FAILURE;
+    }
     parse_DIMACS(in, *solver);
-
-    gzclose(in);
-
+    fclose(in);
     return true;
 }
 
 //Get the number of variables of the formula
 int
-MapleCOMSPSSolver::getVariablesCount()
+SlimeSolver::getVariablesCount()
 {
 	return solver->nVars();
 }
 
 // Get a variable suitable for search splitting
 int
-MapleCOMSPSSolver::getDivisionVariable()
+SlimeSolver::getDivisionVariable()
 {
    return (rand() % getVariablesCount()) + 1;
 }
 
 // Set initial phase for a given variable
 void
-MapleCOMSPSSolver::setPhase(const int var, const bool phase)
+SlimeSolver::setPhase(const int var, const bool phase)
 {
 	solver->setPolarity(var - 1, phase ? true : false);
 }
 
 // Bump activity for a given variable
 void
-MapleCOMSPSSolver::bumpVariableActivity(const int var, const int times)
+SlimeSolver::bumpVariableActivity(const int var, const int times)
 {
 }
 
 // Interrupt the SAT solving, so it can be started again with new assumptions
 void
-MapleCOMSPSSolver::setSolverInterrupt()
+SlimeSolver::setSolverInterrupt()
 {
    stopSolver = true;
 
@@ -178,7 +171,7 @@ MapleCOMSPSSolver::setSolverInterrupt()
 }
 
 void
-MapleCOMSPSSolver::unsetSolverInterrupt()
+SlimeSolver::unsetSolverInterrupt()
 {
    stopSolver = false;
 
@@ -187,31 +180,40 @@ MapleCOMSPSSolver::unsetSolverInterrupt()
 
 // Diversify the solver
 void
-MapleCOMSPSSolver::diversify(int id)
+SlimeSolver::diversify(int id)
 {
-   if (id == ID_XOR) {
-      solver->GE = true;
-   } else {
-      solver->GE = false;
-   }
-
-   if (id % 2) {
-      solver->VSIDS = false;
-   } else {
-      solver->VSIDS = true;
-   }
-
-   if (id % 4 >= 2) {
-      solver->verso = false;
-   } else {
-      solver->verso = true;
+   int cpus = Parameters::getIntParam("c", 30);
+   solver->log = Parameters::getIntParam("v", 0);
+   switch (Parameters::getIntParam("slime", 1))
+   {
+   case 1: // SLIME or SLIME-BMM depending on the parameters
+      solver->sls = Parameters::getBoolParam("sls");
+      solver->polarity_init_method = Parameters::getIntParam("pol-init", 1);
+      solver->activity_init_method = Parameters::getIntParam("act-init", 1);
+      solver->restarts_gap = Parameters::getIntParam("restart-gap", 300);
+      break;
+   case 2: // Half SLIME/Half SLIME-BMM
+      if (id <= (cpus/2 -1)) {
+         solver->sls = false;
+         solver->polarity_init_method = 1;
+         solver->activity_init_method = 1;
+         solver->restarts_gap = 50;
+      } else {
+         solver->sls = true;
+         solver->polarity_init_method = 0;
+         solver->activity_init_method = 0;
+         // solver->restarts_gap = Parameters::getIntParam("restart-gap", 300);
+      }
+      break;
+   default:
+      break;
    }
 }
 
 // Solve the formula with a given set of assumptions
 // return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
 SatResult
-MapleCOMSPSSolver::solve(const vector<int> & cube)
+SlimeSolver::solve(const vector<int> & cube)
 {
    unsetSolverInterrupt();
 
@@ -249,7 +251,7 @@ MapleCOMSPSSolver::solve(const vector<int> & cube)
 }
 
 void
-MapleCOMSPSSolver::addClause(ClauseExchange * clause)
+SlimeSolver::addClause(ClauseExchange * clause)
 {
    clausesToAdd.addClause(clause);
 
@@ -257,7 +259,7 @@ MapleCOMSPSSolver::addClause(ClauseExchange * clause)
 }
 
 void
-MapleCOMSPSSolver::addLearnedClause(ClauseExchange * clause)
+SlimeSolver::addLearnedClause(ClauseExchange * clause)
 {
    if (clause->size == 1) {
       unitsToImport.addClause(clause);
@@ -267,7 +269,7 @@ MapleCOMSPSSolver::addLearnedClause(ClauseExchange * clause)
 }
 
 void
-MapleCOMSPSSolver::addClauses(const vector<ClauseExchange *> & clauses)
+SlimeSolver::addClauses(const vector<ClauseExchange *> & clauses)
 {
    clausesToAdd.addClauses(clauses);
 
@@ -275,7 +277,7 @@ MapleCOMSPSSolver::addClauses(const vector<ClauseExchange *> & clauses)
 }
 
 void
-MapleCOMSPSSolver::addInitialClauses(const vector<ClauseExchange *> & clauses)
+SlimeSolver::addInitialClauses(const vector<ClauseExchange *> & clauses)
 {
    for (size_t ind = 0; ind < clauses.size(); ind++) {
       vec<Lit> mcls;
@@ -298,7 +300,7 @@ MapleCOMSPSSolver::addInitialClauses(const vector<ClauseExchange *> & clauses)
 }
 
 void
-MapleCOMSPSSolver::addLearnedClauses(const vector<ClauseExchange *> & clauses)
+SlimeSolver::addLearnedClauses(const vector<ClauseExchange *> & clauses)
 {
    for (size_t i = 0; i < clauses.size(); i++) {
       addLearnedClause(clauses[i]);
@@ -306,19 +308,19 @@ MapleCOMSPSSolver::addLearnedClauses(const vector<ClauseExchange *> & clauses)
 }
 
 void
-MapleCOMSPSSolver::getLearnedClauses(vector<ClauseExchange *> & clauses)
+SlimeSolver::getLearnedClauses(vector<ClauseExchange *> & clauses)
 {
    clausesToExport.getClauses(clauses);
 }
 
 void
-MapleCOMSPSSolver::increaseClauseProduction()
+SlimeSolver::increaseClauseProduction()
 {
    lbdLimit++;
 }
 
 void
-MapleCOMSPSSolver::decreaseClauseProduction()
+SlimeSolver::decreaseClauseProduction()
 {
    if (lbdLimit > 2) {
       lbdLimit--;
@@ -326,7 +328,7 @@ MapleCOMSPSSolver::decreaseClauseProduction()
 }
 
 SolvingStatistics
-MapleCOMSPSSolver::getStatistics()
+SlimeSolver::getStatistics()
 {
    SolvingStatistics stats;
 
@@ -340,7 +342,7 @@ MapleCOMSPSSolver::getStatistics()
 }
 
 std::vector<int>
-MapleCOMSPSSolver::getModel()
+SlimeSolver::getModel()
 {
    std::vector<int> model;
 
@@ -356,7 +358,7 @@ MapleCOMSPSSolver::getModel()
 
 
 vector<int>
-MapleCOMSPSSolver::getFinalAnalysis()
+SlimeSolver::getFinalAnalysis()
 {
    vector<int> outCls;
 
@@ -369,12 +371,12 @@ MapleCOMSPSSolver::getFinalAnalysis()
 
 
 vector<int>
-MapleCOMSPSSolver::getSatAssumptions() {
+SlimeSolver::getSatAssumptions() {
    vector<int> outCls;
-   vec<Lit> lits;
-   solver->getAssumptions(lits);
-   for (int i = 0; i < lits.size(); i++) {
-     outCls.push_back(-(INT_LIT(lits[i])));
-   }
-   return outCls;
 };
+
+
+void
+SlimeSolver::setSeed(int seed) {
+   solver->init_seed(seed);
+}

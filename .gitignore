@@ -1,4 +1,5 @@
 *.o
 painless-mcomsps
 mapleCOMSPS/build/
+slime/build/
 mapleCOMSPS/m4ri-20140914/
