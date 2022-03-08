@@ -26,7 +26,10 @@ Content
 
 * slime/:
    Contains the code of Slime from the SAT Competition 2021 with our Bayesian Moment Matching algorithm.
-
+   * utils/SearchInitializer.cc:
+      Contains the BMM implementation.
+   * core/Solver.cc:
+      Contains the CDCL algorithm (BMM is added to the solve_() and search() methods).
 
 To compile the project
 ----------------------
@@ -45,6 +48,10 @@ Exemple:
 - Run a solver with 26 sequential solver, 2 Sharer, all-to-all sharing, and BMM inprocessing:
 
   ./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -pol-init=1 -act-init=1 -restart-gap=50
+
+- Run a Portfolio of Slime solvers (without BMM) in the same configuration as above:
+
+  ./painless-mcomsps dimacs\_filename -c=26 -shr-strat=1 -pol-init=0 -act-init=0 -sls
 
 - Run a solver with half SLIME/half SLIME-BMM Sequential Worker:
 
