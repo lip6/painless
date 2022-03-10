@@ -1239,10 +1239,6 @@ void Solver::uncheckedEnqueue(Lit p, int level, CRef from) {
         }
 #endif
     }
-    if (polarity_init_method == 1 && polarity[x] != sign(p)) {
-        ++flips;
-        var_flips.insert(x);
-    }
     assigns[x] = lbool(!sign(p));
     vardata[x] = mkVarData(from, level);
     trail.push_(p);
