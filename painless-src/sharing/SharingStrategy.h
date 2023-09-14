@@ -54,6 +54,6 @@ public:
                           const vector<SolverInterface *> & producers,
                           const vector<SolverInterface *> & consumers) = 0;
 
-   /// Return the sharing statistics of this sharng strategy.
+   /// Return the sharing statistics of this sharing strategy.
    virtual SharingStatistics getStatistics() = 0;
 };

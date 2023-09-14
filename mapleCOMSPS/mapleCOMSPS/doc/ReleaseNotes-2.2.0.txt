@@ -25,12 +25,12 @@ Changes since version 2.0:
    this have been broken since, but should be fairly easy to fix if
    so.
 
- * Changed C++ file-extention to the less problematic ".cc".
+ * Changed C++ file-extension to the less problematic ".cc".
 
  * Source code is now namespace-protected
 
  * Introducing a new Clause Memory Allocator that brings reduced
-   memory consumption on 64-bit architechtures and improved
+   memory consumption on 64-bit architectures and improved
    performance (to some extent). The allocator uses a region-based
    approach were all references to clauses are represented as a 32-bit
    index into a global memory region that contains all clauses. To

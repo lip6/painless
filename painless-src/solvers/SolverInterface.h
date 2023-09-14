@@ -41,7 +41,7 @@ enum SatResult
 };
 
 
-/// Code  for the type of solvers
+/// Code for the type of solvers
 enum SolverType
 {
 	MAPLE = 0

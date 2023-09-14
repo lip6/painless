@@ -24,6 +24,6 @@
 /// Print the model correctly in stdout.
 void printModel(vector<int> & model);
 
-/// Load the cnf contains in the file to the solver.
+/// Load the cnf contained in the file to the solver.
 bool loadFormulaToSolvers(vector<SolverInterface*> solvers,
                           const char* filename);

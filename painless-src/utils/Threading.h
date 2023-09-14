@@ -56,7 +56,7 @@ public:
       TESTRUN(pthread_mutex_unlock(&mtx), "Mutex unlock failed with msg %d\n")
    }
 
-   /// Try to lock the mutex, return true if succes else false.
+   /// Try to lock the mutex, return true if success else false.
    bool tryLock()
    {
       // return true if lock acquired

@@ -89,7 +89,7 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
         BoolOption   drup   ("MAIN", "drup",   "Generate DRUP UNSAT proof.", false);
-        StringOption drup_file("MAIN", "drup-file", "DRUP UNSAT proof ouput file.", "");
+        StringOption drup_file("MAIN", "drup-file", "DRUP UNSAT proof output file.", "");
 
         parseOptions(argc, argv, true);
         

@@ -68,7 +68,7 @@ class SimpSolver : public Solver {
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
     bool    addClause_(      vec<Lit>& ps);
-    bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
+    bool    substitute(Var v, Lit x);  // Replace all occurrences of v with x (may cause a contradiction).
 
     // Parallel support:
     //
@@ -91,7 +91,7 @@ class SimpSolver : public Solver {
     bool    eliminate_  ();
     void    removeSatisfied();
 
-    // Memory managment:
+    // Memory management:
     //
     virtual void garbageCollect();
 
@@ -136,7 +136,7 @@ class SimpSolver : public Solver {
         const vec<int>& n_occ;
         explicit ElimLt(const vec<int>& no) : n_occ(no) {}
 
-        // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
+        // TODO: are 64-bit operations here noticeably bad on 32-bit platforms? Could use a saturating
         // 32-bit implementation instead then, but this will have to do for now.
         uint64_t cost  (Var x)        const { return (uint64_t)n_occ[toInt(mkLit(x))] * (uint64_t)n_occ[toInt(~mkLit(x))]; }
         bool operator()(Var x, Var y) const { return cost(x) < cost(y); }

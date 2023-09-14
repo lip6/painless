@@ -29,7 +29,7 @@
 
 using namespace std;
 
-/// Clause buffer is a queue containning shared clauses.
+/// Clause buffer is a queue containing shared clauses.
 class ClauseBuffer
 {
 public:

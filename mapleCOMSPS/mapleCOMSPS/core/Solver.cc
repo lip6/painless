@@ -443,7 +443,7 @@ void Solver::removeClause(CRef cr) {
     }
 
     detachClause(cr);
-    // Don't leave pointers to free'd memory!
+    // Don't leave pointers to freed memory!
     if (locked(c)){
         Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == l_True ? c[0] : c[1]);
         vardata[var(implied)].reason = CRef_Undef; }
@@ -985,7 +985,7 @@ void Solver::rebuildOrderHeap()
 |  simplify : [void]  ->  [bool]
 |
 |  Description:
-|    Simplify the clause database according to the current top-level assigment. Currently, the only
+|    Simplify the clause database according to the current top-level assignment. Currently, the only
 |    thing done here is the removal of satisfied clauses, but more things can be put here.
 |________________________________________________________________________________________________@*/
 bool Solver::simplify(bool do_stamping)
@@ -1039,7 +1039,7 @@ void Solver::removeClauseHack(CRef cr, Lit watched0, Lit watched1)
     // TODO: dirty hack to exploit 'detachClause'. 'c' hasn't shrunk yet, so this will work fine.
     c[0] = watched0, c[1] = watched1;
     detachClause(cr);
-    // Don't leave pointers to free'd memory!
+    // Don't leave pointers to freed memory!
     if (locked(c)){
         Lit implied = c.size() != 2 ? c[0] : (value(c[0]) == l_True ? c[0] : c[1]);
         vardata[var(implied)].reason = CRef_Undef; }
@@ -1133,7 +1133,7 @@ NextClause:;
 |    Search for a model the specified number of conflicts.
 |
 |  Output:
-|    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
+|    'l_True' if a partial assignment that is consistent with respect to the clauseset is found. If
 |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
 |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
 |________________________________________________________________________________________________@*/

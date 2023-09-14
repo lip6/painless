@@ -35,12 +35,12 @@ public:
    void doSharing(int idSharer, const vector<SolverInterface *> & from,
                   const vector<SolverInterface *> & to);
 
-   /// Return the sharing statistics of this sharng strategy.
+   /// Return the sharing statistics of this sharing strategy.
    SharingStatistics getStatistics();
 
 protected:
 
-   /// Shrengthed a given clause.
+   /// Strengthened a given clause.
    bool strengthed(ClauseExchange * cls, ClauseExchange ** out_cls); 
 
    /// Solver used for the strengthening.

@@ -269,7 +269,7 @@ class ClauseAllocator : public RegionAllocator<uint32_t>
 
 
 //=================================================================================================
-// OccLists -- a class for maintaining occurence lists with lazy deletion:
+// OccLists -- a class for maintaining occurrence lists with lazy deletion:
 
 template<class Idx, class Vec, class Deleted>
 class OccLists

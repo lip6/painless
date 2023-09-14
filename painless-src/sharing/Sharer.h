@@ -86,6 +86,6 @@ protected:
    /// Vector of the consumers.
    vector<SolverInterface *> consumers;
    
-   /// Pointer to the thread in chrage of sharing.
+   /// Pointer to the thread in charge of sharing.
    Thread * sharer;
 };
