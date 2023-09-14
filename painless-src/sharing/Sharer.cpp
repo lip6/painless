@@ -26,9 +26,9 @@
 #include <algorithm>
 #include <unistd.h>
 
-/// Function exectuted by each sharer.
+/// Function executed by each sharer.
 /// This is main of sharer threads.
-/// @param  arg contains a pointeur to the associated class
+/// @param  arg contains a pointer to the associated class
 /// @return return NULL if the thread exit correctly
 static void * mainThrSharing(void * arg)
 {

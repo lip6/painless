@@ -26,7 +26,7 @@
 
 using namespace std;
 
-// Some forward declatarations for MapleCOMSPS
+// Some forward declarations for MapleCOMSPS
 namespace MapleCOMSPS
 {
    class SimpSolver;

@@ -39,14 +39,14 @@ public:
    void doSharing(int idSharer, const vector<SolverInterface *> & from,
                   const vector<SolverInterface *> & to);
 
-   /// Return the sharing statistics of this sharng strategy.
+   /// Return the sharing statistics of this sharing strategy.
    SharingStatistics getStatistics();
 
 protected:
    /// Number of shared literals per round
    int literalPerRound;
 
-   /// Databse used to store the clauses.
+   /// Database used to store the clauses.
    ClauseDatabase database;
 
    /// Sharing statistics.

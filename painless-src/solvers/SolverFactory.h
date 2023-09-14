@@ -43,7 +43,7 @@ public:
    /// Clone and return a new solver.
    static SolverInterface * cloneSolver(SolverInterface * other);
 
-   /// Print stats of a groupe of solvers.
+   /// Print stats of a group of solvers.
    static void printStats(const vector<SolverInterface *> & solvers);
 
    /// Apply a sparse and random diversification on solvers.

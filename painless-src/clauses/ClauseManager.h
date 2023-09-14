@@ -51,7 +51,7 @@ public:
    /// Increase the number of references to a shared clause.
    static void increaseClause(ClauseExchange * cls, int refs = 1)
    {
-      cls->nbRefs += refs; // atomic adition
+      cls->nbRefs += refs; // atomic addition
    }
 
    /// Release a shared clauses, delete it if needed.
