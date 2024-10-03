@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message Clause {
+    repeated int32 literals = 1;
+}
+
+message Clauses {
+    uint32 num_clauses = 1;
+    repeated Clause clauses = 2;
+}

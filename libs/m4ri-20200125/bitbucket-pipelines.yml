@@ -1,0 +1,11 @@
+image: gcc:10
+
+pipelines:
+  default:
+    - step:
+        script:
+          - autoreconf -i
+            # https://github.com/google/sanitizers/issues/916
+          - ASAN_OPTIONS=detect_leaks=0 CFLAGS="-fsanitize=address" ./configure --enable-debug
+          - ASAN_OPTIONS=detect_leaks=0 make check
+          - make distcheck

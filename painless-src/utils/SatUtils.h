@@ -19,11 +19,27 @@
 
 #pragma once
 
-#include "../solvers/SolverInterface.h"
+#include "../solvers/SolverInterface.hpp"
+#include "ClauseUtils.h"
+#include <algorithm>
 
-/// Print the model correctly in stdout.
-void printModel(vector<int> & model);
+#define SKIP_NONDIGIT(c, f) \
+    do                      \
+    {                       \
+        c = fgetc(f);       \
+    } while (!isdigit(c))
+
+#define GET_NUMBER(c, f, n)     \
+    do                          \
+    {                           \
+        n = n * 10 + (c - '0'); \
+        c = fgetc(f);           \
+    } while (isdigit(c))
 
 /// Load the cnf contains in the file to the solver.
-bool loadFormulaToSolvers(vector<SolverInterface*> solvers,
-                          const char* filename);
+bool parseFormula(const char *filename, std::vector<simpleClause> &clauses, unsigned *varCount);
+
+bool parseParameters(const char *filename, unsigned *clauseCount, unsigned *varCount);
+
+// To be generalized by taking a refenrece to a Preprocess instance
+bool parseFormulaForSBVA(const char *filename, std::vector<simpleClause> &clauses, std::vector<std::vector<unsigned>> &listsOfOccurence, std::vector<bool> &isClauseDeleted, unsigned *varCount);

@@ -19,41 +19,45 @@
 
 #pragma once
 
-#include "../solvers/SolverInterface.h"
+#include "sharing/SharingStatistics.h"
+#include "sharing/SharingEntityVisitor.h"
+
+// To include the real types
+#include "../solvers/SolverCdclInterface.hpp"
+#include "sharing/GlobalDatabase.h"
+#include "sharing/SharingEntity.hpp"
 
 #include <vector>
 
-using namespace std;
-
-/// Sharing statistics.
-struct SharingStatistics
-{
-   /// Constructor.
-   SharingStatistics()
-   {
-      sharedClauses   = 0;
-      receivedClauses = 0;
-   }
-
-   /// Number of shared clauses that have been shared.
-   unsigned long sharedClauses;
-
-   /// Number of shared clauses produced.
-   unsigned long receivedClauses;
-};
-
-/// Strategy to shared clauses.
+/**
+ * \defgroup sharing_strat Sharing Strategies
+ * \ingroup sharing_strat
+ * \ingroup sharing
+ * @brief The interface for all the different sharing strategies local or global.
+ *
+ */
 class SharingStrategy
 {
 public:
+   /// Constructors
+   SharingStrategy() {}
+
    /// Destructor.
-   virtual ~SharingStrategy() {};
+   virtual ~SharingStrategy() {}
 
    /// This method shared clauses from the producers to the consumers.
-   virtual void doSharing(int idSharer,
-                          const vector<SolverInterface *> & producers,
-                          const vector<SolverInterface *> & consumers) = 0;
+   /// @return true if sharer should end , false otherwise
+   virtual bool doSharing() = 0;
 
-   /// Return the sharing statistics of this sharng strategy.
-   virtual SharingStatistics getStatistics() = 0;
+   /// @brief  It permits the strategy to choose the sleeping time of the sharer
+   /// @return number of micro seconds to sleep
+   virtual ulong getSleepingTime();
+
+   /// @brief Function called to print the stats of the strategy
+   virtual void printStats() = 0;
+
+   /// @brief To count the number of literals present in a vector of clauses
+   /// @param clauses the vector of clauses
+   /// @return the number of literals in the vector clauses
+   static int getLiteralsCount(std::vector<std::shared_ptr<ClauseExchange>> clauses);
 };

@@ -1,0 +1,131 @@
+#ifndef NDIST
+
+#include "GenericSharing.h"
+#include "utils/ClauseUtils.h"
+#include "utils/Parameters.h"
+#include "utils/MpiUtils.h"
+#include "utils/Logger.h"
+#include "painless.h"
+#include <random>
+
+GenericSharing::GenericSharing(std::shared_ptr<GlobalDatabase> g_base, std::vector<int> &&producers, std::vector<int> &&consumers) : GlobalSharingStrategy(g_base), producers(producers), consumers(consumers)
+{
+    this->totalSize = Parameters::getIntParam("gshr-lit", 200 * Parameters::getIntParam("c", 28));
+}
+
+GenericSharing::GenericSharing(std::shared_ptr<GlobalDatabase> g_base, std::vector<int> &producers, std::vector<int> &consumers) : GlobalSharingStrategy(g_base), producers(producers), consumers(consumers)
+{
+    this->totalSize = Parameters::getIntParam("gshr-lit", 200 * Parameters::getIntParam("c", 28));
+}
+
+GenericSharing::~GenericSharing()
+{
+    MPI_Status status;
+    // waiting to receive remaining end messages just in case
+    for (MPI_Request &req : this->sendRequests)
+        MPI_Cancel(&req);
+}
+
+bool GenericSharing::initMpiVariables()
+{
+    if (world_size < 2)
+    {
+        LOG("[GSharing] I am alone or MPI was not initialized , no need for distributed mode, initialization aborted.");
+
+        return false;
+    }
+
+    LOGVECTOR(&this->producers[0], producers.size(), "Producers: ");
+    LOGVECTOR(&this->consumers[0], consumers.size(), "Consumers: ");
+
+    return true;
+}
+
+bool GenericSharing::doSharing()
+{
+    
+
+    return false;
+}
+
+//==============================
+// Serialization/Deseralization
+//==============================
+
+// Pattern: this->idSharer 2 6 lbd 0 6 -9 3 5 lbd 0 -4 -2 lbd 0 nb_buffers_aggregated
+int GenericSharing::serializeClauses(std::vector<int> &serialized_v_cls)
+{
+    unsigned clausesSelected = 0;
+    std::shared_ptr<ClauseExchange> tmp_cls;
+
+    unsigned dataCount = serialized_v_cls.size();
+
+    while (dataCount < totalSize && globalDatabase->getClauseToSend(tmp_cls))
+    {
+        if (dataCount + tmp_cls->size + 2 > totalSize)
+        {
+            LOGDEBUG1("[GenericSharing %d] Serialization overflow avoided, %d/%d, wanted to add %d", dataCount, totalSize, tmp_cls->size + 2);
+            globalDatabase->importClause(tmp_cls); // reinsert to clauseToSend if doesn't fit
+            break;
+        }
+
+        // check with bloom filter if clause will be sent. If already sent, the clause is directly released
+        if (!this->b_filter_send.contains(tmp_cls->lits))
+        {
+            serialized_v_cls.insert(serialized_v_cls.end(), tmp_cls->lits.begin(), tmp_cls->lits.end());
+            serialized_v_cls.push_back((tmp_cls->lbd == 0) ? -1 : tmp_cls->lbd);
+            serialized_v_cls.push_back(0);
+            this->b_filter_send.insert(tmp_cls->lits);
+            clausesSelected++;
+
+            dataCount += (2 + tmp_cls->size);
+        }
+        else
+        {
+            gstats.sharedDuplicasAvoided++;
+        }
+    }
+
+    if (dataCount > totalSize)
+    {
+        LOGWARN("Panic!! datacount(%d) > totalsize(%d). Deserialization will create erroenous clauses", dataCount, totalSize);
+    }
+    return clausesSelected;
+}
+
+void GenericSharing::deserializeClauses(std::vector<int> &serialized_v_cls)
+{
+    std::vector<int> tmp_cls;
+    int current_cls = 0;
+    int nb_clauses = 0;
+    int lbd;
+    const unsigned source_id = globalDatabase->getId();
+    const unsigned buffer_size = serialized_v_cls.size();
+    std::shared_ptr<ClauseExchange> p_cls;
+
+    for (int i = 0; i < buffer_size; i++)
+    {
+        if (serialized_v_cls[i] == 0)
+        {
+            tmp_cls.clear();
+            tmp_cls.insert(tmp_cls.end(), serialized_v_cls.begin() + current_cls, serialized_v_cls.begin() + i);
+            lbd = (tmp_cls.back() == -1) ? 0 : tmp_cls.back();
+            tmp_cls.pop_back();
+
+            if (!this->b_filter_send.contains(tmp_cls)) // check if received from another neighbor : worth it ?
+            {
+                p_cls = std::make_shared<ClauseExchange>(std::move(tmp_cls), lbd, source_id);
+                if (globalDatabase->addReceivedClause(p_cls))
+                    gstats.receivedClauses++;
+                this->b_filter_send.insert(tmp_cls);
+            }
+            else
+            {
+                gstats.receivedDuplicas++;
+            }
+
+            current_cls = i + 1;
+        }
+    }
+}
+#endif

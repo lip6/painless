@@ -17,44 +17,48 @@
 // this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-#include "../utils/Logger.h"
-#include "../working/SequentialWorker.h"
+#include "utils/Logger.h"
+#include "working/SequentialWorker.h"
+#include "painless.h"
+#include "utils/SatUtils.h"
+#include "utils/Parameters.h"
 
 #include <unistd.h>
 
-using namespace std;
+;
 
 // Main executed by worker threads
-void * mainWorker(void *arg)
+void *mainWorker(void *arg)
 {
-   SequentialWorker * sq = (SequentialWorker *)arg;
+   SequentialWorker *sq = (SequentialWorker *)arg;
 
    SatResult res = UNKNOWN;
 
-   vector<int> model;
+   std::vector<int> model;
 
-   while (globalEnding == false && sq->force == false) {
+   while (globalEnding == false && sq->force == false)
+   {
       pthread_mutex_lock(&sq->mutexStart);
 
-      if (sq->waitJob == true) {
+      while (sq->waitJob == true)
+      {
          pthread_cond_wait(&sq->mutexCondStart, &sq->mutexStart);
       }
 
       pthread_mutex_unlock(&sq->mutexStart);
 
       sq->waitInterruptLock.lock();
-
-      do {
-         res = sq->solver->solve(sq->actualCube);
-      } while (sq->force == false && res == UNKNOWN);
+      
+      res = sq->solver->solve(sq->actualCube); // why pass by param what the solver already has ?
 
       sq->waitInterruptLock.unlock();
 
-      if (res == SAT) {
+      if (res == SAT)
+      {
          model = sq->solver->getModel();
       }
 
-      sq->join(NULL, res, model);
+      sq->join(NULL, res, model); // assign true to force ! No need for sq->force==false in while loop (see original painless)
 
       model.clear();
 
@@ -65,14 +69,14 @@ void * mainWorker(void *arg)
 }
 
 // Constructor
-SequentialWorker::SequentialWorker(SolverInterface * solver_)
+SequentialWorker::SequentialWorker(std::shared_ptr<SolverInterface> solver_)
 {
-   solver  = solver_;
-   force   = false;
+   solver = solver_;
+   force = false;
    waitJob = true;
 
    pthread_mutex_init(&mutexStart, NULL);
-   pthread_cond_init (&mutexCondStart, NULL);
+   pthread_cond_init(&mutexCondStart, NULL);
 
    worker = new Thread(mainWorker, this);
 }
@@ -80,87 +84,75 @@ SequentialWorker::SequentialWorker(SolverInterface * solver_)
 // Destructor
 SequentialWorker::~SequentialWorker()
 {
-   setInterrupt();
+   if (!force)
+      setInterrupt();
 
    worker->join();
    delete worker;
 
    pthread_mutex_destroy(&mutexStart);
-   pthread_cond_destroy (&mutexCondStart);
-
-   solver->release();
+   pthread_cond_destroy(&mutexCondStart);
 }
 
-void
-SequentialWorker::solve(const vector<int> & cube)
+void SequentialWorker::solve(const std::vector<int> &cube)
 {
    actualCube = cube;
-   
+
    unsetInterrupt();
 
    waitJob = false;
 
-   pthread_mutex_lock  (&mutexStart);
-   pthread_cond_signal (&mutexCondStart);
+   pthread_mutex_lock(&mutexStart);
+   pthread_cond_signal(&mutexCondStart);
    pthread_mutex_unlock(&mutexStart);
 }
 
-void
-SequentialWorker::join(WorkingStrategy * winner, SatResult res,
-                       const vector<int> & model)
+void SequentialWorker::join(WorkingStrategy *winner, SatResult res,
+                            const std::vector<int> &model)
 {
    force = true;
+
+   LOGDEBUG1("SequentialWorker %p is joining with res = %d.", this, res);
 
    if (globalEnding)
       return;
 
-   if (parent == NULL) {
-      globalEnding = true;
-      finalResult  = res;
+   if (parent == NULL)
+   {
+      worker->join();
 
-      if (res == SAT) {
+      globalEnding = true;
+      finalResult = res;
+
+      if (res == SAT)
+      {
          finalModel = model;
       }
-   } else {
+      pthread_mutex_lock(&mutexGlobalEnd);
+      pthread_cond_broadcast(&condGlobalEnd);
+      pthread_mutex_unlock(&mutexGlobalEnd);
+   }
+   else
+   {
+      LOGDEBUG1("SequentialWorker %p calls its parent",this);
       parent->join(this, res, model);
    }
 }
 
-void
-SequentialWorker::waitInterrupt()
+void SequentialWorker::waitInterrupt()
 {
    waitInterruptLock.lock();
    waitInterruptLock.unlock();
 }
 
-void
-SequentialWorker::setInterrupt()
+void SequentialWorker::setInterrupt()
 {
    force = true;
    solver->setSolverInterrupt();
 }
 
-void
-SequentialWorker::unsetInterrupt()
+void SequentialWorker::unsetInterrupt()
 {
    force = false;
    solver->unsetSolverInterrupt();
-}
-
-int
-SequentialWorker::getDivisionVariable()
-{
-   return solver->getDivisionVariable();
-}
-
-void
-SequentialWorker::setPhase(const int var, const bool phase)
-{
-   solver->setPhase(var, phase);
-}
-
-void
-SequentialWorker::bumpVariableActivity(const int var, const int times)
-{
-   solver->bumpVariableActivity(var, times);
 }

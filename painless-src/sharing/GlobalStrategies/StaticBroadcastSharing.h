@@ -1,0 +1,1 @@
+// Make a broadcast that share only if a certain number of clauses are produced so a bootstrap is needed for each sharing action ( if a machine have enough )

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../clauses/ClauseExchange.h"
+#include "clauses/ClauseExchange.h"
 
 #include <atomic>
 #include <memory>
@@ -27,7 +27,7 @@
 #include <vector>
 
 
-using namespace std;
+
 
 /// Clause buffer is a queue containning shared clauses.
 class ClauseBuffer
@@ -40,16 +40,16 @@ public:
    ~ClauseBuffer();
 
    /// Enqueue a shared clause to the buffer.
-   void addClause (ClauseExchange * clause);
+   void addClause (std::shared_ptr<ClauseExchange> clause);
 
    /// Enqueue shared clauses to the buffer.
-   void addClauses(const vector<ClauseExchange *> & clauses);
+   void addClauses(const std::vector<std::shared_ptr<ClauseExchange>> & clauses);
 
    /// Dequeue a shared clause.
-   bool getClause (ClauseExchange ** clause);
+   bool getClause (std::shared_ptr<ClauseExchange> &clause);
 
    /// Dequeue shared clauses.
-   void getClauses(vector<ClauseExchange *> & clauses);
+   void getClauses(std::vector<std::shared_ptr<ClauseExchange>> & clauses);
 
    /// Return the current size of the buffer
    int size();
@@ -57,11 +57,11 @@ public:
 protected:
    typedef struct ListElement
    {
-      ClauseExchange * clause;
+      std::shared_ptr<ClauseExchange> clause;
 
-      atomic<ListElement *> next;         
+      std::atomic<ListElement *> next;         
 
-      ListElement(ClauseExchange * cls)
+      ListElement(std::shared_ptr<ClauseExchange> cls)
       {
          next   = NULL;
          clause = cls;
@@ -74,10 +74,10 @@ protected:
 
    typedef struct ListRoot
    {
-      atomic<int> size;
+      std::atomic<int> size;
 
-      atomic<ListElement *> head;
-      atomic<ListElement *> tail;
+      std::atomic<ListElement *> head;
+      std::atomic<ListElement *> tail;
    } ListRoot;
 
    /// Root of producer/customers lists

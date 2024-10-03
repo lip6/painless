@@ -20,22 +20,26 @@
 #pragma once
 
 #include "sharing/Sharer.h"
-#include "solvers/SolverInterface.h"
+#include "solvers/SolverCdclInterface.hpp"
 #include "working/WorkingStrategy.h"
 
 #include <atomic>
 #include <vector>
-
-using namespace std;
+#include <unistd.h>
 
 /// Is it the end of the search
-extern atomic<bool> globalEnding;
+extern std::atomic<bool> globalEnding;
+/// @brief  Mutex for timeout cond
+extern pthread_mutex_t mutexGlobalEnd;
+
+/// @brief Cond to wait on timeout or wakeup on globalEnding
+extern pthread_cond_t condGlobalEnd;
 
 /// Working strategy
-extern WorkingStrategy * working;
+extern WorkingStrategy *working;
 
 /// Array of sharers
-extern Sharer ** sharers;
+extern std::vector<Sharer *> sharers;
 
 /// Size of the array of sharers
 extern int nSharers;
@@ -44,4 +48,13 @@ extern int nSharers;
 extern SatResult finalResult;
 
 /// Model for SAT instances
-extern vector<int> finalModel;
+extern std::vector<int> finalModel;
+
+/// @brief Number of sharing groups
+extern int nb_groups;
+
+/// Number of solvers for sat solving to launch
+extern int cpus;
+
+/// To check if painless is using distributed mode
+extern std::atomic<bool> dist;

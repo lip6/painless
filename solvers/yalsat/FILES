@@ -1,0 +1,14 @@
+yalsat          executable SAT solver
+palsat          executable SAT solver simple portfolio version
+main.c          front-end, e.g. dimacs parser, connects to library
+libyals.a       actual library 
+yals.h          library include file
+yals.c          library implementation
+yils.h          internal API calls
+config.c        prints banner (includes configuration)
+config.h        automatically generated from './mkconfig.sh'
+makefile        instantiated from 'makfile.in' by './configure.sh'
+configure.sh    configure script (try './configure -h')
+mkconfig.sh     prints version and compile time information
+getgidid.sh     determine current 'git id' (or of release)
+makefile.in     makefile template

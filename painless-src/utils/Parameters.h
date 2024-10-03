@@ -1,22 +1,3 @@
-// -----------------------------------------------------------------------------
-// Copyright (C) 2017  Ludovic LE FRIOUX
-//
-// This file is part of PaInleSS.
-//
-// PaInleSS is free software: you can redistribute it and/or modify it under the
-// terms of the GNU General Public License as published by the Free Software
-// Foundation, either version 3 of the License, or (at your option) any later
-// version.
-//
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-// details.
-//
-// You should have received a copy of the GNU General Public License along with
-// this program.  If not, see <http://www.gnu.org/licenses/>.
-// -----------------------------------------------------------------------------
-
 #pragma once
 
 #include <iostream>
@@ -25,98 +6,61 @@
 #include <string>
 #include <string.h>
 
-using namespace std;
+#include "Logger.h"
 
-extern map<string, string> params;
+extern std::map<std::string, std::string> params;
 
-extern char * filename;
+extern char *filename;
 
-/// Class to manage the parameters
+/// \class Parameters
+/// \brief Class to manage the parameters
+/// \defgroup utils
+/// \ingroup utils
 class Parameters
 {
 public:
-   /// Init the parameters.
-   static void init(int argc, char ** argv)
-   {
-      for (int i = 1; i < argc; i++) {
-         char * arg = argv[i];
 
-         if (arg[0] != '-' && filename == NULL) {
-            filename = arg;
-            continue;
-         }
+   Parameters() = delete;
 
-         char * eq = strchr(arg, '=');
+   /// \brief Initializes the parameters using the command line arguments.
+   /// \param argc The number of command line arguments.
+   /// \param argv The array of command line arguments.
+   static void init(int argc, char **argv);
 
-         if (eq == NULL) {
-            params[arg+1];
-         } else {
-            *eq = 0;
+   /// \brief Gets the filename parameter.
+   /// \return The filename parameter as a C-style string.
+   static char *getFilename();
 
-            char * left  = arg+1;
-            char * right = eq+1;
+   /// \brief Check if flag exists
+   /// \param name The name of the flag
+   /// \return True if the flag exists, otherwise false
+   static bool getBoolParam(const std::string &name);
 
-            params[left] = right;
-         }
-      }
-   }
+   /// \brief Gets a string parameter by name with a default value.
+   /// \param name The name of the string parameter.
+   /// \param defaultValue The default value to return if the parameter is not found.
+   /// \return The value of the parameter as a string.
+   static const std::string getParam(const std::string &name, const std::string &defaultValue);
 
-   /// Get the input cnf filename.
-   static char * getFilename()
-   {
-      static char * ret = filename;
+   /// \brief Gets a string parameter by name.
+   /// \param name The name of the string parameter.
+   /// \return The value of the parameter as a string.
+   static const std::string getParam(const std::string &name);
 
-      return ret;
-   }
+   /// \brief Gets an integer parameter by name with a default value.
+   /// \param name The name of the integer parameter.
+   /// \param defaultValue The default value to return if the parameter is not found.
+   /// \return The value of the parameter as an integer.
+   static int getIntParam(const std::string &name, int defaultValue);
 
-   /// Print all parameters.
-   static void printParams()
-   {
-      printf("c filename %s\n", filename);
+   /// \brief Prints all the parameters to the standard output.
+   static void printParams();
 
-      cout << "c ";
+   /// \brief Prints the help message for the parameters.
+   static void printHelp();
 
-      for (map<string,string>::iterator it = params.begin();
-           it != params.end(); it++)
-      {
-         if (it->second.empty()) {
-            cout << it->first << ", ";
-         } else {
-            cout << it->first << "=" << it->second << ", ";
-         }
-      }
-
-      cout << "\n";
-   }
-
-   /// Return true if the parameters is set otherwise false.
-   static bool getBoolParam(const string & name)
-   {
-      return params.find(name) != params.end();
-   }
-
-   /// Get the string value of a parameters with a default value.
-   static const string getParam(const string & name,
-                                const string & defaultValue)
-   {
-      if (getBoolParam(name))
-         return params[name];
-
-      return defaultValue;
-   }
-
-   /// Get the string value of a parameter.
-   static const string getParam(const string & name)
-   {
-      return getParam(name, "");
-   }
-
-   /// Get the int value of a parameter with a default value.
-   static int getIntParam(const string & name, int defaultValue)
-   {
-      if (getBoolParam(name))
-         return atoi(params[name].c_str());
-
-      return defaultValue;
-   }
+private:
+   static char *binName;
+   static std::map<std::string, std::string> params;
+   static char * filename;
 };

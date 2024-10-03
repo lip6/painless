@@ -1,64 +1,50 @@
-// -----------------------------------------------------------------------------
-// Copyright (C) 2017  Ludovic LE FRIOUX
-//
-// This file is part of PaInleSS.
-//
-// PaInleSS is free software: you can redistribute it and/or modify it under the
-// terms of the GNU General Public License as published by the Free Software
-// Foundation, either version 3 of the License, or (at your option) any later
-// version.
-//
-// This program is distributed in the hope that it will be useful, but WITHOUT
-// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-// details.
-//
-// You should have received a copy of the GNU General Public License along with
-// this program.  If not, see <http://www.gnu.org/licenses/>.
-// -----------------------------------------------------------------------------
-
 #pragma once
 
-#include <atomic>
 #include <iostream>
+#include <vector>
 
-using namespace std;
-
-/// Structure of a shared clause.
-typedef struct ClauseExchange
+struct ClauseExchange
 {
-   /// Number of references on this clause.
-   atomic<int> nbRefs;
+    ClauseExchange(unsigned size);
 
-   /// LBD value of this clause.
-   int lbd;
-   
-   /// Id of the solver that has exported this clause.
-   int from;
+    ClauseExchange(std::vector<int> &&v_cls, unsigned lbd);
 
-   /// Size of this clause.
-   int size;
+    ClauseExchange(std::vector<int> &&v_cls, unsigned lbd, unsigned from);
 
-   /// Literals of this clause.
-   int lits[0];
+    ~ClauseExchange();
 
-} ClauseExchange;
+    /// LBD value of this clause.
+    unsigned lbd;
 
-/// Print clause.
-inline void printClauseExchange(ClauseExchange * cls)
-{
-   cout << "size: " << cls->size;
-   cout << " lbd: " << cls->lbd;
-   cout << " from: " << cls->from;
-   cout << " {";
+    /// Id of the solver that has exported this clause.
+    unsigned from;
 
-	if (cls->size > 0) {
-	   cout << cls->lits[0];
-	}
+    /// Size redundant with lits.size() kept temporarely
+    unsigned size;
 
-	for (int i = 1; i < cls->size; i++) {
-	   cout << ", " << cls->lits[i];
-   }
+    /// Checksum of the clause
+    size_t checksum;
 
-   cout << "}" << endl;
-}
+    /// Literals of this clause.
+    std::vector<int> lits;
+
+    inline void printClauseExchange()
+    {
+        int size = this->lits.size();
+        std::cout << "c Clause Exchange at" << this << ":" << std::endl;
+        std::cout << " size: " << size;
+        std::cout << " lbd: " <<  this->lbd;
+        std::cout << " from: " << this->from;
+        std::cout << " {";
+
+        if (size > 0)
+        {
+            std::cout << this->lits[0];
+            for (int i = 1; i < size; i++)
+            {
+                std::cout << ", " << this->lits[i];
+            }
+        }
+        std::cout << "}" << std::endl;
+    }
+};

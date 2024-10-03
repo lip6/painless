@@ -17,171 +17,108 @@
 // this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-#include "../painless.h"
-#include "../sharing/Sharer.h"
-#include "../solvers/SolverInterface.h"
-#include "../utils/Logger.h"
-#include "../utils/Parameters.h"
+#include "painless.h"
+#include "sharing/Sharer.h"
+#include "utils/Logger.h"
+#include "utils/Parameters.h"
+#include "utils/System.h"
 
 #include <algorithm>
 #include <unistd.h>
 
 /// Function exectuted by each sharer.
 /// This is main of sharer threads.
-/// @param  arg contains a pointeur to the associated class
+/// @param  arg contains a pointer to the associated class
 /// @return return NULL if the thread exit correctly
-static void * mainThrSharing(void * arg)
+void *mainThrSharing(void *arg)
 {
-   Sharer * shr  = (Sharer *)arg;
-   int round     = 0;
-   int sleepTime = Parameters::getIntParam("shr-sleep", 500000);
+   Sharer *shr = (Sharer *)arg;
 
-   while (true) {
-      // Sleep 
-      usleep(sleepTime);
-   
-      if (globalEnding)
-         break; // Need to stop
+   int round = 0;
+   int nbStrats = shr->sharingStrategies.size();
+   int lastStrategy = -1;
+   int sleepTime = shr->sharingStrategies.front()->getSleepingTime() / nbStrats; // TODO : to be replaced
+   double sharingTime = 0;
+   int wakeupRet = 0;
+   timespec sleepTimeSpec;
+   timespec timespecCond;
 
-      round++; // New round
+   getTimeSpecMicro(sleepTime, &sleepTimeSpec);
+   usleep(Parameters::getIntParam("init-sleep", 10000)*shr->id); /* attempt to desync when there are multiple sharers */
+   LOG1("Sharer %d will start now", shr->id);
 
-      SharingStatistics stats = shr->sharingStrategy->getStatistics();
-      log(2, "Sharer %d enter in round  %d, received cls %ld, shared cls %ld\n",
-          shr->id, round, stats.receivedClauses, stats.sharedClauses);
+   bool can_break = false;
 
+   while (!can_break)
+   {
 
-      // Add new solvers
-      // -------------------------
-      shr->addLock.lock();
-
-      shr->producers.insert(shr->producers.end(), shr->addProducers.begin(),
-                            shr->addProducers.end());
-      shr->addProducers.clear();
-
-      shr->consumers.insert(shr->consumers.end(), shr->addConsumers.begin(),
-                            shr->addConsumers.end());
-      shr->addConsumers.clear();
-
-      shr->addLock.unlock();
-
+      lastStrategy = round % nbStrats;
 
       // Sharing phase
-      shr->sharingStrategy->doSharing(shr->id, shr->producers, shr->consumers);
+      sharingTime = getAbsoluteTime();
+      can_break = shr->sharingStrategies[lastStrategy]->doSharing();
+      sharingTime = getAbsoluteTime() - sharingTime;
+      LOG2("[Sharer %d] Sharing round %d done in %f s.", shr->id, round, sharingTime);
 
-      
-      // Remove solvers
-      // -------------------------
-      shr->removeLock.lock();
-
-      for (size_t i = 0; i < shr->removeProducers.size(); i++) {
-         shr->producers.erase(remove(shr->producers.begin(),
-                                     shr->producers.end(),
-                                     shr->removeProducers[i]),
-                              shr->producers.end());
-         shr->removeProducers[i]->release();
+      // sleep
+      if (!globalEnding)
+      {
+         // wait for sleeptime time then wakeup (spurious ok)
+         // if signaled the globalending will be managed by the strategy
+         pthread_mutex_lock(&mutexGlobalEnd);
+         getTimeToWait(&sleepTimeSpec, &timespecCond);
+         wakeupRet = pthread_cond_timedwait(&condGlobalEnd, &mutexGlobalEnd, &timespecCond);
+         pthread_mutex_unlock(&mutexGlobalEnd);
+         LOGDEBUG1("sharer wakeupRet = %d , globalEnding = %d ", wakeupRet, globalEnding.load());
+         // usleep(sleepTime);
       }
-      shr->removeProducers.clear();
 
-      for (size_t i = 0; i < shr->removeConsumers.size(); i++) {
-         shr->consumers.erase(remove(shr->consumers.begin(),
-                                     shr->consumers.end(),
-                                     shr->removeConsumers[i]),
-                              shr->consumers.end());
-         shr->removeConsumers[i]->release();
-      }
-      shr->removeConsumers.clear();
-
-      shr->removeLock.unlock();
-
-
-      if (globalEnding)
-         break; // Need to stop
+      round++; // New round
+      shr->totalSharingTime += sharingTime;
    }
 
+   // Removed strategy that ended
+   LOG3("Sharer %d strategy %d ended", shr->id, lastStrategy);
+   nbStrats--;
+
+   LOG3("Sharer %d has %d remaining strategies.", shr->id, nbStrats);
+
+   // Launch a final doSharing to make the other strategies finalize correctly (removed from the previous while(1) to lessen ifs)
+   for (int i = 0; i < nbStrats; i++)
+   {
+      if (i == lastStrategy)
+         continue;
+      LOG3("Sharer %d will end strategy %d", shr->id, i);
+      if (!shr->sharingStrategies[i]->doSharing())
+      {
+         LOGERROR("Panic, strategy %d didn't detect ending!", i);
+      }
+   }
    return NULL;
 }
 
-Sharer::Sharer(int id, SharingStrategy * sharingStrategy,
-               vector<SolverInterface *> producers,
-               vector<SolverInterface *> consumers)
+Sharer::Sharer(int _id, std::vector<std::shared_ptr<SharingStrategy>> &_sharingStrategies) : Entity(_id), sharingStrategies(_sharingStrategies)
 {
-   this->id              = id;
-   this->sharingStrategy = sharingStrategy;
-   this->producers       = producers;
-   this->consumers       = consumers;
+   sharer = new Thread(mainThrSharing, this);
+}
 
-   for (size_t i = 0; i < producers.size(); i++) {
-      producers[i]->increase();
-   }
-
-   for (size_t i = 0; i < consumers.size(); i++) {
-      consumers[i]->increase();
-   }
-
-   sharer  = new Thread(mainThrSharing, this);
+Sharer::Sharer(int _id, std::shared_ptr<SharingStrategy> _sharingStrategy) : Entity(_id)
+{
+   sharingStrategies.push_back(_sharingStrategy);
+   sharer = new Thread(mainThrSharing, this);
 }
 
 Sharer::~Sharer()
 {
-   sharer->join();
-   delete sharer;
+   this->join();
+}
 
-   removeLock.lock();
-
-   for (int i = 0; i < removeProducers.size(); i++) {
-      removeProducers[i]->release();
+void Sharer::printStats()
+{
+   LOGSTAT("Sharer %d: executionTime: %f", this->getId(), this->totalSharingTime);
+   for (int i = 0; i < sharingStrategies.size(); i++)
+   {
+      LOGSTAT("Strategy '%s': ", typeid(*sharingStrategies[i]).name());
+      sharingStrategies[i]->printStats();
    }
-
-   for (size_t i = 0; i < removeConsumers.size(); i++) {
-      removeConsumers[i]->release();
-   }
-
-   removeLock.unlock();
-
-   delete sharingStrategy;
-}
-
-void
-Sharer::addProducer(SolverInterface * solver)
-{
-   solver->increase();
-
-   addLock.lock();
-   addProducers.push_back(solver);
-   addLock.unlock();
-}
-
-void
-Sharer::addConsumer(SolverInterface * solver)
-{
-   solver->increase();
-
-   addLock.lock();
-   addConsumers.push_back(solver);
-   addLock.unlock();
-}
-
-void
-Sharer::removeProducer(SolverInterface * solver)
-{
-   removeLock.lock();
-   removeProducers.push_back(solver);
-   removeLock.unlock();
-}
-
-void
-Sharer::removeConsumer(SolverInterface * solver)
-{
-   removeLock.lock();
-   removeConsumers.push_back(solver);
-   removeLock.unlock();
-}
-
-void
-Sharer::printStats()
-{
-   SharingStatistics stats = sharingStrategy->getStatistics();
-
-   cout << "c Sharer " << id << " received cls "<< stats.receivedClauses
-        << ", shared cls " << stats.sharedClauses << endl;
 }

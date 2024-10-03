@@ -19,73 +19,57 @@
 
 #pragma once
 
-#include "../sharing/SharingStrategy.h"
-#include "../utils/Threading.h"
+#include "sharing/SharingStrategy.h"
+#include "sharing/SharingEntity.hpp"
+#include "utils/Threading.h"
+#include "utils/Logger.h"
 
+static void *mainThrSharing(void *arg);
 
-static void * mainThrSharing(void * arg);
+/// \defgroup sharing Sharing Related Classes
+/// \ingroup sharing
 
-
-/// A sharer is a thread responsible to share clauses between solvers.
-class Sharer
+/// @brief A sharer is a thread responsible to share clauses between solvers.
+class Sharer : public Entity
 {
 public:
-   /// Constructor.
-   Sharer(int id_, SharingStrategy * sharingStrategy_,
-          vector<SolverInterface *> producers_,
-          vector<SolverInterface *> consumer_);
+   /// Constructors.
+   Sharer(int id_, std::vector<std::shared_ptr<SharingStrategy>> &sharingStrategies);
+   Sharer(int id_, std::shared_ptr<SharingStrategy> sharingStrategy);
 
    /// Destructor.
-   ~Sharer();
-
-   /// Add a solver to the producers.
-   void addProducer(SolverInterface * solver);
-   
-   /// Add a solver to the consumers.
-   void addConsumer(SolverInterface * solver);
-
-   /// Remove a solver from the producers.
-   void removeProducer(SolverInterface * solver);
-
-   /// Remove a solver from the consumers.
-   void removeConsumer(SolverInterface * solver);
+   virtual ~Sharer();
 
    /// Print sharing statistics.
-   void printStats();
+   virtual void printStats();
+
+   /// @brief To join the thread of this sharer object
+   inline void join()
+   {
+      if(sharer == nullptr) return ;
+      sharer->join();
+      delete sharer;
+      sharer = nullptr;
+       LOGDEBUG1("Sharer %d joined", id);
+   }
+
+   inline void setThreadAffinity(int coreId)
+   {
+      this->sharer->setThreadAffinity(coreId);
+   }
 
 protected:
-   friend void * mainThrSharing(void *);
+   /// Pointer to the thread in charge of sharing.
+   Thread *sharer;
 
-   /// Id of the sharer.
-   int id;
+   /// @brief Heuristic for strategy implementation comparaison (TODO: ifndef NSTAT for such probes)
+   double totalSharingTime = 0;
 
-   /// Strategy used to shared clauses.
-   SharingStrategy * sharingStrategy;
+   /// Strategy/Strategies used to shared clauses.
+   std::vector<std::shared_ptr<SharingStrategy>> sharingStrategies;
 
-   /// Mutex used to add producers and consumers.
-   Mutex addLock;
-
-   /// Mutex used to add producers and consumers.
-   Mutex removeLock;
-
-   /// Vector of solvers to add to the producers.
-   vector<SolverInterface *> addProducers;
-
-   /// Vector of solvers to add to the consumers.
-   vector<SolverInterface *> addConsumers;
-
-   /// Vector of solvers to remove from the producers.
-   vector<SolverInterface *> removeProducers;
-   
-   /// Vector of solvers to remove from the consumers.
-   vector<SolverInterface *> removeConsumers;
-   
-   /// Vector of the producers.
-   vector<SolverInterface *> producers;
-   
-   /// Vector of the consumers.
-   vector<SolverInterface *> consumers;
-   
-   /// Pointer to the thread in chrage of sharing.
-   Thread * sharer;
+   /// @brief Working function that will call sharingStrategy doSharing()
+   /// @param  sharer the sharer object
+   /// @return NULL if well ended
+   friend void *mainThrSharing(void *);
 };

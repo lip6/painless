@@ -19,56 +19,49 @@
 
 #pragma once
 
-#include "../solvers/SolverInterface.h"
-#include "../utils/Threading.h"
-#include "../working/WorkingStrategy.h"
+#include "../solvers/SolverInterface.hpp"
+#include "utils/Threading.h"
+#include "working/WorkingStrategy.h"
 
 #include <vector>
 
-using namespace std;
 
 // Main executed by worker threads
-static void * mainWorker(void * arg);
+static void *mainWorker(void *arg);
 
 class SequentialWorker : public WorkingStrategy
 {
 public:
-   SequentialWorker(SolverInterface * solver_);
-   
+   SequentialWorker(std::shared_ptr<SolverInterface> solver_);
+
    ~SequentialWorker();
 
-   void solve (const vector<int> & cube);
+   void solve(const std::vector<int> &cube);
 
-   void join(WorkingStrategy * winner, SatResult res,
-             const vector<int> & model);
+   void join(WorkingStrategy *winner, SatResult res,
+             const std::vector<int> &model);
 
    void setInterrupt();
 
    void unsetInterrupt();
 
    void waitInterrupt();
-   
-   int getDivisionVariable();
 
-   void setPhase(const int var, const bool phase);
-
-   void bumpVariableActivity(const int var, const int times);
-
-   SolverInterface * solver;
+   std::shared_ptr<SolverInterface> solver;
 
 protected:
-   friend void * mainWorker(void * arg);
+   friend void *mainWorker(void *arg);
 
-   Thread * worker;
+   Thread *worker;
 
-   vector<int> actualCube;
+   std::vector<int> actualCube;
 
-   atomic<bool> force;
-   
-   atomic<bool> waitJob;
+   std::atomic<bool> force;
+
+   std::atomic<bool> waitJob;
 
    Mutex waitInterruptLock;
 
    pthread_mutex_t mutexStart;
-   pthread_cond_t  mutexCondStart;
+   pthread_cond_t mutexCondStart;
 };

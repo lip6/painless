@@ -17,17 +17,19 @@
 // this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
-#include "../clauses/ClauseDatabase.h"
-#include "../clauses/ClauseManager.h"
-#include "../clauses/ClauseExchange.h"
-#include "../utils/Logger.h"
+#include "clauses/ClauseDatabase.h"
+#include "clauses/ClauseExchange.h"
+#include "utils/Logger.h"
 
-#include <string.h>
-#include <stdio.h>
+#include <numeric>
 
-using namespace std;
 
 ClauseDatabase::ClauseDatabase()
+{
+   this->maxClauseSize = 0;
+}
+
+ClauseDatabase::ClauseDatabase(int maxClauseSize) : maxClauseSize(maxClauseSize)
 {
 }
 
@@ -35,61 +37,10 @@ ClauseDatabase::~ClauseDatabase()
 {
 }
 
-void
-ClauseDatabase::addClause(ClauseExchange * clause)
+void ClauseDatabase::getTotalSizes(std::stringstream &strStream)
 {
-	int clsSize = clause->size;
-
-	while (clauses.size() < clsSize) {
-      vector<ClauseExchange *> newVector;
-		clauses.push_back(newVector);
-	}
-
-   if ((clauses[clsSize-1].size() + 1) * clsSize < 1000) {
-      clauses[clsSize-1].push_back(clause);
-   } else {
-      ClauseManager::releaseClause(clause);
-   }
-}
-
-int
-ClauseDatabase::giveSelection(vector<ClauseExchange *> & selectedCls,
-                              unsigned totalSize, int * selectCount)
-{
-   int used     = 0;
-   *selectCount = 0;
-
-   for (unsigned i = 0; i < clauses.size(); i++) {
-      unsigned clsSize = i + 1;
-      unsigned left    = totalSize - used;
-
-      if (left < clsSize) // No more place
-         return used;
-      
-      if (left >= clsSize * clauses[i].size()) {
-         // If all the clauses of size clsSize (i+1) can be added
-         used = used + clsSize * clauses[i].size();
-
-         selectedCls.insert(selectedCls.end(), clauses[i].begin(),
-                            clauses[i].end());
-
-         *selectCount += clauses[i].size();
-
-         clauses[i].clear();
-      } else {
-         // Else how many clauses can be added
-         // Add them one by one
-         unsigned nCls = left / clsSize;
-         used              = used + clsSize * nCls;
-
-         for (unsigned k = 0; k < nCls; k++) {
-            selectedCls.push_back(clauses[i].back());
-            clauses[i].pop_back();
-
-            *selectCount += 1;
-         }
-      }
-   }
-
-   return used;
+   unsigned size = totalSizes.size();
+   for (int i = 0; i < size; i++)
+      strStream<< "[" << i + 1 << "]:" << totalSizes[i] << ", ";
+   strStream << " TOTAL: " << std::accumulate(totalSizes.begin(), totalSizes.end(), 0) << std::endl;
 }

@@ -1,0 +1,69 @@
+CC=@CC@
+CFLAGS=@CFLAGS@
+LD=@LD@
+AR=@AR@
+
+VPATH=../src:../test
+
+%.o: %.cc ../[st]*/*.h makefile
+	$(CC) $(CFLAGS) -c $<
+
+APPSRC=application.cc #handle.cc parse.cc witness.cc
+
+LIBSRT=$(sort $(wildcard ../src/*.cc))
+LIBSUB=$(subst ../src/,,$(LIBSRT))
+LIBSRC=$(filter-out main.cc $(APPSRC),$(LIBSUB))
+
+TSTSRT=$(sort $(wildcard ../test/*.cc))
+TSTSUB=$(subst ../test/,,$(TSTSRT))
+TSTSRC=$(filter-out test.cc,$(TSTSUB))
+
+APPOBJ=$(APPSRC:.cc=.o)
+LIBOBJ=$(LIBSRC:.cc=.o)
+TSTOBJ=$(APPOBJ) $(TSTSRC:.cc=.o)
+
+INCLUDES=-I../$(shell pwd|sed -e 's,.*/,,')
+
+all: libgkissat.a kissat@TESTDEFAULT@
+test: all tissat
+	./tissat
+
+REMOVE=*.gcda *.gcno *.gcov gmon.out *~ *.proof
+
+clean:
+	rm -f kissat tissat
+	rm -f makefile build.h *.o *.a
+	rm -f $(REMOVE)
+	cd ../src; rm -f $(REMOVE)
+	cd ../test; rm -f $(REMOVE)
+
+coverage:
+	@gcov -o . -s ../src/*.[ch] 2>&1 | \
+	../scripts/filter-coverage-output.sh
+indent:
+	indent ../*/*.[ch]
+
+kissat: main.o $(APPOBJ) libgkissat.a makefile
+	$(LD) -o $@ $< $(APPOBJ) -L. -lgkissat -lm
+
+tissat: test.o $(TSTOBJ) libgkissat.a makefile
+	$(LD) -o $@ $< $(TSTOBJ) -L. -lgkissat -lm
+
+build.h:
+	../scripts/generate-build-header.sh > $@
+
+collect.o: sort.cc
+dense.o: sort.cc
+propagate.o: assign.cc
+watch.o: sort.cc
+
+build.o: build.cc build.h ../[st]*/*.h makefile
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+
+test.o: test.cc build.h ../[st]*/*.h makefile
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+
+libgkissat.a: $(LIBOBJ) makefile
+	$(AR) rc $@ $(LIBOBJ)
+
+.PHONY: all clean coverage indent test build.h

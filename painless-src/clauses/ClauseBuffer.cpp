@@ -18,10 +18,9 @@
 // -----------------------------------------------------------------------------
 
 #include "ClauseBuffer.h"
+#include "utils/Logger.h"
 
 #include <iostream>
-
-using namespace std;
 
 //-------------------------------------------------
 // Constructor & Destructor
@@ -35,13 +34,14 @@ ClauseBuffer::ClauseBuffer()
 
 ClauseBuffer::~ClauseBuffer()
 {
+   LOGDEBUG2( "Destroying ClauseBuffer with Head %p, Tail %p, Size %d ",buffer.head.load(),buffer.tail.load(),buffer.size.load());
 }
 
 //-------------------------------------------------
 //  Add clause(s)
 //-------------------------------------------------
 void
-ClauseBuffer::addClause(ClauseExchange * clause)
+ClauseBuffer::addClause(std::shared_ptr<ClauseExchange> clause)
 {
    ListElement * tail, * next;
    ListElement * node = new ListElement(clause);
@@ -53,6 +53,8 @@ ClauseBuffer::addClause(ClauseExchange * clause)
       if (tail == buffer.tail) {
          if (next == NULL) {
             if (tail->next.compare_exchange_strong(next, node)) {
+               buffer.size++;
+               LOGDEBUG2( "Added clause %p at listElement %p ",node->clause,node);
                break;
             } 
          } else {
@@ -62,11 +64,10 @@ ClauseBuffer::addClause(ClauseExchange * clause)
    }
 
    buffer.tail.compare_exchange_strong(tail, node);
-   buffer.size++;
 }
 
 void
-ClauseBuffer::addClauses(const vector<ClauseExchange *> & clauses) {
+ClauseBuffer::addClauses(const std::vector<std::shared_ptr<ClauseExchange>> & clauses) {
    for (int i = 0; i < clauses.size(); i++) {
       addClause(clauses[i]);
    }
@@ -77,7 +78,7 @@ ClauseBuffer::addClauses(const vector<ClauseExchange *> & clauses) {
 //  Get clause(s)
 //-------------------------------------------------
 bool
-ClauseBuffer::getClause(ClauseExchange ** clause) {
+ClauseBuffer::getClause(std::shared_ptr<ClauseExchange> &clause) {
    ListElement * head, * tail, * next;
 
    while (true) {
@@ -92,8 +93,8 @@ ClauseBuffer::getClause(ClauseExchange ** clause) {
 
             buffer.tail.compare_exchange_strong(tail, next);
          } else {
-            *clause = next->clause;
-
+            clause = next->clause;
+            LOGDEBUG2( "Got clause %p from listElement %p ",next,clause);
             if (buffer.head.compare_exchange_strong(head, next)) {
                break;
             }
@@ -109,14 +110,14 @@ ClauseBuffer::getClause(ClauseExchange ** clause) {
 }
 
 void
-ClauseBuffer::getClauses(vector<ClauseExchange *> & clauses)
+ClauseBuffer::getClauses(std::vector<std::shared_ptr<ClauseExchange>> & clauses)
 {
-   ClauseExchange * cls;
+   std::shared_ptr<ClauseExchange> cls;
 
    int nClauses = size();
    int nClausesGet = 0;
 
-   while (getClause(&cls) && nClausesGet < nClauses) {
+   while (getClause(cls) && nClausesGet < nClauses) {
       clauses.push_back(cls);
       nClausesGet++;
    }
@@ -128,5 +129,5 @@ ClauseBuffer::getClauses(vector<ClauseExchange *> & clauses)
 int
 ClauseBuffer::size()
 {
-   return buffer.size.load();
+   return buffer.size;
 }

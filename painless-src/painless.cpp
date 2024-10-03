@@ -17,215 +17,219 @@
 
 #include "painless.h"
 
+#include "utils/ErrorCodes.h"
 #include "utils/Logger.h"
 #include "utils/Parameters.h"
 #include "utils/System.h"
 #include "utils/SatUtils.h"
+#include "utils/MpiUtils.h"
 
 #include "solvers/SolverFactory.h"
-#include "solvers/Reducer.h"
 
-#include "clauses/ClauseManager.h"
-
-#include "sharing/StrengtheningSharing.h"
-#include "sharing/SimpleSharing.h"
-#include "sharing/HordeSatSharing.h"
 #include "sharing/Sharer.h"
-
 #include "working/SequentialWorker.h"
-#include "working/Portfolio.h"
+#include "working/PortfolioPRS.h"
+#include "working/PortfolioSBVA.h"
+#include "preprocessors/StructuredBva.hpp"
+
+/* TEMP */
+#include "preprocessors/PRS-Preprocessors/preprocess.hpp"
 
 #include <unistd.h>
+#include <random>
+#include <thread>
 
-
-using namespace std;
-
+// -------------------------------------------
+// Useful for timeout
+// -------------------------------------------
+int timeout; // 0 by default
 
 // -------------------------------------------
 // Declaration of global variables
 // -------------------------------------------
-atomic<bool> globalEnding(false);
 
-Sharer ** sharers = NULL;
+std::atomic<bool> globalEnding(false);
+pthread_mutex_t mutexGlobalEnd;
+pthread_cond_t condGlobalEnd;
 
-int nSharers = 0;
+std::vector<Sharer *> sharers;
 
-WorkingStrategy * working = NULL;
+// int nSharers = 0;
+
+WorkingStrategy *working = NULL;
+
+std::atomic<bool> dist = false;
+
+// needed for diversification
+int nb_groups;
+int cpus;
 
 SatResult finalResult = UNKNOWN;
 
-vector<int> finalModel;
-
-vector<SolverInterface *> solvers;
-
-void redefine_sig_handler(int num, void (*handler)(int))
-{
-   struct sigaction signal;
-   signal.sa_handler = handler;
-   signal.sa_flags = 0;
-   sigemptyset(&signal.sa_mask);
-   sigaction(num, &signal, NULL);
-}
+std::vector<int> finalModel;
 
 // -------------------------------------------
 // Main of the framework
 // -------------------------------------------
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 {
    Parameters::init(argc, argv);
 
-   if (Parameters::getFilename() == NULL ||
-       Parameters::getBoolParam("h"))
-   {
-      cout << "USAGE: " << argv[0] << " [options] input.cnf" << endl;
-      cout << "Options:" << endl;
-      cout << "\t-c=<INT>\t\t number of cpus, default is 24" << endl;
-      cout << "\t-max-memory=<INT>\t memory limit in GB, default is 51" << \
-	      endl;
-      cout << "\t-t=<INT>\t\t timeout in seconds, default is no limit" << endl;
-      cout << "\t-lbd-limit=<INT>\t LBD limit of exported clauses, default is" \
-	      " 2" << endl;
-      cout << "\t-shr-sleep=<INT>\t time in useconds a sharer sleep each " \
-         "round, default is 500000 (0.5s)" << endl;
-      cout << "\t-shr-lit=<INT>\t\t number of literals shared per round, " \
-         "default is 1500" << endl;
-      cout << "\t-v=<INT>\t\t verbosity level, default is 0" << endl;
-      return 0;
-   }
+   setVerbosityLevel(Parameters::getIntParam("v", 0));
+
+   nb_groups = Parameters::getIntParam("groups", 2);
+   cpus = Parameters::getIntParam("c", 30);
+   dist = Parameters::getBoolParam("dist");
+   int shr_strat = Parameters::getIntParam("shr-strat", 1);
+   std::string solverNames = Parameters::getParam("solver", "k");
+   timeout = Parameters::getIntParam("t", 5000); // if <0 will loop till a solution is found
+
+   double resolutionTime = 0;
 
    Parameters::printParams();
 
-   int cpus = Parameters::getIntParam("c", 23);
-   setVerbosityLevel(Parameters::getIntParam("v", 0));
+#ifndef NDIST
 
-   // Create and init solvers
-   vector<SolverInterface *> solvers_LRB_recto;
-   vector<SolverInterface *> solvers_LRB_verso;
-   vector<SolverInterface *> solvers_VSIDS_recto;
-   vector<SolverInterface *> solvers_VSIDS_verso;
+   if (dist)
+   {
+      // MPI Initialization
+      // If MPI_Init_Thread causes problems see how to wait for the mpi_rank
+      int provided;
+      MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &provided);
+      MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-   if (Parameters::getBoolParam("strength") && cpus >= 2) {
-      SolverFactory::createMapleCOMSPSSolvers(cpus - 1, solvers);
-      solvers.push_back(SolverFactory::createReducerSolver(SolverFactory::createMapleCOMSPSSolver()));
-   } else {
-      SolverFactory::createMapleCOMSPSSolvers(cpus, solvers);
-   }
+      LOGDEBUG1("Thread strategy provided is %d", provided);
 
-   int nSolvers = solvers.size();
+      if (provided < MPI_THREAD_SERIALIZED)
+      {
+         LOGERROR("Wanted MPI initialization is not possible !");
+         dist = false;
+      }
+      else
+      {
+         TESTRUNMPI(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
 
-   cout << "c " << nSolvers << " solvers are used, with IDs in [|0, "
-        << nSolvers - 1 << "|]." << endl;
-   cout << "c solvers with odd (even) IDs used LRB (VSIDS)." << endl;
-   cout << "c solver " << ID_XOR
-        << " uses Gaussian Elimination (GE) at preprocessing" << endl;
+         char hostname[256];
+         gethostname(hostname, sizeof(hostname));
+         LOGDEBUG1("PID %d on %s is of rank %d", getpid(), hostname, mpi_rank);
 
-   SolverFactory::nativeDiversification(solvers);
-
-   for (int id = 0; id < nSolvers; id++) {
-      if (id % 2 == 0) {
-         if (id % 4 == 0) {
-            solvers_LRB_verso.push_back(solvers[id]);
-         } else {
-            solvers_LRB_recto.push_back(solvers[id]);
-         }
-      } else {
-         if ((id - 1) % 4 == 0) {
-            solvers_VSIDS_verso.push_back(solvers[id]);
-         } else {
-            solvers_VSIDS_recto.push_back(solvers[id]);
-         }
+         TESTRUNMPI(MPI_Comm_size(MPI_COMM_WORLD, &world_size));
       }
    }
-
-   SolverFactory::sparseRandomDiversification(solvers_LRB_recto);
-   SolverFactory::sparseRandomDiversification(solvers_LRB_verso);
-   SolverFactory::sparseRandomDiversification(solvers_VSIDS_recto);
-   SolverFactory::sparseRandomDiversification(solvers_VSIDS_verso);
-
-
-   vector<SolverInterface *> from;
-   switch(Parameters::getIntParam("shr-strat", 0)) {
-      // Init Sharing
-      case 1 :
-         nSharers   = 1;
-         sharers    = new Sharer*[nSharers];
-         sharers[0] = new Sharer(0, new SimpleSharing(), solvers, solvers);
-         break;
-      case 2 :
-         nSharers = cpus;
-         sharers  = new Sharer*[nSharers];
-
-         for (size_t i = 0; i < nSharers; i++) {
-            from.clear();
-            from.push_back(solvers[i]);
-            sharers[i] = new Sharer(i, new HordeSatSharing(), from,
-                                    solvers);
-         }
-         break;
+#else
+   if (dist)
+   {
+      LOGWARN("The binary was compiled with -DNDIST: -dist flag is not supported!");
+      exit(PERR_DIST_COMPILE);
    }
+#endif
+
+   // Init timeout detection before starting the solvers and sharers
+   pthread_mutex_init(&mutexGlobalEnd, NULL);
+   pthread_cond_init(&condGlobalEnd, NULL);
+
+   pthread_mutex_lock(&mutexGlobalEnd); // to make sure that the broadcast is done when main has done its wait
 
    // Init working
-   working = new Portfolio();
-   for (size_t i = 0; i < nSolvers; i++) {
-      working->addSlave(new SequentialWorker(solvers[i]));
-   }
-
-
-   // Init the management of clauses
-   ClauseManager::initClauseManager();
-
+   if (dist)
+      working = new PortfolioPRS();
+   else
+      working = new PortfolioSBVA();
 
    // Launch working
-   vector<int> cube;
-   working->solve(cube);
+   std::vector<int> cube;
 
+   std::thread mainWorker(&WorkingStrategy::solve, (WorkingStrategy *)working, std::ref(cube));
 
-   // Wait until end or timeout
-   int timeout = Parameters::getIntParam("t", -1);
+   int wakeupRet = 0;
 
-   while(globalEnding == false) {
-      sleep(1);
+   if (timeout > 0)
+   {
+      // Wait until end or timeout
+      timespec timeoutSpec = {timeout, 0};
+      timespec timespecCond;
 
-      if (timeout > 0 && getRelativeTime() >= timeout) {
+      while ((int)getRelativeTime() < timeout && globalEnding == false) // to manage the spurious wake ups
+      {
+         timeoutSpec.tv_sec = (timeout - (int)getRelativeTime()); // count only seconds
+         getTimeToWait(&timeoutSpec, &timespecCond);
+         wakeupRet = pthread_cond_timedwait(&condGlobalEnd, &mutexGlobalEnd, &timespecCond);
+         LOGWARN("main wakeupRet = %d , globalEnding = %d ", wakeupRet, globalEnding.load());
+      }
+
+      // in case the sharers have done their wait too late
+      pthread_cond_broadcast(&condGlobalEnd);
+
+      pthread_mutex_unlock(&mutexGlobalEnd);
+
+      if ((int)getRelativeTime() >= timeout && finalResult == SatResult::UNKNOWN) // if timeout set globalEnding otherwise a solver woke me up
+      {
          globalEnding = true;
+         finalResult = SatResult::TIMEOUT; /* Important for DIST !!!*/
          working->setInterrupt();
+         resolutionTime = timeout;
+
+         if (!dist)
+         {
+            LOGSTAT("Resolution time: %f s", resolutionTime);
+            LOGSTAT("Memory used %f Ko", MemInfo::getUsedMemory());
+            logSolution("UNKNOWN");
+            exit(0);
+         }
+      }
+      else
+      {
+         resolutionTime = getRelativeTime();
       }
    }
-
-
-  // Delete sharers
-  for (int id = 0; id < nSharers; id++) {
-     sharers[id]->printStats();
-     delete sharers[id];
-  }
-  delete sharers;
-
-  // Print solver stats
-  SolverFactory::printStats(solvers);
-
-
-  // Delete working strategy
-  delete working;
-
-
-  // Delete shared clauses
-  ClauseManager::joinClauseManager();
-
-
-   // Print the result and the model if SAT
-   cout << "c Resolution time: " << getRelativeTime() << "s" << endl;
-
-   if (finalResult == SAT) {
-      cout << "s SATISFIABLE" << endl;
-
-      if (Parameters::getBoolParam("no-model") == false) {
-         printModel(finalModel);
+   else
+   {
+      // no timeout waiting
+      while (globalEnding == false) // to manage the spurious wake ups
+      {
+         pthread_cond_wait(&condGlobalEnd, &mutexGlobalEnd);
+         LOGWARN("main wakeupRet = %d , globalEnding = %d ", wakeupRet, globalEnding.load());
       }
-   } else if (finalResult == UNSAT) {
-      cout << "s UNSATISFIABLE" << endl;
-   } else {
-      cout << "s UNKNOWN" << endl;
+      resolutionTime = getRelativeTime();
+      // in case the sharers have done their wait too late
+      pthread_cond_broadcast(&condGlobalEnd);
+
+      pthread_mutex_unlock(&mutexGlobalEnd);
    }
 
-   return finalResult;
+   mainWorker.join();
+
+   if (dist)
+   {
+      static_cast<PortfolioPRS *>(working)->restoreModelDist();
+      delete working;
+      TESTRUNMPI(MPI_Finalize());
+   }
+
+   if (mpi_rank == mpi_winner)
+   {
+      if (finalResult == SatResult::SAT)
+      {
+         logSolution("SATISFIABLE");
+
+         if (Parameters::getBoolParam("no-model") == false)
+         {
+            logModel(finalModel);
+         }
+      }
+      else if (finalResult == SatResult::UNSAT)
+      {
+         logSolution("UNSATISFIABLE");
+      }
+      else // if timeout or unknown
+      {
+         logSolution("UNKNOWN");
+         finalResult = SatResult::UNKNOWN;
+      }
+
+      LOGSTAT("Resolution time: %f s", getRelativeTime());
+      LOGSTAT("Memory used %f Ko", MemInfo::getUsedMemory());
+      return finalResult;
+   }
+   return 0;
 }

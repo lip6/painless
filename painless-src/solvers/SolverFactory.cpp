@@ -16,115 +16,156 @@
 // You should have received a copy of the GNU General Public License along with
 // this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
+#include "solvers/SolverFactory.h"
+#include "utils/Parameters.h"
+#include "utils/System.h"
+#include "utils/Logger.h"
+#include "painless.h"
 
-#include "../solvers/MapleCOMSPSSolver.h"
-#include "../solvers/Reducer.h"
-#include "../solvers/SolverFactory.h"
-#include "../utils/Parameters.h"
-#include "../utils/System.h"
+#include <cassert>
+#include <random>
 
-#include <math.h>
-
-void
-SolverFactory::sparseRandomDiversification(
-      const vector<SolverInterface *> & solvers)
+void SolverFactory::diversification(const std::vector<std::shared_ptr<SolverCdclInterface>> &cdclSolvers, const std::vector<std::shared_ptr<LocalSearchSolver>> &localSolvers, bool dist, int mpi_rank, int world_size)
 {
-   if (solvers.size() == 0)
-      return;
+   /* More flexibile diversification */
+   unsigned nb_solvers = cdclSolvers.size(); // cdclSolvers.size() + localSolvers.size();
+   unsigned maxId = (dist) ? nb_solvers * world_size : nb_solvers;
 
-   int vars = solvers[0]->getVariablesCount();
-
-   for (int sid = 0; sid < solvers.size(); sid++) {
-      srand(sid);
-      for (int var = 1; var <= vars; var++) {
-         if (rand() % solvers.size() == 0) {
-            solvers[sid]->setPhase(var, rand() % 2 == 1);
-         }
+   /* TODO: solvers must init this by themselves in the constructor*/
+   if (dist)
+   {
+      for (auto &solver : cdclSolvers)
+      {
+         assert(mpi_rank >= 0);
+         solver->setId(nb_solvers * mpi_rank + solver->id);
       }
    }
+
+   if (maxId <= 2)
+   {
+      LOGWARN("Not enough solvers (%d) to perform a good diversification (need >= 2)", maxId);
+   }
+
+   // std::random_device uses /dev/urandom by default (to be checked)
+   std::mt19937 engine(std::random_device{}());
+   std::uniform_int_distribution<int> uniform(1, Parameters::getIntParam("max-div-noise", 100)); /* test with a normal dist*/
+
+   SolverDivFamily family = SolverDivFamily::MIXED_SWITCH;
+
+   LOGDEBUG1("Diversification on: nb_solvers = %d, dist = %d, mpi_rank = %d, world_size = %d, maxId = %d", nb_solvers, dist, mpi_rank, world_size, maxId);
+
+   for (auto cdclSolver : cdclSolvers)
+   {
+      /* TODO: Use mpi_rank if dist and certain Global Strat*/
+      /* % maxId is useful when new solvers are added afterwards */
+      family = ((cdclSolver->id % maxId) < maxId / 3) ? SolverDivFamily::UNSAT_FOCUSED : ((cdclSolver->id % maxId) < maxId * 2 / 3) ? SolverDivFamily::SAT_STABLE
+                                                                                                                                    : SolverDivFamily::MIXED_SWITCH;
+      cdclSolver->setFamily(family);
+      cdclSolver->diversify(engine, uniform);
+      // solver->printParameters();
+   }
+
+   for (auto localSolver : localSolvers)
+   {
+      localSolver->diversify(engine, uniform);
+   }
+
+   LOG("Diversification done");
 }
 
-void
-SolverFactory::nativeDiversification(const vector<SolverInterface *> & solvers)
+void SolverFactory::createSolver(char type, std::vector<std::shared_ptr<SolverCdclInterface>> &cdclSolvers, std::vector<std::shared_ptr<LocalSearchSolver>> &localSolvers)
 {
-   for (int sid = 0; sid < solvers.size(); sid++) {
-      solvers[sid]->diversify(sid);
+   int id = currentIdSolver.fetch_add(1);
+   if(id >= cpus)
+   {
+      LOGWARN("Solver of type '%c' will not be instantiated, the number of solvers %d reached the maximum %d.", type, id, cpus);
+      return;
+   }
+   switch (type)
+   {
+#ifdef GLUCOSE_
+   case 'g':
+      // GLUCOSE implementation
+      break;
+#endif
+
+#ifdef LINGELING_
+   case 'l':
+      // LINGELING implementation
+      break;
+#endif
+
+#ifdef MAPLECOMSPS_
+   case 'a':
+      cdclSolvers.emplace_back(std::make_shared<MapleCOMSPSSolver>(id));
+      break;
+#endif
+
+#ifdef MINISAT_
+   case 'm':
+      // MINISAT implementation
+      break;
+#endif
+
+#ifdef KISSATMAB_
+   case 'k':
+      cdclSolvers.emplace_back(std::make_shared<KissatMABSolver>(id));
+      break;
+#endif
+
+#ifdef KISSATGASPI_
+   case 'K':
+      cdclSolvers.emplace_back(std::make_shared<KissatGASPISolver>(id));
+      break;
+#endif
+
+#ifdef YALSAT_
+   case 'y':
+      localSolvers.emplace_back(std::make_shared<YalSat>(id));
+      break;
+#endif
+
+   default:
+      LOGERROR("The SolverCdclType %d specified is not available!", type);
+      exit(-1);
+      break;
    }
 }
 
-SolverInterface *
-SolverFactory::createMapleCOMSPSSolver()
+void SolverFactory::createSolvers(int maxSolvers, std::string portfolio, std::vector<std::shared_ptr<SolverCdclInterface>> &cdclSolvers, std::vector<std::shared_ptr<LocalSearchSolver>> &localSolvers)
+{
+   unsigned typeCount = portfolio.size();
+   for (size_t i = 0; i < maxSolvers; i++)
+   {
+      createSolver(portfolio.at(i % typeCount), cdclSolvers, localSolvers);
+   }
+}
+
+Reducer *
+SolverFactory::createReducerSolver()
 {
    int id = currentIdSolver.fetch_add(1);
 
-   SolverInterface * solver = new MapleCOMSPSSolver(id);
-
-   solver->loadFormula(Parameters::getFilename());
+   Reducer *solver = new Reducer(id, SolverCdclType::MAPLE);
 
    return solver;
 }
 
-SolverInterface *
-SolverFactory::createReducerSolver(SolverInterface* _solver)
+void SolverFactory::printStats(const std::vector<std::shared_ptr<SolverCdclInterface>> &cdclSolvers, const std::vector<std::shared_ptr<LocalSearchSolver>> &localSolvers)
 {
-   int id = currentIdSolver.fetch_add(1);
+   /*LOGSTAT(" | ID | conflicts  | propagations |  restarts  | decisions  "
+       "| memPeak |");*/
 
-   SolverInterface * solver = new Reducer(id, _solver);
-
-   solver->loadFormula(Parameters::getFilename());
-
-   return solver;
-}
-
-void
-SolverFactory::createMapleCOMSPSSolvers(int maxSolvers,
-                                        vector<SolverInterface *> & solvers)
-{
-   solvers.push_back(createMapleCOMSPSSolver());
-
-   double memoryUsed    = getMemoryUsed();
-   int maxMemorySolvers = Parameters::getIntParam("max-memory", 62) * 1024 *
-                          1024 / memoryUsed;
-
-   if (maxSolvers > maxMemorySolvers) {
-      maxSolvers = maxMemorySolvers;
+   for (auto s : cdclSolvers)
+   {
+      // if (s->testStrengthening())
+      s->printStatistics();
    }
 
-   for (int i = 1; i < maxSolvers; i++) {
-      solvers.push_back(cloneSolver(solvers[0]));
-   }
-}
-
-SolverInterface *
-SolverFactory::cloneSolver(SolverInterface * other)
-{
-   SolverInterface * solver;
-   
-   int id = currentIdSolver.fetch_add(1);
-
-   switch(other->type) {
-      case MAPLE :
-	      solver = new MapleCOMSPSSolver((MapleCOMSPSSolver &) *other, id);
-      	break;
-
-      default :
-         return NULL;
-   }
-
-   return solver;
-}
-
-void
-SolverFactory::printStats(const vector<SolverInterface *> & solvers)
-{
-   printf("c | ID | conflicts  | propagations |  restarts  | decisions  " \
-          "| memPeak |\n");
-
-   for (size_t i = 0; i < solvers.size(); i++) {
-      SolvingStatistics stats = solvers[i]->getStatistics();
-
-      printf("c | %2zu | %10ld | %12ld | %10ld | %10ld | %7d |\n",
-             solvers[i]->id, stats.conflicts, stats.propagations,
-             stats.restarts, stats.decisions, (int)stats.memPeak);
+   /*LOGSTAT(" | ID | flips  | unsatClauses |  restarts | memPeak |");*/
+   for (auto s : localSolvers)
+   {
+      // if (s->testStrengthening())
+      s->printStatistics();
    }
 }
