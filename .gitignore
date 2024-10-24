@@ -6,11 +6,8 @@ outputs
 inputs
 painless-mcomsps
 painless
-docs/
-doxygen/html
-doxygen/latex
-doxygen/markdowns
-.html
+docs/build
+html
 .pdf
 *.uri
 get_sat22_inputs.sh
@@ -23,19 +20,21 @@ get_sat22_inputs.sh
 *.h_old
 *.ignore
 *.o
-hostfile
+hostfile.*
 openMPI
 *.out
-*.pb.*
+*.local
 
-libs/m4ri-20140914/Makefile
-libs/m4ri-20140914/config.status
-libs/m4ri-20140914/libm4ri.la
-libs/m4ri-20140914/libtool
-libs/m4ri-20140914/m4ri/m4ri_config.h
-libs/m4ri-20140914/autom4te.cache
-libs/m4ri-20140914/configure~
-libs/m4ri-20140914/m4ri/config.h.in~
+libs/m4ri-20200125/.libs
+libs/m4ri-20200125/*/.*
+libs/m4ri-20200125/Makefile
+libs/m4ri-20200125/config.status
+libs/m4ri-20200125/libm4ri.la
+libs/m4ri-20200125/libtool
+libs/m4ri-20200125/m4ri/m4ri_config.h
+libs/m4ri-20200125/autom4te.cache
+libs/m4ri-20200125/configure~
+libs/m4ri-20200125/m4ri/config.h.in~
 libs/m4ri-20200125/Makefile
 libs/m4ri-20200125/Makefile.in
 libs/m4ri-20200125/aclocal.m4
@@ -80,12 +79,10 @@ libs/m4ri-20200125/missing
 libs/m4ri-20200125/test-driver
 libs/m4ri-20200125/tests/Makefile
 libs/m4ri-20200125/tests/Makefile.in
-libs/m4ri-20200125/tests/.*
-libs/m4ri-20200125/.libs
-libs/m4ri-20200125/bench/.deps
-libs/m4ri-20200125/m4ri/.deps
-libs/m4ri-20200125/m4ri/.dirstamp
+libs/m4ri-20200125/configure~
 
+solvers/lingeling/lglcfg.h
+solvers/lingeling/lglcflags.h
 solvers/kissat_mab/build/
 solvers/kissat_mab/makefile
 solvers/GASPIKISSAT/build/
@@ -95,11 +92,32 @@ solvers/yalsat/config.h
 solvers/yalsat/makefile
 solvers/yalsat/yalsat
 
+solvers/cadical/makefile
+solvers/cadical/src/makefile
+solvers/kissat/makefile
+solvers/kissat/src/makefile
+solvers/lingeling/ilingeling
+solvers/lingeling/lglddtrace
+solvers/lingeling/lglmbt
+solvers/lingeling/lgluntrace
+solvers/lingeling/lingeling
+solvers/lingeling/plingeling
+solvers/lingeling/treengeling
+solvers/lingeling/lglcfg.h
+solvers/lingeling/lglcflags.h
+
+solvers/glucose/parallel/depend.mk
+
 solvers/mapleCOMSPS/build
+
+solvers/kissat-inc/makefile
+solvers/kissat-inc/src/makefile
+solvers/kissat-inc/build
 
 *.csv
 
 build/
+solvers/yalsat/yalsat
 *.la
 config.status
 libtool
