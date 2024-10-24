@@ -100,12 +100,12 @@ do { \
     memset (refs, 0, sizeof refs); \
 } while (0)
 
-    kissat_push_binary_watch (solver, &watches, true, false, 0);
-    kissat_push_blocking_watch (solver, &watches, 1, 0);
-    kissat_push_binary_watch (solver, &watches, false, false, 2);
-    kissat_push_blocking_watch (solver, &watches, 3, 1);
-    kissat_push_binary_watch (solver, &watches, true, false, 4);
-    kissat_push_binary_watch (solver, &watches, false, false, 5);
+    kissat_mab_push_binary_watch (solver, &watches, true, false, 0);
+    kissat_mab_push_blocking_watch (solver, &watches, 1, 0);
+    kissat_mab_push_binary_watch (solver, &watches, false, false, 2);
+    kissat_mab_push_blocking_watch (solver, &watches, 3, 1);
+    kissat_mab_push_binary_watch (solver, &watches, true, false, 4);
+    kissat_mab_push_binary_watch (solver, &watches, false, false, 5);
 
     SETUP_FOUND_AND_CLAUSES ();
 
@@ -194,8 +194,8 @@ do { \
 
     solver->watching = false;
 
-    kissat_push_large_watch (solver, &watches, 0);
-    kissat_push_large_watch (solver, &watches, 1);
+    kissat_mab_push_large_watch (solver, &watches, 0);
+    kissat_mab_push_large_watch (solver, &watches, 1);
 
     SETUP_FOUND_AND_CLAUSES ();
     int large = 0;

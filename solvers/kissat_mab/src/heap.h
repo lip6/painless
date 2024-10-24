@@ -14,71 +14,82 @@ typedef struct heap heap;
 
 struct heap
 {
-  bool tainted;
-  unsigned vars;
-  unsigned size;
-  unsigneds stack;
-  double *score;
-  unsigned *pos;
+	bool tainted;
+	unsigned vars;
+	unsigned size;
+	unsigneds stack;
+	double* score;
+	unsigned* pos;
 };
 
 struct kissat;
 
-void kissat_resize_heap (struct kissat *, heap *, unsigned size);
-void kissat_release_heap (struct kissat *, heap *);
+void
+kissat_mab_resize_heap(struct kissat*, heap*, unsigned size);
+void
+kissat_mab_release_heap(struct kissat*, heap*);
 
 static inline bool
-kissat_heap_contains (heap * heap, unsigned idx)
+kissat_mab_heap_contains(heap* heap, unsigned idx)
 {
-  return idx < heap->vars && !DISCONTAINED (heap->pos[idx]);
+	return idx < heap->vars && !DISCONTAINED(heap->pos[idx]);
 }
 
 static inline unsigned
-kissat_get_heap_pos (const heap * heap, unsigned idx)
+kissat_mab_get_heap_pos(const heap* heap, unsigned idx)
 {
-  return idx < heap->vars ? heap->pos[idx] : DISCONTAIN;
+	return idx < heap->vars ? heap->pos[idx] : DISCONTAIN;
 }
 
 static inline double
-kissat_get_heap_score (const heap * heap, unsigned idx)
+kissat_mab_get_heap_score(const heap* heap, unsigned idx)
 {
-  return idx < heap->vars ? heap->score[idx] : 0.0;
+	return idx < heap->vars ? heap->score[idx] : 0.0;
 }
 
 static inline bool
-kissat_empty_heap (heap * heap)
+kissat_mab_empty_heap(heap* heap)
 {
-  return EMPTY_STACK (heap->stack);
+	return EMPTY_STACK(heap->stack);
 }
 
 static inline size_t
-kissat_size_heap (heap * heap)
+kissat_mab_size_heap(heap* heap)
 {
-  return SIZE_STACK (heap->stack);
+	return SIZE_STACK(heap->stack);
 }
 
-void kissat_push_heap (struct kissat *, heap *, unsigned);
-void kissat_pop_heap (struct kissat *, heap *, unsigned);
-void kissat_update_heap (struct kissat *, heap *, unsigned, double);
+void
+kissat_mab_push_heap(struct kissat*, heap*, unsigned);
+void
+kissat_mab_pop_heap(struct kissat*, heap*, unsigned);
+void
+kissat_mab_update_heap(struct kissat*, heap*, unsigned, double);
 
 static inline unsigned
-kissat_max_heap (heap * heap)
+kissat_mab_max_heap(heap* heap)
 {
-  assert (!kissat_empty_heap (heap));
-  return PEEK_STACK (heap->stack, 0);
+	assert(!kissat_mab_empty_heap(heap));
+	return PEEK_STACK(heap->stack, 0);
 }
 
-double kissat_max_score_on_heap (heap *);
-void kissat_rescale_heap (struct kissat *, heap * heap, double factor);
+double
+kissat_mab_max_score_on_heap(heap*);
+void
+kissat_mab_rescale_heap(struct kissat*, heap* heap, double factor);
 
 #ifndef NDEBUG
-void kissat_dump_heap (heap *);
+void
+kissat_mab_dump_heap(heap*);
 #endif
 
 #ifndef NDEBUG
-void kissat_check_heap (heap *);
+void
+kissat_mab_check_heap(heap*);
 #else
-#define kissat_check_heap(...) do { } while (0)
+#define kissat_mab_check_heap(...)                                                                                     \
+	do {                                                                                                               \
+	} while (0)
 #endif
 
 #endif

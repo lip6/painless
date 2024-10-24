@@ -9,7 +9,7 @@
 #include <math.h>
 
 changes
-kissat_changes (kissat * solver)
+kissat_mab_changes (kissat * solver)
 {
   changes res;
   res.variables.units = solver->statistics.units;
@@ -21,7 +21,7 @@ kissat_changes (kissat * solver)
 }
 
 bool
-kissat_changed (changes b, changes a)
+kissat_mab_changed (changes b, changes a)
 {
   if (a.variables.added != b.variables.added)
     return true;
@@ -35,60 +35,60 @@ kissat_changed (changes b, changes a)
 }
 
 uint64_t
-kissat_logn (uint64_t count)
+kissat_mab_logn (uint64_t count)
 {
   return log10 (count + 10);
 }
 
 static uint64_t
-kissat_lognlogn (uint64_t count)
+kissat_mab_lognlogn (uint64_t count)
 {
   const double tmp = log10 (count + 10);
   return tmp * tmp;
 }
 
 uint64_t
-kissat_ndivlogn (uint64_t count)
+kissat_mab_ndivlogn (uint64_t count)
 {
-  return count / kissat_logn (count);
+  return count / kissat_mab_logn (count);
 }
 
 uint64_t
-kissat_linear (uint64_t count)
+kissat_mab_linear (uint64_t count)
 {
   return count;
 }
 
 uint64_t
-kissat_nlogn (uint64_t count)
+kissat_mab_nlogn (uint64_t count)
 {
-  return count * kissat_logn (count);
+  return count * kissat_mab_logn (count);
 }
 
 uint64_t
-kissat_nlognlogn (uint64_t count)
+kissat_mab_nlognlogn (uint64_t count)
 {
-  return count * kissat_lognlogn (count);
+  return count * kissat_mab_lognlogn (count);
 }
 
 uint64_t
-kissat_quadratic (uint64_t count)
+kissat_mab_quadratic (uint64_t count)
 {
   return count * count;
 }
 
 uint64_t
-kissat_scale_delta (kissat * solver, const char *pretty, uint64_t delta)
+kissat_mab_scale_delta (kissat * solver, const char *pretty, uint64_t delta)
 {
   const uint64_t C = IRREDUNDANT_CLAUSES;
-  const double f = kissat_logn (C);
+  const double f = kissat_mab_logn (C);
   assert (f >= 1);
   const double ff = f * f;
   assert (ff >= 1);
   uint64_t scaled = ff * delta;
   assert (delta <= scaled);
 // *INDENT-OFF*
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
     "scaled %s delta %" PRIu64
     " = %g * %" PRIu64
     " = %g^2 * %" PRIu64
@@ -100,15 +100,15 @@ kissat_scale_delta (kissat * solver, const char *pretty, uint64_t delta)
 }
 
 uint64_t
-kissat_scale_limit (kissat * solver,
+kissat_mab_scale_limit (kissat * solver,
 		    const char *pretty, uint64_t count, int base)
 {
   assert (base >= 0);
   assert (count > 0);
-  const double f = kissat_logn (count - 1);
+  const double f = kissat_mab_logn (count - 1);
   assert (f >= 1);
   uint64_t scaled = f * base;
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
 		       "scaled %s limit %" PRIu64 " = "
 		       "log10 (%" PRIu64 ") * %d = %g * %d",
 		       pretty, scaled, count, base, f, base);
@@ -135,7 +135,7 @@ init_enabled (kissat * solver)
     probe = true;
   else
     probe = false;
-  kissat_very_verbose (solver, "probing %sabled", probe ? "en" : "dis");
+  kissat_mab_very_verbose (solver, "probing %sabled", probe ? "en" : "dis");
   solver->enabled.probe = probe;
 
   bool eliminate;
@@ -145,7 +145,7 @@ init_enabled (kissat * solver)
     eliminate = false;
   else
     eliminate = true;
-  kissat_very_verbose (solver, "eliminate %sabled", eliminate ? "en" : "dis");
+  kissat_mab_very_verbose (solver, "eliminate %sabled", eliminate ? "en" : "dis");
   solver->enabled.eliminate = eliminate;
 
   bool autarky;
@@ -155,7 +155,7 @@ init_enabled (kissat * solver)
     autarky = false;
   else
     autarky = true;
-  kissat_very_verbose (solver, "autarky %sabled", autarky ? "en" : "dis");
+  kissat_mab_very_verbose (solver, "autarky %sabled", autarky ? "en" : "dis");
   solver->enabled.autarky = autarky;
 }
 
@@ -170,7 +170,7 @@ init_mode_limit (kissat * solver)
       const uint64_t delta = GET_OPTION (modeinit);
       const uint64_t limit = CONFLICTS + delta;
       limits->mode.conflicts = limit;
-      kissat_very_verbose (solver, "initial stable mode switching limit "
+      kissat_mab_very_verbose (solver, "initial stable mode switching limit "
 			   "at %s conflicts", FORMAT_COUNT (limit));
 
       solver->mode.ticks = solver->statistics.search_ticks;
@@ -180,8 +180,8 @@ init_mode_limit (kissat * solver)
       solver->mode.propagations = solver->statistics.search_propagations;
 #endif
 // *INDENT-OFF*
-      solver->mode.entered = kissat_process_time ();
-      kissat_very_verbose (solver,
+      solver->mode.entered = kissat_mab_process_time ();
+      kissat_mab_very_verbose (solver,
         "starting focused mode at %.2f seconds "
         "(%" PRIu64 " conflicts, %" PRIu64 " ticks"
 #ifndef NMETRICS
@@ -197,7 +197,7 @@ init_mode_limit (kissat * solver)
 #endif
     }
   else
-    kissat_very_verbose (solver,
+    kissat_mab_very_verbose (solver,
 			 "no need to set mode limit (only %s mode enabled)",
 			 GET_OPTION (stable) ? "stable" : "focused");
 }
@@ -211,12 +211,12 @@ common_limits (kissat * solver)
     {
       solver->bounds.eliminate.max_bound_completed = 0;
       solver->bounds.eliminate.additional_clauses = 0;
-      kissat_very_verbose (solver, "reset elimination bound to zero");
+      kissat_mab_very_verbose (solver, "reset elimination bound to zero");
     }
 }
 
 void
-kissat_init_limits (kissat * solver)
+kissat_mab_init_limits (kissat * solver)
 {
   assert (solver->statistics.searches == 1);
 
@@ -231,7 +231,7 @@ kissat_init_limits (kissat * solver)
     INIT_CONFLICT_LIMIT (rephase, false);
 
   if (!solver->stable)
-    kissat_new_focused_restart_limit (solver);
+    kissat_mab_new_focused_restart_limit (solver);
 
   common_limits (solver);
 

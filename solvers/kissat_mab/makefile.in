@@ -23,14 +23,14 @@ TSTOBJ=$(APPOBJ) $(TSTSRC:.c=.o)
 
 INCLUDES=-I../$(shell pwd|sed -e 's,.*/,,')
 
-all: libkissat.a kissat@TESTDEFAULT@
+all: libkissat_mab.a kissat_mab@TESTDEFAULT@
 test: all tissat
 	./tissat
 
 REMOVE=*.gcda *.gcno *.gcov gmon.out *~ *.proof
 
 clean:
-	rm -f kissat tissat
+	rm -f kissat_mab tissat
 	rm -f makefile build.h *.o *.a
 	rm -f $(REMOVE)
 	cd ../src; rm -f $(REMOVE)
@@ -42,11 +42,11 @@ coverage:
 indent:
 	indent ../*/*.[ch]
 
-kissat: main.o $(APPOBJ) libkissat.a makefile
-	$(LD) -o $@ $< $(APPOBJ) -L. -lkissat -lm
+kissat_mab: main.o $(APPOBJ) libkissat_mab.a makefile
+	$(LD) -o $@ $< $(APPOBJ) -L. -lkissat_mab -lm
 
-tissat: test.o $(TSTOBJ) libkissat.a makefile
-	$(LD) -o $@ $< $(TSTOBJ) -L. -lkissat -lm
+tissat_mab: test.o $(TSTOBJ) libkissat_mab.a makefile
+	$(LD) -o $@ $< $(TSTOBJ) -L. -lkissat_mab -lm
 
 build.h:
 	../scripts/generate-build-header.sh > $@
@@ -62,7 +62,7 @@ build.o: build.c build.h ../[st]*/*.h makefile
 test.o: test.c build.h ../[st]*/*.h makefile
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
-libkissat.a: $(LIBOBJ) makefile
+libkissat_mab.a: $(LIBOBJ) makefile
 	$(AR) rc $@ $(LIBOBJ)
 
 .PHONY: all clean coverage indent test build.h

@@ -8,7 +8,7 @@
 #include <string.h>
 
 bool
-kissat_has_configuration (const char *name)
+kissat_mab_has_configuration (const char *name)
 {
   if (!strcmp (name, "default"))
     return true;
@@ -20,7 +20,7 @@ kissat_has_configuration (const char *name)
 }
 
 void
-kissat_configuration_usage (void)
+kissat_mab_configuration_usage (void)
 {
   const char *fmt = "  --%-24s %s\n";
   printf (fmt, "default", "default configuration");
@@ -29,23 +29,23 @@ kissat_configuration_usage (void)
 }
 
 void
-kissat_set_configuration (kissat * solver, const char *name)
+kissat_mab_set_configuration (kissat * solver, const char *name)
 {
   if (!strcmp (name, "default"))
     return;
   if (!strcmp (name, "sat"))
     {
       printf("sat option!\n");
-      kissat_set_option (solver, "target", TARGET_SAT);
+      kissat_mab_set_option (solver, "target", TARGET_SAT);
       return;
     }
   if (!strcmp (name, "unsat"))
     {
-      kissat_set_option (solver, "stable", STABLE_UNSAT);
+      kissat_mab_set_option (solver, "stable", STABLE_UNSAT);
       return;
     }
 }
 
 #else
-int kissat_config_dummy_to_avoid_warning;
+int kissat_mab_config_dummy_to_avoid_warning;
 #endif

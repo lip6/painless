@@ -3,6 +3,7 @@
 
 struct kissat;
 
-void kissat_autarky (struct kissat *);
+void
+kissat_mab_autarky(struct kissat*);
 
 #endif

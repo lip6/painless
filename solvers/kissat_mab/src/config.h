@@ -6,8 +6,10 @@
 
 struct kissat;
 
-void kissat_configuration_usage (void);
-bool kissat_has_configuration (const char *);
+void
+kissat_mab_configuration_usage(void);
+bool
+kissat_mab_has_configuration(const char*);
 
 #endif
 #endif

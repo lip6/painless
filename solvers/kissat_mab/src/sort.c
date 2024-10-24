@@ -87,7 +87,7 @@ move_smallest_literal_to_front (kissat * solver,
 static inline
 #endif
   void
-kissat_sort_literals (kissat * solver,
+kissat_mab_sort_literals (kissat * solver,
 #ifdef INLINE_SORT
 		      const value * values, const assigned * assigned,
 #endif

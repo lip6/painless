@@ -5,21 +5,21 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-static void (*kissat_abort_function) (void);
+static void (*kissat_mab_abort_function) (void);
 
 void
-kissat_call_function_instead_of_abort (void (*f) (void))
+kissat_mab_call_function_instead_of_abort (void (*f) (void))
 {
-  kissat_abort_function = f;
+  kissat_mab_abort_function = f;
 }
 
 // *INDENT-OFF*
 
 void
-kissat_abort (void)
+kissat_mab_abort (void)
 {
-  if (kissat_abort_function)
-    { FLUSH_COVERAGE (); kissat_abort_function (); } // Keep all in this line.
+  if (kissat_mab_abort_function)
+    { FLUSH_COVERAGE (); kissat_mab_abort_function (); } // Keep all in this line.
   else
     { FLUSH_COVERAGE (); abort (); }                 // Keep all in this line.
 }
@@ -40,7 +40,7 @@ typed_error_message_start (const char *type)
 }
 
 void
-kissat_fatal_message_start (void)
+kissat_mab_fatal_message_start (void)
 {
   typed_error_message_start ("fatal error");
 }
@@ -55,7 +55,7 @@ vprint_error (const char *type, const char *fmt, va_list * ap)
 }
 
 void
-kissat_error (const char *fmt, ...)
+kissat_mab_error (const char *fmt, ...)
 {
   va_list ap;
   va_start (ap, fmt);
@@ -64,11 +64,11 @@ kissat_error (const char *fmt, ...)
 }
 
 void
-kissat_fatal (const char *fmt, ...)
+kissat_mab_fatal (const char *fmt, ...)
 {
   va_list ap;
   va_start (ap, fmt);
   vprint_error ("fatal error", fmt, &ap);
   va_end (ap);
-  kissat_abort ();
+  kissat_mab_abort ();
 }

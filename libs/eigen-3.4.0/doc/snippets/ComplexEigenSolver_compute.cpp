@@ -1,4 +1,4 @@
-MatrixXcf A = MatrixXcf::Random(4,4);
+MatrixXcf A = MatrixXcf::Random(4, 4);
 cout << "Here is a random 4x4 matrix, A:" << endl << A << endl << endl;
 
 ComplexEigenSolver<MatrixXcf> ces;
@@ -13,4 +13,4 @@ cout << "If v is the corresponding eigenvector, then lambda * v = " << endl << l
 cout << "... and A * v = " << endl << A * v << endl << endl;
 
 cout << "Finally, V * D * V^(-1) = " << endl
-     << ces.eigenvectors() * ces.eigenvalues().asDiagonal() * ces.eigenvectors().inverse() << endl;
+	 << ces.eigenvectors() * ces.eigenvalues().asDiagonal() * ces.eigenvectors().inverse() << endl;

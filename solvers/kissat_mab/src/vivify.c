@@ -82,7 +82,7 @@ simplify_vivification_candidate (kissat * solver, clause * c)
 	{
 	  satisfied = true;
 	  LOGCLS (c, "vivification %s satisfied candidate", LOGLIT (lit));
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  break;
 	}
       if (!value)
@@ -106,8 +106,8 @@ simplify_vivification_candidate (kissat * solver, clause * c)
       const unsigned first = PEEK_STACK (solver->clause.lits, 0);
       const unsigned second = PEEK_STACK (solver->clause.lits, 1);
       LOGBINARY (first, second, "vivification shrunken candidate");
-      kissat_new_binary_clause (solver, c->redundant, first, second);
-      kissat_mark_clause_as_garbage (solver, c);
+      kissat_mab_new_binary_clause (solver, c->redundant, first, second);
+      kissat_mab_mark_clause_as_garbage (solver, c);
     }
   else
     {
@@ -122,7 +122,7 @@ simplify_vivification_candidate (kissat * solver, clause * c)
       for (unsigned i = 0; i < old_size; i++)
 	{
 	  const unsigned lit = lits[i];
-	  const value value = kissat_fixed (solver, lit);
+	  const value value = kissat_mab_fixed (solver, lit);
 	  assert (value <= 0);
 	  if (value < 0)
 	    continue;
@@ -134,7 +134,7 @@ simplify_vivification_candidate (kissat * solver, clause * c)
       c->size = new_size;
       c->searched = 2;
       if (c->redundant && c->glue >= new_size)
-	kissat_promote_clause (solver, c, new_size - 1);
+	kissat_mab_promote_clause (solver, c, new_size - 1);
       if (!c->shrunken)
 	{
 	  c->shrunken = true;
@@ -202,19 +202,19 @@ schedule_vivification_candidates (kissat * solver,
 #endif
   if (prioritized)
     {
-      kissat_phase (solver, mode, GET (probings),
+      kissat_mab_phase (solver, mode, GET (probings),
 		    "prioritized %zu %s clauses %.0f%%", prioritized,
-		    type, kissat_percent (prioritized, scheduled));
+		    type, kissat_mab_percent (prioritized, scheduled));
     }
   else
     {
-      kissat_phase (solver, mode, GET (probings),
+      kissat_mab_phase (solver, mode, GET (probings),
 		    "prioritizing all %zu scheduled %s clauses",
 		    scheduled, type);
       for (all_stack (reference, ref, *schedule))
 	{
 	  clause *c = (clause *) (arena + ref);
-	  assert (kissat_clause_in_arena (solver, c));
+	  assert (kissat_mab_clause_in_arena (solver, c));
 	  c->vivify = true;
 	}
     }
@@ -223,14 +223,14 @@ schedule_vivification_candidates (kissat * solver,
 static unsigned *
 new_vivification_candidates_counts (kissat * solver)
 {
-  return kissat_calloc (solver, LITS, sizeof (unsigned));
+  return kissat_mab_calloc (solver, LITS, sizeof (unsigned));
 }
 
 static inline bool
 worse_candidate (kissat * solver, unsigned *counts, reference r, reference s)
 {
-  const clause *c = kissat_dereference_clause (solver, r);
-  const clause *d = kissat_dereference_clause (solver, s);
+  const clause *c = kissat_mab_dereference_clause (solver, r);
+  const clause *d = kissat_mab_dereference_clause (solver, s);
 
   if (!c->vivify && d->vivify)
     return true;
@@ -275,7 +275,7 @@ sort_vivification_candidates (kissat * solver,
 {
   for (all_stack (reference, ref, *schedule))
     {
-      clause *c = kissat_dereference_clause (solver, ref);
+      clause *c = kissat_mab_dereference_clause (solver, ref);
       vivify_sort_clause_by_counts (solver, c, counts);
     }
   SORT_STACK (reference, *schedule, WORSE_CANDIDATE);
@@ -293,12 +293,12 @@ vivify_unit_conflict (kissat * solver, unsigned lit)
   if (a->binary)
     {
       const unsigned other = a->reason;
-      conflict = kissat_binary_conflict (solver, a->redundant, lit, other);
+      conflict = kissat_mab_binary_conflict (solver, a->redundant, lit, other);
     }
   else
     {
       const reference ref = a->reason;
-      conflict = kissat_dereference_clause (solver, ref);
+      conflict = kissat_mab_dereference_clause (solver, ref);
     }
   a->analyzed = true;
   PUSH_STACK (solver->analyzed, lit);
@@ -344,7 +344,7 @@ vivify_analyze (kissat * solver, clause * c,
       subsumed = true;
       for (all_literals_in_clause (lit, conflict))
 	{
-	  const value value = kissat_fixed (solver, lit);
+	  const value value = kissat_mab_fixed (solver, lit);
 	  if (value < 0)
 	    continue;
 	  assert (!value);
@@ -400,7 +400,7 @@ vivify_analyze (kissat * solver, clause * c,
 	{
 	  const reference ref = a->reason;
 	  LOGREF (ref, "vivify analyzing %s reason", LOGLIT (lit));
-	  clause *reason = kissat_dereference_clause (solver, ref);
+	  clause *reason = kissat_mab_dereference_clause (solver, ref);
 	  if (reason->redundant)
 	    irredundant = false;
 	  subsumed = marks[lit];
@@ -493,19 +493,19 @@ vivify_learn (kissat * solver, clause * c,
   if (size < non_false)
     {
       if (solver->level)
-	kissat_backtrack (solver, 0);
+	kissat_mab_backtrack (solver, 0);
       LOGTMP ("vivified");
     }
 
   if (size == 1)
     {
       const unsigned unit = PEEK_STACK (solver->clause.lits, 0);
-      kissat_assign_unit (solver, unit);
+      kissat_mab_assign_unit (solver, unit);
       solver->iterating = true;
       CHECK_AND_ADD_UNIT (unit);
       ADD_UNIT_TO_PROOF (unit);
-      kissat_mark_clause_as_garbage (solver, c);
-      clause *conflict = kissat_probing_propagate (solver, 0);
+      kissat_mab_mark_clause_as_garbage (solver, c);
+      clause *conflict = kissat_mab_probing_propagate (solver, 0);
       if (conflict)
 	{
 	  CHECK_AND_ADD_EMPTY ();
@@ -516,7 +516,7 @@ vivify_learn (kissat * solver, clause * c,
       else
 	{
 	  assert (solver->unflushed);
-	  kissat_flush_trail (solver);
+	  kissat_mab_flush_trail (solver);
 	}
       vivify_inc_strengthened (solver, c);
       INC (failed);
@@ -525,10 +525,10 @@ vivify_learn (kissat * solver, clause * c,
   else if (size == 2)
     {
       if (c->redundant)
-	(void) kissat_new_redundant_clause (solver, 1);
+	(void) kissat_mab_new_redundant_clause (solver, 1);
       else
-	(void) kissat_new_irredundant_clause (solver);
-      kissat_mark_clause_as_garbage (solver, c);
+	(void) kissat_mab_new_irredundant_clause (solver);
+      kissat_mab_mark_clause_as_garbage (solver, c);
       vivify_inc_strengthened (solver, c);
       res = true;
     }
@@ -559,9 +559,9 @@ vivify_learn (kissat * solver, clause * c,
 	  if (!c->redundant)
 	    {
 	      if (keep)
-		kissat_mark_added_literal (solver, lit);
+		kissat_mab_mark_added_literal (solver, lit);
 	      else
-		kissat_mark_removed_literal (solver, lit);
+		kissat_mab_mark_removed_literal (solver, lit);
 	    }
 	  if (keep)
 	    lits[new_size++] = lit;
@@ -575,18 +575,18 @@ vivify_learn (kissat * solver, clause * c,
 	}
       c->size = new_size;
       if (c->redundant && c->glue >= new_size)
-	kissat_promote_clause (solver, c, new_size - 1);
+	kissat_mab_promote_clause (solver, c, new_size - 1);
       c->searched = 2;
       LOGCLS (c, "vivified shrunken");
 
-      const reference ref = kissat_reference_clause (solver, c);
+      const reference ref = kissat_mab_reference_clause (solver, c);
 
       // Beware of 'stale blocking literals' ... so rewatch if shrunken.
 
-      kissat_unwatch_blocking (solver, watched[0], ref);
-      kissat_unwatch_blocking (solver, watched[1], ref);
-      kissat_watch_blocking (solver, lits[0], lits[1], ref);
-      kissat_watch_blocking (solver, lits[1], lits[0], ref);
+      kissat_mab_unwatch_blocking (solver, watched[0], ref);
+      kissat_mab_unwatch_blocking (solver, watched[1], ref);
+      kissat_mab_watch_blocking (solver, lits[0], lits[1], ref);
+      kissat_mab_watch_blocking (solver, lits[1], lits[0], ref);
 
       vivify_inc_strengthened (solver, c);
       res = true;
@@ -595,7 +595,7 @@ vivify_learn (kissat * solver, clause * c,
     {
       LOGCLS (c, "vivify subsumed");
       vivify_inc_subsume (solver, c);
-      kissat_mark_clause_as_garbage (solver, c);
+      kissat_mab_mark_clause_as_garbage (solver, c);
       res = true;
     }
   else
@@ -622,13 +622,13 @@ vivify_clause (kissat * solver, clause * c,
 
   for (all_literals_in_clause (lit, c))
     {
-      const value value = kissat_fixed (solver, lit);
+      const value value = kissat_mab_fixed (solver, lit);
       if (value < 0)
 	continue;
       if (value > 0)
 	{
 	  LOGCLS (c, "%s satisfied", LOGLIT (lit));
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  break;
 	}
       PUSH_STACK (*sorted, lit);
@@ -686,7 +686,7 @@ vivify_clause (kissat * solver, clause * c,
 	unit = INVALID_LIT;
       else
 	{
-	  reference ref = kissat_reference_clause (solver, c);
+	  reference ref = kissat_mab_reference_clause (solver, c);
 	  if (a->reason != ref)
 	    unit = INVALID_LIT;
 	}
@@ -699,7 +699,7 @@ vivify_clause (kissat * solver, clause * c,
       const unsigned level = LEVEL (unit);
       assert (level > 0);
       LOG ("forced to backtrack to level %u", level - 1);
-      kissat_backtrack (solver, level - 1);
+      kissat_mab_backtrack (solver, level - 1);
     }
 
   assert (EMPTY_STACK (solver->analyzed));
@@ -724,7 +724,7 @@ vivify_clause (kissat * solver, clause * c,
 	    {
 	      const unsigned idx = IDX (lit);
 	      if (solver->stable)
-		printf ("[%g]", kissat_get_heap_score (scores, idx));
+		printf ("[%g]", kissat_mab_get_heap_score (scores, idx));
 	      else
 		printf ("{%u}", links[idx].stamp);
 	    }
@@ -757,7 +757,7 @@ vivify_clause (kissat * solver, clause * c,
 	    }
 
 	  LOG ("forced to backtrack to decision level %u", level - 1);
-	  kissat_backtrack (solver, level - 1);
+	  kissat_mab_backtrack (solver, level - 1);
 	}
 
       const value value = VALUE (lit);
@@ -769,11 +769,11 @@ vivify_clause (kissat * solver, clause * c,
 	  const unsigned not_lit = NOT (lit);
 	  INC (vivify_assumed);
 	  INC (vivify_probes);
-	  kissat_internal_assume (solver, not_lit);
+	  kissat_mab_internal_assume (solver, not_lit);
 	  if (solver->level == 1)
-	    conflict = kissat_hyper_propagate (solver, c);
+	    conflict = kissat_mab_hyper_propagate (solver, c);
 	  else
-	    conflict = kissat_probing_propagate (solver, c);
+	    conflict = kissat_mab_probing_propagate (solver, c);
 	  if (!conflict)
 	    continue;
 	  vivify_binary_or_large_conflict (solver, conflict);
@@ -800,7 +800,7 @@ vivify_clause (kissat * solver, clause * c,
       else if (GET_OPTION (vivifyimply) == 2)
 	{
 	  LOGCLS (c, "vivify implied");
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  INC (vivify_implied);
 	  res = true;
 	}
@@ -820,7 +820,7 @@ vivify_clause (kissat * solver, clause * c,
       if (subsumed)
 	{
 	  LOGCLS (c, "vivify subsumed");
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  vivify_inc_subsume (solver, c);
 	  res = true;
 	}
@@ -891,7 +891,7 @@ vivify_round (kissat * solver, round round)
   INIT_STACK (schedule);
 
   unsigned *counts = 0;
-  kissat_flush_large_watches (solver);
+  kissat_mab_flush_large_watches (solver);
   counts = new_vivification_candidates_counts (solver);
   {
     bool redundant, tier2;
@@ -913,25 +913,25 @@ vivify_round (kissat * solver, round round)
 				      &schedule, counts, redundant, tier2);
   }
   sort_vivification_candidates (solver, &schedule, counts);
-  kissat_watch_large_clauses (solver);
+  kissat_mab_watch_large_clauses (solver);
 
   const size_t scheduled = SIZE_STACK (schedule);
 #ifndef QUIET
   const size_t total =
     (round == IRREDUNDANT_ROUND) ? IRREDUNDANT_CLAUSES : REDUNDANT_CLAUSES;
-  kissat_phase (solver, mode, GET (probings),
+  kissat_mab_phase (solver, mode, GET (probings),
 		"scheduled %zu %s clauses %.0f%% of %zu", scheduled,
-		type, kissat_percent (scheduled, total), total);
+		type, kissat_mab_percent (scheduled, total), total);
 #endif
   SET_EFFICIENCY_BOUND (ticks_limit, vivify,
 			probing_ticks, search_ticks,
-			kissat_nlogn (scheduled));
+			kissat_mab_nlogn (scheduled));
 
   if (round == REDUNDANT_TIER2_ROUND)
     {
       const uint64_t delta = ticks_limit - solver->statistics.probing_ticks;
       ticks_limit += 3 * delta;
-      kissat_very_verbose (solver,
+      kissat_mab_very_verbose (solver,
 			   "increasing redundant tier2 efficiency limit to %"
 			   PRIu64 " by %" PRIu64 " = 3 * %" PRIu64,
 			   ticks_limit, 3 * delta, delta);
@@ -947,7 +947,7 @@ vivify_round (kissat * solver, round round)
       if (TERMINATED (19))
 	break;
       const reference ref = POP_STACK (schedule);
-      clause *c = kissat_dereference_clause (solver, ref);
+      clause *c = kissat_mab_dereference_clause (solver, ref);
       if (c->garbage)
 	continue;
       tried++;
@@ -958,21 +958,21 @@ vivify_round (kissat * solver, round round)
 	break;
     }
   if (solver->level)
-    kissat_backtrack (solver, 0);
-  kissat_dealloc (solver, counts, LITS, sizeof *counts);
+    kissat_mab_backtrack (solver, 0);
+  kissat_mab_dealloc (solver, counts, LITS, sizeof *counts);
   RELEASE_STACK (sorted);
 #ifndef QUIET
-  kissat_phase (solver, mode, GET (probings),
+  kissat_mab_phase (solver, mode, GET (probings),
 		"vivified %zu %s clauses %.0f%% out of %zu tried",
-		vivified, type, kissat_percent (vivified, tried), tried);
+		vivified, type, kissat_mab_percent (vivified, tried), tried);
   if (!solver->inconsistent)
     {
       size_t remain = SIZE_STACK (schedule);
       if (remain)
 	{
-	  kissat_phase (solver, mode, GET (probings),
+	  kissat_mab_phase (solver, mode, GET (probings),
 			"%zu %s clauses remain %.0f%% out of %zu scheduled",
-			remain, type, kissat_percent (remain, scheduled),
+			remain, type, kissat_mab_percent (remain, scheduled),
 			scheduled);
 
 	  const word *arena = BEGIN_STACK (solver->arena);
@@ -985,16 +985,16 @@ vivify_round (kissat * solver, round round)
 		prioritized++;
 	    }
 	  if (prioritized)
-	    kissat_phase (solver, mode, GET (probings),
+	    kissat_mab_phase (solver, mode, GET (probings),
 			  "keeping %zu %s clauses prioritized %.0f%%",
 			  prioritized, type,
-			  kissat_percent (prioritized, remain));
+			  kissat_mab_percent (prioritized, remain));
 	  else
-	    kissat_phase (solver, mode, GET (probings),
+	    kissat_mab_phase (solver, mode, GET (probings),
 			  "no prioritized %s clauses left", type);
 	}
       else
-	kissat_phase (solver, mode, GET (probings),
+	kissat_mab_phase (solver, mode, GET (probings),
 		      "all scheduled %s clauses tried", type);
     }
 #endif
@@ -1038,7 +1038,7 @@ really_vivify (kissat * solver)
 }
 
 void
-kissat_vivify (kissat * solver)
+kissat_mab_vivify (kissat * solver)
 {
   if (solver->inconsistent)
     return;

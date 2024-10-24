@@ -34,41 +34,41 @@ start_search(kissat *solver)
   bool stable = (GET_OPTION(stable) == 2);
 
   solver->stable = stable;
-  kissat_phase(solver, "search", GET(searches),
+  kissat_mab_phase(solver, "search", GET(searches),
                "initializing %s search after %" PRIu64 " conflicts",
                (stable ? "stable" : "focus"), CONFLICTS);
 
-  kissat_init_averages(solver, &AVERAGES);
+  kissat_mab_init_averages(solver, &AVERAGES);
 
   if (solver->stable)
-    kissat_init_reluctant(solver);
+    kissat_mab_init_reluctant(solver);
 
-  kissat_init_limits(solver);
+  kissat_mab_init_limits(solver);
 
   unsigned seed = GET_OPTION(seed);
   solver->random = seed;
   LOG("initialized random number generator with seed %u", seed);
 
-  kissat_reset_rephased(solver);
+  kissat_mab_reset_rephased(solver);
 
   const unsigned eagersubsume = GET_OPTION(eagersubsume);
   if (eagersubsume && !solver->clueue.elements)
-    kissat_init_clueue(solver, &solver->clueue, eagersubsume);
+    kissat_mab_init_clueue(solver, &solver->clueue, eagersubsume);
 #ifndef QUIET
   limits *limits = &solver->limits;
   limited *limited = &solver->limited;
   if (!limited->conflicts && !limited->decisions)
-    kissat_very_verbose(solver, "starting unlimited search");
+    kissat_mab_very_verbose(solver, "starting unlimited search");
   else if (limited->conflicts && !limited->decisions)
-    kissat_very_verbose(solver,
+    kissat_mab_very_verbose(solver,
                         "starting search with conflicts limited to %" PRIu64,
                         limits->conflicts);
   else if (!limited->conflicts && limited->decisions)
-    kissat_very_verbose(solver,
+    kissat_mab_very_verbose(solver,
                         "starting search with decisions limited to %" PRIu64,
                         limits->decisions);
   else
-    kissat_very_verbose(solver,
+    kissat_mab_very_verbose(solver,
                         "starting search with decisions limited to %" PRIu64
                         " and conflicts limited to %" PRIu64,
                         limits->decisions, limits->conflicts);
@@ -102,7 +102,7 @@ stop_search(kissat *solver, int res)
 
   if (solver->terminate)
   {
-    kissat_very_verbose(solver, "termination forced externally");
+    kissat_mab_very_verbose(solver, "termination forced externally");
     solver->terminate = 0;
   }
 
@@ -144,7 +144,7 @@ conflict_limit_hit(kissat *solver)
     return false;
   if (solver->limits.conflicts > solver->statistics.conflicts)
     return false;
-  kissat_very_verbose(solver, "conflict limit %" PRIu64 " hit after %" PRIu64 " conflicts",
+  kissat_mab_very_verbose(solver, "conflict limit %" PRIu64 " hit after %" PRIu64 " conflicts",
                       solver->limits.conflicts,
                       solver->statistics.conflicts);
   return true;
@@ -157,32 +157,32 @@ decision_limit_hit(kissat *solver)
     return false;
   if (solver->limits.decisions > solver->statistics.decisions)
     return false;
-  kissat_very_verbose(solver, "decision limit %" PRIu64 " hit after %" PRIu64 " decisions",
+  kissat_mab_very_verbose(solver, "decision limit %" PRIu64 " hit after %" PRIu64 " decisions",
                       solver->limits.decisions,
                       solver->statistics.decisions);
   return true;
 }
 
-int kissat_search(kissat *solver)
+int kissat_mab_search(kissat *solver)
 {
   start_search(solver);
-  kissat_bump_one(solver, solver->bump_one);
-  int res = kissat_walk_initially(solver);
+  kissat_mab_bump_one(solver, solver->bump_one);
+  int res = kissat_mab_walk_initially(solver);
   while (!res)
   {
     // Begin Painless
     if (0 == solver->level)
     {
-      if (false == kissat_import_unit_from_painless(solver))
+      if (false == kissat_mab_import_unit_from_painless(solver))
         return 20;
-      if (false == kissat_import_from_painless(solver))
+      if (false == kissat_mab_import_from_painless(solver))
         return 20;
     }
     // End Painless
-    clause *conflict = kissat_search_propagate(solver);
+    clause *conflict = kissat_mab_search_propagate(solver);
     if (conflict)
     {
-      res = kissat_analyze(solver, conflict);
+      res = kissat_mab_analyze(solver, conflict);
       solver->nconflict += 1;
     }
     else if (solver->iterating)
@@ -193,29 +193,29 @@ int kissat_search(kissat *solver)
       break;
     else if (conflict_limit_hit(solver)) // app option
       break;
-    else if (kissat_reducing(solver)) // OPTION 'reduce': learned clause reduction
-      res = kissat_reduce(solver);
-    else if (kissat_restarting(solver)) // OPTION 'restart'
+    else if (kissat_mab_reducing(solver)) // OPTION 'reduce': learned clause reduction
+      res = kissat_mab_reduce(solver);
+    else if (kissat_mab_restarting(solver)) // OPTION 'restart'
     {
-      kissat_restart(solver);
-      kissat_bump_one(solver, solver->bump_one);
+      kissat_mab_restart(solver);
+      kissat_mab_bump_one(solver, solver->bump_one);
     }
-    else if (kissat_rephasing(solver)) // OPTION 'rephase': reinitialization of decision phases
-      kissat_rephase(solver);
-    else if (kissat_eliminating(solver)) // OPTION 'simplify' && 'eliminate'
-      res = kissat_eliminate(solver);
-    else if (kissat_probing(solver)) // OPTION 'simplify' && 'probing' && ('substitute' || 'failed' || 'transitive' || 'vivify')
-      res = kissat_probe(solver);
+    else if (kissat_mab_rephasing(solver)) // OPTION 'rephase': reinitialization of decision phases
+      kissat_mab_rephase(solver);
+    else if (kissat_mab_eliminating(solver)) // OPTION 'simplify' && 'eliminate'
+      res = kissat_mab_eliminate(solver);
+    else if (kissat_mab_probing(solver)) // OPTION 'simplify' && 'probing' && ('substitute' || 'failed' || 'transitive' || 'vivify')
+      res = kissat_mab_probe(solver);
     else if (!solver->level && solver->unflushed)
-      kissat_flush_trail(solver);
+      kissat_mab_flush_trail(solver);
     else if (decision_limit_hit(solver)) // app option
       break;
     /*
       solver->restarts_gap = GET_OPTION(ccanr_gap_inc);
-      kissat_ccanr:
+      kissat_mab_ccanr:
         ...
-        solver->freeze_ls_restart_num = solver->restarts_gap; // the end of kissat_ccanr
-      kissat_search_propagate:
+        solver->freeze_ls_restart_num = solver->restarts_gap; // the end of kissat_mab_ccanr
+      kissat_mab_search_propagate:
         ...
         if (conflict) {
           INC (conflicts);
@@ -223,11 +223,11 @@ int kissat_search(kissat *solver)
         }
   }
     */
-    else if (kissat_ccanring(solver)) // GET_OPTION(ccanr) && solver->freeze_ls_restart_num < 1
-      res = kissat_ccanr(solver);     // Launched when the number of conflicts reaches ccanr_gap_inc
+    else if (kissat_mab_ccanring(solver)) // GET_OPTION(ccanr) && solver->freeze_ls_restart_num < 1
+      res = kissat_mab_ccanr(solver);     // Launched when the number of conflicts reaches ccanr_gap_inc
     else
     {
-      kissat_decide(solver);
+      kissat_mab_decide(solver);
       solver->nassign += 1;
     }
   }

@@ -7,18 +7,20 @@ typedef struct mode mode;
 
 struct mode
 {
-  uint64_t ticks;
+	uint64_t ticks;
 #ifndef QUIET
-  double entered;
-  uint64_t conflicts;
+	double entered;
+	uint64_t conflicts;
 #ifndef NMETRICS
-  uint64_t propagations;
-  uint64_t visits;
+	uint64_t propagations;
+	uint64_t visits;
 #endif
 #endif
 };
 
-void kissat_switch_search_mode (struct kissat *);
-void kissat_update_scores (struct kissat *);
+void
+kissat_mab_switch_search_mode(struct kissat*);
+void
+kissat_mab_update_scores(struct kissat*);
 
 #endif

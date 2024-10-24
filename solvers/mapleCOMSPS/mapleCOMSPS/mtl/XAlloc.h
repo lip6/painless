@@ -17,7 +17,6 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
 
-
 #ifndef MapleCOMSPS_XAlloc_h
 #define MapleCOMSPS_XAlloc_h
 
@@ -29,14 +28,16 @@ namespace MapleCOMSPS {
 //=================================================================================================
 // Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
 
-class OutOfMemoryException{};
-static inline void* xrealloc(void *ptr, size_t size)
+class OutOfMemoryException
+{};
+static inline void*
+xrealloc(void* ptr, size_t size)
 {
-    void* mem = realloc(ptr, size);
-    if (mem == NULL && errno == ENOMEM){
-        throw OutOfMemoryException();
-    }else
-        return mem;
+	void* mem = realloc(ptr, size);
+	if (mem == NULL && errno == ENOMEM) {
+		throw OutOfMemoryException();
+	} else
+		return mem;
 }
 
 //=================================================================================================

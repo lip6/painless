@@ -4,6 +4,7 @@
 struct kissat;
 struct clause;
 
-struct clause *kissat_probing_propagate (struct kissat *, struct clause *);
+struct clause*
+kissat_mab_probing_propagate(struct kissat*, struct clause*);
 
 #endif

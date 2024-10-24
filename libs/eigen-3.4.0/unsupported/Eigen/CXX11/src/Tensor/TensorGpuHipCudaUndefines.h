@@ -13,7 +13,7 @@
 #ifndef EIGEN_PERMANENTLY_ENABLE_GPU_HIP_CUDA_DEFINES
 
 #undef gpuStream_t
-#undef gpuDeviceProp_t 
+#undef gpuDeviceProp_t
 #undef gpuError_t
 #undef gpuSuccess
 #undef gpuErrorNotReady

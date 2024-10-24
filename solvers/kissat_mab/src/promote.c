@@ -3,7 +3,7 @@
 #include "promote.h"
 
 unsigned
-kissat_recompute_glue (kissat * solver, clause * c)
+kissat_mab_recompute_glue (kissat * solver, clause * c)
 {
   assert (EMPTY_STACK (solver->promote));
   for (all_literals_in_clause (lit, c))
@@ -28,7 +28,7 @@ kissat_recompute_glue (kissat * solver, clause * c)
 }
 
 void
-kissat_promote_clause (kissat * solver, clause * c, unsigned new_glue)
+kissat_mab_promote_clause (kissat * solver, clause * c, unsigned new_glue)
 {
   assert (!c->keep);
   assert (c->redundant);

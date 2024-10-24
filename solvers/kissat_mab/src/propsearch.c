@@ -44,7 +44,7 @@ update_search_propagation_statistics (kissat * solver,
 static inline void
 update_consistently_assigned (kissat * solver)
 {
-  const unsigned assigned = kissat_assigned (solver);
+  const unsigned assigned = kissat_mab_assigned (solver);
   if (assigned != solver->consistently_assigned)
     {
       LOG ("updating consistently assigned from %u to %u",
@@ -72,7 +72,7 @@ search_propagate (kissat * solver)
 
 
 clause *
-kissat_search_propagate (kissat * solver)
+kissat_mab_search_propagate (kissat * solver)
 {
   assert (!solver->probing);
   assert (solver->watching);
@@ -97,11 +97,11 @@ kissat_search_propagate (kissat * solver)
       unsigned lit = i>=0?PEEK_STACK (solver->trail, i):0;  
       while(i>=0 && LEVEL(lit)==solver->level){
 	    lit = PEEK_STACK (solver->trail, i);
-            kissat_bump_chb(solver,IDX(lit), conflict? 1.0 : 0.9); 
+            kissat_mab_bump_chb(solver,IDX(lit), conflict? 1.0 : 0.9); 
 	    i--;	    
       }
   }  
-  if(solver->stable && solver->heuristic==1 && conflict) kissat_decay_chb(solver);
+  if(solver->stable && solver->heuristic==1 && conflict) kissat_mab_decay_chb(solver);
 
   return conflict;
 }

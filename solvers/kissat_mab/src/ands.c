@@ -4,16 +4,16 @@
 #include "inline.h"
 
 bool
-kissat_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
+kissat_mab_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
 {
   if (!GET_OPTION (ands))
     return false;
-  size_t marked = kissat_mark_binaries (solver, lit);
+  size_t marked = kissat_mab_mark_binaries (solver, lit);
   if (!marked)
     return false;
   if (marked < 2)
     {
-      kissat_unmark_binaries (solver, lit);
+      kissat_mab_unmark_binaries (solver, lit);
       return false;
     }
 
@@ -41,7 +41,7 @@ kissat_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
 	  const value value = values[other];
 	  if (value > 0)
 	    {
-	      kissat_eliminate_clause (solver, c, INVALID_LIT);
+	      kissat_mab_eliminate_clause (solver, c, INVALID_LIT);
 	      base = 0;
 	      break;
 	    }
@@ -59,7 +59,7 @@ kissat_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
     }
   if (!base)
     {
-      kissat_unmark_binaries (solver, lit);
+      kissat_mab_unmark_binaries (solver, lit);
       return false;
     }
   LOGCLS (base, "found and gate %s base clause", LOGLIT (not_lit));
@@ -73,7 +73,7 @@ kissat_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
       assert (marks[not_other]);
       marks[not_other] = 0;
     }
-  watch tmp = kissat_binary_watch (0, false, false);
+  watch tmp = kissat_mab_binary_watch (0, false, false);
   watches *watches = &WATCHES (lit);
   for (all_binary_large_watches (watch, *watches))
     {
@@ -89,7 +89,7 @@ kissat_find_and_gate (kissat * solver, unsigned lit, unsigned negative)
       tmp.binary.lit = other;
       PUSH_STACK (solver->gates[negative], tmp);
     }
-  tmp = kissat_large_watch (kissat_reference_clause (solver, base));
+  tmp = kissat_mab_large_watch (kissat_mab_reference_clause (solver, base));
   PUSH_STACK (solver->gates[!negative], tmp);
   solver->gate_eliminated = GATE_ELIMINATED (ands);
   return true;

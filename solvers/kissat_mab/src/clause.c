@@ -57,11 +57,11 @@ init_clause(kissat *solver, clause *res,
 #endif
 }
 
-void kissat_connect_clause(kissat *solver, clause *c)
+void kissat_mab_connect_clause(kissat *solver, clause *c)
 {
   watches *all_watches = solver->watches;
-  const reference ref = kissat_reference_clause(solver, c);
-  kissat_inlined_connect_clause(solver, all_watches, c, ref);
+  const reference ref = kissat_mab_reference_clause(solver, c);
+  kissat_mab_inlined_connect_clause(solver, all_watches, c, ref);
 }
 
 static reference
@@ -72,11 +72,11 @@ new_binary_clause(kissat *solver,
   assert(first != second);
   assert(first != NOT(second));
   assert(!original || !redundant);
-  kissat_watch_binary(solver, redundant, false, first, second);
+  kissat_mab_watch_binary(solver, redundant, false, first, second);
   if (!redundant)
   {
-    kissat_mark_added_literal(solver, first);
-    kissat_mark_added_literal(solver, second);
+    kissat_mab_mark_added_literal(solver, first);
+    kissat_mab_mark_added_literal(solver, second);
   }
   inc_clause(solver, original, redundant);
   if (!original)
@@ -93,23 +93,23 @@ new_large_clause(kissat *solver,
                  unsigned size, unsigned *lits)
 {
   assert(size > 2);
-  reference res = kissat_allocate_clause(solver, size);
-  clause *c = kissat_unchecked_dereference_clause(solver, res);
+  reference res = kissat_mab_allocate_clause(solver, size);
+  clause *c = kissat_mab_unchecked_dereference_clause(solver, res);
   init_clause(solver, c, redundant, glue, size);
   /**
    * c->lits is initiliazed to [3] in struct clause, allocate calculate the size remaining
-   * static inline size_t kissat_bytes_of_clause (unsigned size)
+   * static inline size_t kissat_mab_bytes_of_clause (unsigned size)
       {
         const size_t res = sizeof (clause) + (size - 3) * sizeof (unsigned);
-        return kissat_align_word (res);
+        return kissat_mab_align_word (res);
       }
   */
   memcpy(c->lits, lits, size * sizeof(unsigned));
   LOGREF(res, "new");
   if (solver->watching)
-    kissat_watch_reference(solver, lits[0], lits[1], res);
+    kissat_mab_watch_reference(solver, lits[0], lits[1], res);
   else
-    kissat_connect_clause(solver, c);
+    kissat_mab_connect_clause(solver, c);
   if (redundant)
   {
     if (!c->keep && solver->first_reducible == INVALID_REF)
@@ -117,7 +117,7 @@ new_large_clause(kissat *solver,
   }
   else
   {
-    kissat_mark_added_literals(solver, size, lits);
+    kissat_mab_mark_added_literals(solver, size, lits);
     solver->last_irredundant = res;
   }
   inc_clause(solver, original, redundant);
@@ -139,29 +139,29 @@ new_clause(kissat *solver,
     res = new_binary_clause(solver, original, redundant, lits[0], lits[1]);
   else
     res = new_large_clause(solver, original, redundant, glue, size, lits);
-  kissat_defrag_watches_if_needed(solver);
+  kissat_mab_defrag_watches_if_needed(solver);
   // res in the reference of the clause in the stack arena.
   return res;
 }
 
-void kissat_new_binary_clause(kissat *solver,
+void kissat_mab_new_binary_clause(kissat *solver,
                               bool redundant, unsigned first, unsigned second)
 {
   (void)new_binary_clause(solver, false, redundant, first, second);
 }
 
 reference
-kissat_new_original_clause(kissat *solver)
+kissat_mab_new_original_clause(kissat *solver)
 {
   const unsigned size = SIZE_STACK(solver->clause.lits);
   unsigned *lits = BEGIN_STACK(solver->clause.lits);
-  kissat_sort_literals(solver, size, lits);
+  kissat_mab_sort_literals(solver, size, lits);
   reference res = new_clause(solver, true, false, 0, size, lits);
   return res;
 }
 
 reference
-kissat_new_irredundant_clause(kissat *solver)
+kissat_mab_new_irredundant_clause(kissat *solver)
 {
   const unsigned size = SIZE_STACK(solver->clause.lits);
   unsigned *lits = BEGIN_STACK(solver->clause.lits);
@@ -169,7 +169,7 @@ kissat_new_irredundant_clause(kissat *solver)
 }
 
 reference
-kissat_new_redundant_clause(kissat *solver, unsigned glue)
+kissat_mab_new_redundant_clause(kissat *solver, unsigned glue)
 {
   const unsigned size = SIZE_STACK(solver->clause.lits);
   unsigned *lits = BEGIN_STACK(solver->clause.lits);
@@ -182,7 +182,7 @@ mark_clause_as_garbage(kissat *solver, clause *c)
   assert(!c->garbage);
   LOGCLS(c, "garbage");
   if (!c->redundant)
-    kissat_mark_removed_literals(solver, c->size, c->lits);
+    kissat_mab_mark_removed_literals(solver, c->size, c->lits);
   REMOVE_CHECKER_CLAUSE(c);
   DELETE_CLAUSE_FROM_PROOF(c);
   if (c->hyper)
@@ -195,34 +195,34 @@ mark_clause_as_garbage(kissat *solver, clause *c)
   c->garbage = true;
 }
 
-void kissat_mark_clause_as_garbage(kissat *solver, clause *c)
+void kissat_mab_mark_clause_as_garbage(kissat *solver, clause *c)
 {
   assert(!c->garbage);
   mark_clause_as_garbage(solver, c);
-  size_t bytes = kissat_actual_bytes_of_clause(c);
+  size_t bytes = kissat_mab_actual_bytes_of_clause(c);
   ADD(arena_garbage, bytes);
 }
 
 clause *
-kissat_delete_clause(kissat *solver, clause *c)
+kissat_mab_delete_clause(kissat *solver, clause *c)
 {
   LOGCLS(c, "delete");
   assert(c->size > 2);
   assert(c->garbage);
-  size_t bytes = kissat_actual_bytes_of_clause(c);
+  size_t bytes = kissat_mab_actual_bytes_of_clause(c);
   SUB(arena_garbage, bytes);
   INC(clauses_deleted);
   return (clause *)((char *)c + bytes);
 }
 
-void kissat_delete_binary(kissat *solver,
+void kissat_mab_delete_binary(kissat *solver,
                           bool redundant, bool hyper, unsigned a, unsigned b)
 {
   LOGBINARY(a, b, "delete");
   if (!redundant)
   {
-    kissat_mark_removed_literal(solver, a);
-    kissat_mark_removed_literal(solver, b);
+    kissat_mab_mark_removed_literal(solver, a);
+    kissat_mab_mark_removed_literal(solver, b);
   }
   else if (hyper)
     DEC(hyper_binaries);

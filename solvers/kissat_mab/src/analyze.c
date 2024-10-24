@@ -66,7 +66,7 @@ one_literal_on_conflict_level(kissat *solver,
   {
     LOG("forced backtracking due to conflict level %u < level %u",
         conflict_level, solver->level);
-    kissat_backtrack(solver, conflict_level);
+    kissat_mab_backtrack(solver, conflict_level);
   }
 
   if (conflict_size > 2)
@@ -96,13 +96,13 @@ one_literal_on_conflict_level(kissat *solver,
       reference ref = INVALID_REF;
       if (highest_position > 1)
       {
-        ref = kissat_reference_clause(solver, conflict);
-        kissat_unwatch_blocking(solver, lit, ref);
+        ref = kissat_mab_reference_clause(solver, conflict);
+        kissat_mab_unwatch_blocking(solver, lit, ref);
       }
       lits[highest_position] = lit;
       lits[i] = highest_literal;
       if (highest_position > 1)
-        kissat_watch_blocking(solver, lits[i], lits[!i], ref);
+        kissat_mab_watch_blocking(solver, lits[i], lits[!i], ref);
     }
   }
 
@@ -113,17 +113,17 @@ one_literal_on_conflict_level(kissat *solver,
   assert(forced_lit != INVALID_LIT);
 
   LOG("reusing conflict as driving clause of %s", LOGLIT(forced_lit));
-  kissat_backtrack(solver, solver->level - 1);
+  kissat_mab_backtrack(solver, solver->level - 1);
   if (conflict_size == 2)
   {
     assert(conflict == &solver->conflict);
     const unsigned other = lits[0] ^ lits[1] ^ forced_lit;
-    kissat_assign_binary(solver, conflict->redundant, forced_lit, other);
+    kissat_mab_assign_binary(solver, conflict->redundant, forced_lit, other);
   }
   else
   {
-    const reference ref = kissat_reference_clause(solver, conflict);
-    kissat_assign_reference(solver, forced_lit, ref, conflict);
+    const reference ref = kissat_mab_reference_clause(solver, conflict);
+    kissat_mab_assign_reference(solver, forced_lit, ref, conflict);
   }
 
   return true;
@@ -217,13 +217,13 @@ update_trail_average(kissat *solver)
   const unsigned size = SIZE_STACK(solver->trail);
   const unsigned assigned = size - solver->unflushed;
   const unsigned active = solver->active;
-  const double filled = kissat_percent(assigned, active);
+  const double filled = kissat_mab_percent(assigned, active);
   LOG("trail filled %.0f%% (size %u, unflushed %u, active %u)",
       filled, size, solver->unflushed, active);
   UPDATE(trail, filled);
 }
 
-int kissat_analyze(kissat *solver, clause *conflict)
+int kissat_mab_analyze(kissat *solver, clause *conflict)
 {
   assert(!solver->inconsistent);
   START(analyze);
@@ -241,7 +241,7 @@ int kissat_analyze(kissat *solver, clause *conflict)
       res = 1;
     else if (!conflict_level)
       res = -1;
-    else if ((conflict = kissat_deduce_first_uip_clause(solver, conflict)))
+    else if ((conflict = kissat_mab_deduce_first_uip_clause(solver, conflict)))
     {
       reset_markings(solver);
       reset_analyze(solver);
@@ -250,17 +250,17 @@ int kissat_analyze(kissat *solver, clause *conflict)
     }
     else
     {
-      kissat_minimize_clause(solver);
+      kissat_mab_minimize_clause(solver);
       if (!solver->probing)
         analyze_reason_side_literals(solver);
       reset_markings(solver);
-      kissat_learn_clause(solver);
+      kissat_mab_learn_clause(solver);
 
       // MAB
       if (!solver->probing && (!solver->stable || solver->heuristic == 0))
-        kissat_bump_variables(solver);
+        kissat_mab_bump_variables(solver);
       if (!solver->probing && solver->stable && (solver->heuristic == 1))
-        kissat_update_conflicted_chb(solver);
+        kissat_mab_update_conflicted_chb(solver);
 
       reset_analyze(solver);
       reset_levels(solver);

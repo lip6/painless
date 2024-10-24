@@ -35,7 +35,7 @@ propagate_clause (kissat * solver,
       if (other_value > 0)
 	{
 	  LOGCLS (c, "%s satisfied", LOGLIT (other));
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  return 0;
 	}
       if (other_value < 0)
@@ -104,7 +104,7 @@ propagate_unassigned (kissat * solver, word * arena,
 	{
 	  const reference ref = watch.large.ref;
 	  clause *c = (clause *) (arena + ref);
-	  assert (kissat_clause_in_arena (solver, c));
+	  assert (kissat_mab_clause_in_arena (solver, c));
 	  unassigned += propagate_clause (solver, values, autarky, work, c);
 	}
     }
@@ -150,7 +150,7 @@ determine_autarky (kissat * solver, value * autarky, unsigneds * work)
 
   const value *values = solver->values;
 
-  clause *last_irredundant = kissat_last_irredundant_clause (solver);
+  clause *last_irredundant = kissat_mab_last_irredundant_clause (solver);
 
   for (all_clauses (c))
     {
@@ -172,11 +172,11 @@ determine_autarky (kissat * solver, value * autarky, unsigneds * work)
     }
 
   if (assigned)
-    kissat_phase (solver, "autarky", GET (autarky_determined),
+    kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		  "preliminary large clause autarky of size %u", assigned);
   else
     {
-      kissat_phase (solver, "autarky", GET (autarky_determined),
+      kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		    "empty preliminary large clause autarky");
       return UINT_MAX;
     }
@@ -228,11 +228,11 @@ determine_autarky (kissat * solver, value * autarky, unsigneds * work)
     }
 
   if (assigned)
-    kissat_phase (solver, "autarky", GET (autarky_determined),
+    kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		  "preliminary binary clause autarky of size %u", assigned);
   else
     {
-      kissat_phase (solver, "autarky", GET (autarky_determined),
+      kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		    "empty preliminary binary clause autarky");
       return UINT_MAX;
     }
@@ -270,17 +270,17 @@ determine_autarky (kissat * solver, value * autarky, unsigneds * work)
 	      if (lit_value <= 0)
 		continue;
 	      if (ref == INVALID_REF)
-		ref = kissat_reference_clause (solver, c);
-	      kissat_connect_literal (solver, lit, ref);
+		ref = kissat_mab_reference_clause (solver, c);
+	      kissat_mab_connect_literal (solver, lit, ref);
 	    }
 	}
     }
 
   if (assigned)
-    kissat_phase (solver, "autarky", GET (autarky_determined),
+    kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		  "final autarky of size %u", assigned);
   else
-    kissat_phase (solver, "autarky", GET (autarky_determined),
+    kissat_mab_phase (solver, "autarky", GET (autarky_determined),
 		  "empty final autarky");
 
   return assigned;
@@ -318,7 +318,7 @@ flush_large_connected_and_autarky_binaries (kissat * solver)
 	  else if (lit < other)
 	    {
 	      assert (!watch.binary.redundant);
-	      kissat_delete_binary (solver, false, false, lit, other);
+	      kissat_mab_delete_binary (solver, false, false, lit, other);
 	      flushed_binaries++;
 	    }
 	}
@@ -326,10 +326,10 @@ flush_large_connected_and_autarky_binaries (kissat * solver)
     }
 #ifndef QUIET
   if (flushed_large)
-    kissat_very_verbose (solver, "flushed %zu large clause references",
+    kissat_mab_very_verbose (solver, "flushed %zu large clause references",
 			 flushed_large);
   if (flushed_binaries)
-    kissat_very_verbose (solver, "flushed %zu autarky binary clauses",
+    kissat_mab_very_verbose (solver, "flushed %zu autarky binary clauses",
 			 flushed_binaries);
 #else
   (void) flushed_binaries;
@@ -342,7 +342,7 @@ autarky_literal (kissat * solver, unsigned lit)
 {
   LOG ("autarky literal %s", LOGLIT (lit));
   INC (autarky);
-  kissat_mark_eliminated_variable (solver, IDX (lit));
+  kissat_mab_mark_eliminated_variable (solver, IDX (lit));
   word *arena = BEGIN_STACK (solver->arena);
   if (GET_OPTION (incremental))
     {
@@ -357,26 +357,26 @@ autarky_literal (kissat * solver, unsigned lit)
 	    {
 	      assert (!watch.binary.redundant);
 	      const unsigned other = watch.binary.lit;
-	      kissat_weaken_binary (solver, lit, other);
+	      kissat_mab_weaken_binary (solver, lit, other);
 	      *q++ = watch;
 	    }
 	  else
 	    {
 	      const reference ref = watch.large.ref;
 	      clause *c = (clause *) (arena + ref);
-	      assert (kissat_clause_in_arena (solver, c));
+	      assert (kissat_mab_clause_in_arena (solver, c));
 	      assert (!c->redundant);
 	      if (!c->garbage)
 		{
-		  kissat_weaken_clause (solver, lit, c);
-		  kissat_mark_clause_as_garbage (solver, c);
+		  kissat_mab_weaken_clause (solver, lit, c);
+		  kissat_mab_mark_clause_as_garbage (solver, c);
 		}
 	    }
 	}
       SET_END_OF_WATCHES (*watches, q);
     }
   else
-    kissat_weaken_unit (solver, lit);
+    kissat_mab_weaken_unit (solver, lit);
 }
 
 static void
@@ -402,7 +402,7 @@ apply_autarky (kissat * solver, unsigned size, value * autarky)
 }
 
 void
-kissat_autarky (kissat * solver)
+kissat_mab_autarky (kissat * solver)
 {
   if (solver->inconsistent)
     return;
@@ -417,9 +417,9 @@ kissat_autarky (kissat * solver)
   INC (autarky_determined);
   litwatches saved;
   INIT_STACK (saved);
-  kissat_enter_dense_mode (solver, 0, &saved);
+  kissat_mab_enter_dense_mode (solver, 0, &saved);
   solver->watching = false;
-  value *autarky = kissat_calloc (solver, LITS, sizeof (value));
+  value *autarky = kissat_mab_calloc (solver, LITS, sizeof (value));
   unsigneds work;
   INIT_STACK (work);
   unsigned autarkic = determine_autarky (solver, autarky, &work);
@@ -430,13 +430,13 @@ kissat_autarky (kissat * solver)
       flush_large_connected_and_autarky_binaries (solver);
     }
   else if (autarkic != UINT_MAX)
-    kissat_flush_large_connected (solver);
-  kissat_dealloc (solver, autarky, LITS, sizeof (value));
-  kissat_resume_sparse_mode (solver, true, 0, &saved);
+    kissat_mab_flush_large_connected (solver);
+  kissat_mab_dealloc (solver, autarky, LITS, sizeof (value));
+  kissat_mab_resume_sparse_mode (solver, true, 0, &saved);
   RELEASE_STACK (saved);
   bool success = (autarkic && autarkic < UINT_MAX);
   UPDATE_DELAY (success, autarky);
   REPORT (!success, 'a');
   STOP_SIMPLIFIER_AND_RESUME_SEARCH (autarky);
-  kissat_check_statistics (solver);
+  kissat_mab_check_statistics (solver);
 }

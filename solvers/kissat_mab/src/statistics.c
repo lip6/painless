@@ -14,21 +14,21 @@
 // *INDENT-OFF*
 
 void
-kissat_statistics_print (kissat * solver, bool verbose)
+kissat_mab_statistics_print (kissat * solver, bool verbose)
 {
 #ifndef QUIET
   statistics *statistics = &solver->statistics;
 
-  const double time = kissat_process_time ();
+  const double time = kissat_mab_process_time ();
   size_t variables = SIZE_STACK (solver->import);
 #ifndef NMETRICS
-  const double rss = kissat_maximum_resident_set_size ();
+  const double rss = kissat_mab_maximum_resident_set_size ();
 #endif
 
 /*------------------------------------------------------------------------*/
 
 #define RELATIVE(FIRST,SECOND) \
-  kissat_average (statistics->FIRST, statistics->SECOND)
+  kissat_mab_average (statistics->FIRST, statistics->SECOND)
 
 /*------------------------------------------------------------------------*/
 
@@ -70,7 +70,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
   RELATIVE (NAME, restarts_reused_trails)
 
 #define PER_SECOND(NAME) \
-  kissat_average (statistics->NAME, time)
+  kissat_mab_average (statistics->NAME, time)
 
 #ifdef NMETRICS
 #define PER_TRN_RESOLVED(NAME) \
@@ -81,7 +81,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
 #endif
 
 #define PER_VARIABLE(NAME) \
-  kissat_average (statistics->NAME, variables)
+  kissat_mab_average (statistics->NAME, variables)
 
 #define PER_VIVIFICATION_CHECK(NAME) \
   RELATIVE (NAME, vivification_checks)
@@ -97,7 +97,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
 /*------------------------------------------------------------------------*/
 
 #define PERCENT(FIRST,SECOND) \
-  kissat_percent (statistics->FIRST, statistics->SECOND)
+  kissat_mab_percent (statistics->FIRST, statistics->SECOND)
 
 /*------------------------------------------------------------------------*/
 
@@ -152,7 +152,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
   PERCENT (NAME, clauses_redundant)
 
 #define PCNT_RESIDENT_SET(NAME) \
-  kissat_percent (statistics->NAME, rss)
+  kissat_mab_percent (statistics->NAME, rss)
 
 #define PCNT_RESTARTS(NAME) \
   PERCENT (NAME, restarts)
@@ -170,7 +170,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
   PERCENT (NAME, subsumption_checks)
 
 #define PCNT_VARIABLES(NAME) \
-  kissat_percent (statistics->NAME, variables)
+  kissat_mab_percent (statistics->NAME, variables)
 
 #define PCNT_VIVIFICATION_CHECK(NAME) \
   PERCENT (NAME, vivification_checks)
@@ -213,7 +213,7 @@ kissat_statistics_print (kissat * solver, bool verbose)
 // *INDENT-ON*
 
 #elif defined(NDEBUG)
-int kissat_statistics_dummy_to_avoid_warning;
+int kissat_mab_statistics_dummy_to_avoid_warning;
 #endif
 
 /*------------------------------------------------------------------------*/
@@ -221,7 +221,7 @@ int kissat_statistics_dummy_to_avoid_warning;
 #ifndef NDEBUG
 
 void
-kissat_check_statistics (kissat * solver)
+kissat_mab_check_statistics (kissat * solver)
 {
   if (solver->inconsistent)
     return;
@@ -235,7 +235,7 @@ kissat_check_statistics (kissat * solver)
     {
       if (c->garbage)
 	{
-	  arena_garbage += kissat_actual_bytes_of_clause (c);
+	  arena_garbage += kissat_mab_actual_bytes_of_clause (c);
 	  continue;
 	}
       if (c->hyper)

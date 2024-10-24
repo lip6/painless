@@ -155,7 +155,7 @@ default_number_of_processes (void)
 int
 main (int argc, char **argv)
 {
-  const double start = kissat_wall_clock_time ();
+  const double start = kissat_mab_wall_clock_time ();
   const char *sequential_option = 0;
   const char *processes_option = 0;
   const char *verbose_option = 0;
@@ -306,7 +306,7 @@ main (int argc, char **argv)
     tissat_processes = default_number_of_processes ();
 
 #ifndef QUIET
-  kissat_banner ("", "TISSAT Tester for KISSAT");
+  kissat_mab_banner ("", "TISSAT Tester for KISSAT");
   tissat_line ();
   tissat_message ("Use '-h' to print usage (i.e., how to use patterns).");
 #else
@@ -373,7 +373,7 @@ main (int argc, char **argv)
   bool found_proof_checker = false;
 #define FIND(EXECUTABLE,FLAG) \
 do { \
-  if ((tissat_found_ ## FLAG = kissat_find_executable (#EXECUTABLE))) \
+  if ((tissat_found_ ## FLAG = kissat_mab_find_executable (#EXECUTABLE))) \
     { \
       tissat_message ("Found '%s' executable (will check proofs with it).", \
 	      #EXECUTABLE); \
@@ -404,7 +404,7 @@ do { \
   bool found_compression_utility;
 #define FIND(EXECUTABLE) \
 do { \
-  if ((tissat_found_ ## EXECUTABLE = kissat_find_executable (#EXECUTABLE))) \
+  if ((tissat_found_ ## EXECUTABLE = kissat_mab_find_executable (#EXECUTABLE))) \
     { \
       tissat_message ("Found '%s' executable for testing compression.", \
               #EXECUTABLE); \
@@ -493,9 +493,9 @@ do { \
 	tissat_line ();
       tissat_message ("All %u test jobs %ssucceeded%s in %.2f seconds.",
 		      tissat_scheduled,
-		      kissat_bold_green_color_code (1),
-		      kissat_normal_color_code (1),
-		      kissat_wall_clock_time () - start);
+		      kissat_mab_bold_green_color_code (1),
+		      kissat_mab_normal_color_code (1),
+		      kissat_mab_wall_clock_time () - start);
       tissat_release_jobs ();
     }
   else

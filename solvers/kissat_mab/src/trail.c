@@ -4,12 +4,12 @@
 #include "trail.h"
 
 void
-kissat_flush_trail (kissat * solver)
+kissat_mab_flush_trail (kissat * solver)
 {
   assert (!solver->level);
   assert (solver->unflushed);
   assert (!solver->inconsistent);
-  assert (kissat_propagated (solver));
+  assert (kissat_mab_propagated (solver));
   assert (SIZE_STACK (solver->trail) == solver->unflushed);
   LOG ("flushed %zu units from trail", SIZE_STACK (solver->trail));
   CLEAR_STACK (solver->trail);
@@ -18,7 +18,7 @@ kissat_flush_trail (kissat * solver)
 }
 
 void
-kissat_mark_reason_clauses (kissat * solver, reference start)
+kissat_mab_mark_reason_clauses (kissat * solver, reference start)
 {
   LOG ("starting marking reason clauses at clause[%zu]", start);
   assert (!solver->unflushed);
@@ -39,7 +39,7 @@ kissat_mark_reason_clauses (kissat * solver, reference start)
       if (ref < start)
 	continue;
       clause *c = (clause *) (arena + ref);
-      assert (kissat_clause_in_arena (solver, c)); 
+      assert (kissat_mab_clause_in_arena (solver, c)); 
       c->reason = true;
 #ifdef LOGGING
       reasons++;
@@ -49,45 +49,45 @@ kissat_mark_reason_clauses (kissat * solver, reference start)
 }
 
 void
-kissat_restart_and_flush_trail (kissat * solver)
+kissat_mab_restart_and_flush_trail (kissat * solver)
 {
   if (solver->level)
     {
       LOG ("forced restart");
-      kissat_backtrack (solver, 0);
+      kissat_mab_backtrack (solver, 0);
     }
 #ifndef NDEBUG
   clause *conflict =
 #endif
-    kissat_search_propagate (solver);   
+    kissat_mab_search_propagate (solver);   
   assert (!conflict);
   if (solver->unflushed)
-    kissat_flush_trail (solver);   
+    kissat_mab_flush_trail (solver);   
 }
 
 bool
-kissat_flush_and_mark_reason_clauses (kissat * solver, reference start)
+kissat_mab_flush_and_mark_reason_clauses (kissat * solver, reference start)
 {
   assert (solver->watching);
   assert (!solver->inconsistent);
-  assert (kissat_propagated (solver));
+  assert (kissat_mab_propagated (solver));
 
   if (solver->unflushed)
     {
       LOG ("need to flush %zu units from trail", solver->unflushed);
-      kissat_restart_and_flush_trail (solver);
+      kissat_mab_restart_and_flush_trail (solver);
     }
   else
     {
       LOG ("no need to flush units from trail (all units already flushed)");
-      kissat_mark_reason_clauses (solver, start);
+      kissat_mab_mark_reason_clauses (solver, start);
     }
 
   return true;
 }
 
 void
-kissat_unmark_reason_clauses (kissat * solver, reference start)
+kissat_mab_unmark_reason_clauses (kissat * solver, reference start)
 {
   LOG ("starting unmarking reason clauses at clause[%zu]", start);
   assert (!solver->unflushed);
@@ -108,7 +108,7 @@ kissat_unmark_reason_clauses (kissat * solver, reference start)
       if (ref < start)
 	continue;
       clause *c = (clause *) (arena + ref);
-      assert (kissat_clause_in_arena (solver, c));
+      assert (kissat_mab_clause_in_arena (solver, c));
       assert (c->reason);
       c->reason = false;
 #ifdef LOGGING

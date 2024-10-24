@@ -40,7 +40,7 @@ BF16_PACKET_FUNCTION(Packet16f, Packet16bf, pbessel_y0)
 F16_PACKET_FUNCTION(Packet16f, Packet16h, pbessel_y1)
 BF16_PACKET_FUNCTION(Packet16f, Packet16bf, pbessel_y1)
 
-}  // namespace internal
-}  // namespace Eigen
+} // namespace internal
+} // namespace Eigen
 
-#endif  // EIGEN_AVX512_BESSELFUNCTIONS_H
+#endif // EIGEN_AVX512_BESSELFUNCTIONS_H

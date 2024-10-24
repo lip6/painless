@@ -16,11 +16,11 @@ struct proof
 };
 
 void
-kissat_init_proof (kissat * solver, file * file, bool binary)
+kissat_mab_init_proof (kissat * solver, file * file, bool binary)
 {
   assert (file);
   assert (!solver->proof);
-  proof *proof = kissat_calloc (solver, 1, sizeof (struct proof));
+  proof *proof = kissat_mab_calloc (solver, 1, sizeof (struct proof));
   proof->binary = binary;
   proof->file = file;
   solver->proof = proof;
@@ -28,13 +28,13 @@ kissat_init_proof (kissat * solver, file * file, bool binary)
 }
 
 void
-kissat_release_proof (kissat * solver)
+kissat_mab_release_proof (kissat * solver)
 {
   proof *proof = solver->proof;
   assert (proof);
   LOG ("stopping to trace proof");
   RELEASE_STACK (proof->line);
-  kissat_free (solver, proof, sizeof (struct proof));
+  kissat_mab_free (solver, proof, sizeof (struct proof));
   solver->proof = 0;
 }
 
@@ -43,10 +43,10 @@ kissat_release_proof (kissat * solver)
 #include <inttypes.h>
 
 #define PERCENT_LINES(NAME) \
-  kissat_percent (proof->NAME, proof->lines)
+  kissat_mab_percent (proof->NAME, proof->lines)
 
 void
-kissat_print_proof_statistics (kissat * solver, bool verbose)
+kissat_mab_print_proof_statistics (kissat * solver, bool verbose)
 {
   proof *proof = solver->proof;
   PRINT_STAT ("proof_added", proof->added,
@@ -59,7 +59,7 @@ kissat_print_proof_statistics (kissat * solver, bool verbose)
     PRINT_STAT ("proof_lines", proof->lines, 100, "%", "");
   if (verbose)
     PRINT_STAT ("proof_literals", proof->literals,
-		kissat_average (proof->literals, proof->lines),
+		kissat_mab_average (proof->literals, proof->lines),
 		"", "per line");
 }
 
@@ -68,7 +68,7 @@ kissat_print_proof_statistics (kissat * solver, bool verbose)
 static void
 import_internal_proof_literal (kissat * solver, proof * proof, unsigned ilit)
 {
-  int elit = kissat_export_literal (solver, ilit);
+  int elit = kissat_mab_export_literal (solver, ilit);
   assert (elit);
   PUSH_STACK (proof->line, elit);
   proof->literals++;
@@ -128,12 +128,12 @@ print_binary_proof_line (proof * proof)
       while (x & ~0x7f)
 	{
 	  ch = (x & 0x7f) | 0x80;
-	  kissat_putc (proof->file, ch);
+	  kissat_mab_putc (proof->file, ch);
 	  x >>= 7;
 	}
-      kissat_putc (proof->file, (unsigned char) x);
+      kissat_mab_putc (proof->file, (unsigned char) x);
     }
-  kissat_putc (proof->file, 0);
+  kissat_mab_putc (proof->file, 0);
 }
 
 static void
@@ -152,7 +152,7 @@ print_non_binary_proof_line (proof * proof)
       unsigned eidx;
       if (elit < 0)
 	{
-	  kissat_putc (proof->file, '-');
+	  kissat_mab_putc (proof->file, '-');
 	  eidx = -elit;
 	}
       else
@@ -160,11 +160,11 @@ print_non_binary_proof_line (proof * proof)
       for (unsigned tmp = eidx; tmp; tmp /= 10)
 	*--p = '0' + (tmp % 10);
       while (p != end_of_buffer)
-	kissat_putc (proof->file, *p++);
-      kissat_putc (proof->file, ' ');
+	kissat_mab_putc (proof->file, *p++);
+      kissat_mab_putc (proof->file, ' ');
     }
-  kissat_putc (proof->file, '0');
-  kissat_putc (proof->file, '\n');
+  kissat_mab_putc (proof->file, '0');
+  kissat_mab_putc (proof->file, '\n');
 }
 
 static void
@@ -186,7 +186,7 @@ print_added_proof_line (proof * proof)
 {
   proof->added++;
   if (proof->binary)
-    kissat_putc (proof->file, 'a');
+    kissat_mab_putc (proof->file, 'a');
   print_proof_line (proof);
 }
 
@@ -194,14 +194,14 @@ static void
 print_delete_proof_line (proof * proof)
 {
   proof->deleted++;
-  kissat_putc (proof->file, 'd');
+  kissat_mab_putc (proof->file, 'd');
   if (!proof->binary)
-    kissat_putc (proof->file, ' ');
+    kissat_mab_putc (proof->file, ' ');
   print_proof_line (proof);
 }
 
 void
-kissat_add_binary_to_proof (kissat * solver, unsigned a, unsigned b)
+kissat_mab_add_binary_to_proof (kissat * solver, unsigned a, unsigned b)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -210,7 +210,7 @@ kissat_add_binary_to_proof (kissat * solver, unsigned a, unsigned b)
 }
 
 void
-kissat_add_clause_to_proof (kissat * solver, clause * c)
+kissat_mab_add_clause_to_proof (kissat * solver, clause * c)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -219,7 +219,7 @@ kissat_add_clause_to_proof (kissat * solver, clause * c)
 }
 
 void
-kissat_add_empty_to_proof (kissat * solver)
+kissat_mab_add_empty_to_proof (kissat * solver)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -228,7 +228,7 @@ kissat_add_empty_to_proof (kissat * solver)
 }
 
 void
-kissat_add_lits_to_proof (kissat * solver, size_t size, unsigned *ilits)
+kissat_mab_add_lits_to_proof (kissat * solver, size_t size, unsigned *ilits)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -237,7 +237,7 @@ kissat_add_lits_to_proof (kissat * solver, size_t size, unsigned *ilits)
 }
 
 void
-kissat_add_unit_to_proof (kissat * solver, unsigned ilit)
+kissat_mab_add_unit_to_proof (kissat * solver, unsigned ilit)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -247,7 +247,7 @@ kissat_add_unit_to_proof (kissat * solver, unsigned ilit)
 }
 
 void
-kissat_shrink_clause_in_proof (kissat * solver, clause * c,
+kissat_mab_shrink_clause_in_proof (kissat * solver, clause * c,
 			       unsigned remove, unsigned keep)
 {
   proof *proof = solver->proof;
@@ -267,7 +267,7 @@ kissat_shrink_clause_in_proof (kissat * solver, clause * c,
 }
 
 void
-kissat_delete_binary_from_proof (kissat * solver, unsigned a, unsigned b)
+kissat_mab_delete_binary_from_proof (kissat * solver, unsigned a, unsigned b)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -276,7 +276,7 @@ kissat_delete_binary_from_proof (kissat * solver, unsigned a, unsigned b)
 }
 
 void
-kissat_delete_clause_from_proof (kissat * solver, clause * c)
+kissat_mab_delete_clause_from_proof (kissat * solver, clause * c)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -285,7 +285,7 @@ kissat_delete_clause_from_proof (kissat * solver, clause * c)
 }
 
 void
-kissat_delete_external_from_proof (kissat * solver, size_t size, int *elits)
+kissat_mab_delete_external_from_proof (kissat * solver, size_t size, int *elits)
 {
   proof *proof = solver->proof;
   assert (proof);
@@ -294,7 +294,7 @@ kissat_delete_external_from_proof (kissat * solver, size_t size, int *elits)
 }
 
 void
-kissat_delete_internal_from_proof (kissat * solver,
+kissat_mab_delete_internal_from_proof (kissat * solver,
 				   size_t size, unsigned *ilits)
 {
   proof *proof = solver->proof;
@@ -304,5 +304,5 @@ kissat_delete_internal_from_proof (kissat * solver,
 }
 
 #else
-int kissat_proof_dummy_to_avoid_warning;
+int kissat_mab_proof_dummy_to_avoid_warning;
 #endif

@@ -7,7 +7,7 @@
 #include "xors.h"
 
 size_t
-kissat_mark_binaries (kissat * solver, unsigned lit)
+kissat_mab_mark_binaries (kissat * solver, unsigned lit)
 {
   value *marks = solver->marks;
   size_t res = 0;
@@ -27,7 +27,7 @@ kissat_mark_binaries (kissat * solver, unsigned lit)
 }
 
 void
-kissat_unmark_binaries (kissat * solver, unsigned lit)
+kissat_mab_unmark_binaries (kissat * solver, unsigned lit)
 {
   value *marks = solver->marks;
   watches *watches = &WATCHES (lit);
@@ -37,7 +37,7 @@ kissat_unmark_binaries (kissat * solver, unsigned lit)
 }
 
 bool
-kissat_find_gates (kissat * solver, unsigned lit)
+kissat_mab_find_gates (kissat * solver, unsigned lit)
 {
   solver->gate_eliminated = 0;
   solver->resolve_gate = false;
@@ -46,19 +46,19 @@ kissat_find_gates (kissat * solver, unsigned lit)
   const unsigned not_lit = NOT (lit);
   if (!WATCHES (not_lit).size)
     return false;
-  if (kissat_find_equivalence_gate (solver, lit))
+  if (kissat_mab_find_equivalence_gate (solver, lit))
     return true;
-  if (kissat_find_and_gate (solver, lit, 0))
+  if (kissat_mab_find_and_gate (solver, lit, 0))
     return true;
-  if (kissat_find_and_gate (solver, not_lit, 1))
+  if (kissat_mab_find_and_gate (solver, not_lit, 1))
     return true;
-  if (kissat_find_if_then_else_gate (solver, lit, 0))
+  if (kissat_mab_find_if_then_else_gate (solver, lit, 0))
     return true;
-  if (kissat_find_if_then_else_gate (solver, not_lit, 1))
+  if (kissat_mab_find_if_then_else_gate (solver, not_lit, 1))
     return true;
-  if (kissat_find_xor_gate (solver, lit, 0))
+  if (kissat_mab_find_xor_gate (solver, lit, 0))
     return true;
-  if (kissat_find_xor_gate (solver, not_lit, 1))
+  if (kissat_mab_find_xor_gate (solver, not_lit, 1))
     return true;
   return false;
 }
@@ -98,14 +98,14 @@ get_antecedents (kissat * solver, unsigned lit, unsigned negative)
   size_t size_antecedents = SIZE_STACK (*antecedents);
   LOG ("got %zu antecedent %.0f%% and %zu gate clauses %.0f%% "
        "out of %zu watches of literal %s",
-       size_antecedents, kissat_percent (size_antecedents, watches->size),
-       size_gates, kissat_percent (size_gates, watches->size),
+       size_antecedents, kissat_mab_percent (size_antecedents, watches->size),
+       size_gates, kissat_mab_percent (size_gates, watches->size),
        watches->size, LOGLIT (lit));
 #endif
 }
 
 void
-kissat_get_antecedents (kissat * solver, unsigned lit)
+kissat_mab_get_antecedents (kissat * solver, unsigned lit)
 {
   get_antecedents (solver, lit, 0);
   get_antecedents (solver, NOT (lit), 1);

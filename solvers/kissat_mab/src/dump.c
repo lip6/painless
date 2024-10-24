@@ -7,7 +7,7 @@
 static void
 dump_literal (kissat * solver, unsigned ilit)
 {
-  const int elit = kissat_export_literal (solver, ilit);
+  const int elit = kissat_mab_export_literal (solver, ilit);
   printf ("%u(%d)", ilit, elit);
   const int value = VALUE (ilit);
   if (value)
@@ -34,7 +34,7 @@ dump_clause (kissat * solver, clause * c)
     printf ("redundant glue %u", c->glue);
   else
     printf ("irredundant");
-  const reference ref = kissat_reference_clause (solver, c);
+  const reference ref = kissat_mab_reference_clause (solver, c);
   if (c->garbage)
     printf (" garbage");
   printf (" clause[%u]", ref);
@@ -49,7 +49,7 @@ dump_clause (kissat * solver, clause * c)
 static void
 dump_ref (kissat * solver, reference ref)
 {
-  clause *c = kissat_dereference_clause (solver, ref);
+  clause *c = kissat_mab_dereference_clause (solver, ref);
   dump_clause (solver, c);
 }
 
@@ -330,7 +330,7 @@ dump (kissat * solver)
   printf ("size = %u\n", solver->size);
   printf ("level = %u\n", solver->level);
   printf ("active = %u\n", solver->active);
-  printf ("assigned = %u\n", kissat_assigned (solver));
+  printf ("assigned = %u\n", kissat_mab_assigned (solver));
   printf ("unassigned = %u\n", solver->unassigned);
   dump_import (solver);
   dump_export (solver);
@@ -356,5 +356,5 @@ dump (kissat * solver)
 }
 
 #else
-int kissat_dump_dummy_to_avoid_warning;
+int kissat_mab_dump_dummy_to_avoid_warning;
 #endif

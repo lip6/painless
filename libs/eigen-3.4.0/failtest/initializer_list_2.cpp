@@ -10,7 +10,8 @@
 
 using namespace Eigen;
 
-int main()
+int
+main()
 {
-  Matrix<int, ROWS, COLS> {1, 2, 3};
+	Matrix<int, ROWS, COLS>{ 1, 2, 3 };
 }

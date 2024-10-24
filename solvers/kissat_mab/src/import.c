@@ -21,7 +21,7 @@ adjust_exports_for_external_literal(kissat *solver, unsigned eidx)
   import *import = &PEEK_STACK(solver->import, eidx);
   unsigned iidx = solver->vars;
   // printf("Before Enlarge: solver->vars = %d\n", iidx);
-  kissat_enlarge_variables(solver, iidx + 1);
+  kissat_mab_enlarge_variables(solver, iidx + 1);
   // printf("After Enlarge: solver->vars = %d\n", solver->vars);
   unsigned ilit = 2 * iidx;
   import->imported = true;
@@ -57,7 +57,7 @@ import_literal(kissat *solver, int elit)
 }
 
 unsigned
-kissat_import_literal(kissat *solver, int elit)
+kissat_mab_import_literal(kissat *solver, int elit)
 {
   assert(VALID_EXTERNAL_LITERAL(elit));
   if (GET_OPTION(tumble))

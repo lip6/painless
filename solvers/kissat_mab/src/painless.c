@@ -3,43 +3,43 @@
 #include "error.h"
 
 // For Sharing
-void kissat_clear_pclause(kissat *solver)
+void kissat_mab_clear_pclause(kissat *solver)
 {
     CLEAR_STACK(solver->pclause.lits);
     solver->pclause.glue = 0;
 }
 
-unsigned kissat_pclause_size(kissat *solver)
+unsigned kissat_mab_pclause_size(kissat *solver)
 {
     return SIZE_STACK(solver->pclause.lits);
 }
 
-void kissat_push_plit(kissat *solver, int lit)
+void kissat_mab_push_plit(kissat *solver, int lit)
 {
     PUSH_STACK(solver->pclause.lits, lit);
 }
 
-int kissat_pop_plit(kissat *solver)
+int kissat_mab_pop_plit(kissat *solver)
 {
     return POP_STACK(solver->pclause.lits);
 }
 
-int kissat_peek_plit(kissat *solver, unsigned idx)
+int kissat_mab_peek_plit(kissat *solver, unsigned idx)
 {
     return PEEK_STACK(solver->pclause.lits, idx);
 }
 
-void kissat_set_pglue(kissat *solver, unsigned new_glue)
+void kissat_mab_set_pglue(kissat *solver, unsigned new_glue)
 {
     solver->pclause.glue = new_glue;
 }
 
-unsigned kissat_get_pglue(kissat *solver)
+unsigned kissat_mab_get_pglue(kissat *solver)
 {
     return solver->pclause.glue;
 }
 
-char kissat_push_lits(kissat *solver, const int *external_lits, unsigned size)
+char kissat_mab_push_lits(kissat *solver, const int *external_lits, unsigned size)
 {
     CLEAR_STACK(solver->clause.lits);
     solver->clause.satisfied = false; /* used to ignore statified clauses and ones with an eliminated variable */
@@ -88,7 +88,7 @@ char kissat_push_lits(kissat *solver, const int *external_lits, unsigned size)
                 LOGP("The literal %d is falsified in clause at %p in solver %d ", external_lits[i], external_lits, solver->id_painless);
                 break;
             default:
-                kissat_fatal("ERROR, unexpected value %d for literal %d in solver %d!!", VALUE(internal_lit), external_lits[i], solver->id_painless);
+                kissat_mab_fatal("ERROR, unexpected value %d for literal %d in solver %d!!", VALUE(internal_lit), external_lits[i], solver->id_painless);
                 return false;
             }
         }
@@ -96,7 +96,7 @@ char kissat_push_lits(kissat *solver, const int *external_lits, unsigned size)
     return true;
 }
 
-void kissat_print_sharing_stats(kissat *solver)
+void kissat_mab_print_sharing_stats(kissat *solver)
 {
     printf("c----------[Kissat %d Stats]--------------\
     \nc General:\
@@ -116,43 +116,43 @@ void kissat_print_sharing_stats(kissat *solver)
 }
 
 // Kissat Init
-void kissat_set_import_unit_call(kissat *solver, char (*call)(void *, kissat *))
+void kissat_mab_set_import_unit_call(kissat *solver, char (*call)(void *, kissat *))
 {
     solver->cbkImportUnit = call;
 }
 
-void kissat_set_import_call(kissat *solver, char (*call)(void *, kissat *))
+void kissat_mab_set_import_call(kissat *solver, char (*call)(void *, kissat *))
 {
     solver->cbkImportClause = call;
 }
 
-void kissat_set_export_call(kissat *solver, char (*call)(void *, kissat *))
+void kissat_mab_set_export_call(kissat *solver, char (*call)(void *, kissat *))
 {
     solver->cbkExportClause = call;
 }
 
-void kissat_set_painless(kissat *solver, void *painless_kissat)
+void kissat_mab_set_painless(kissat *solver, void *painless_kissat)
 {
     solver->painless = painless_kissat;
 }
 
-void kissat_set_id(kissat *solver, int id)
+void kissat_mab_set_id(kissat *solver, int id)
 {
     solver->id_painless = id;
 }
 
-void kissat_set_maxVar(kissat *solver, unsigned maxVar)
+void kissat_mab_set_maxVar(kissat *solver, unsigned maxVar)
 {
     solver->max_var = maxVar;
 }
 
-unsigned kissat_get_maxVar(kissat *solver)
+unsigned kissat_mab_get_maxVar(kissat *solver)
 {
     return solver->max_var;
 }
 
 // Moved from application.c
-void kissat_mab_init(struct kissat *solver)
+void kissat_mab_mabvars_init(struct kissat *solver)
 {
     solver->step_chb = 0.1 * GET_OPTION(stepchb);
     solver->heuristic = GET_OPTION(heuristic);
@@ -170,7 +170,7 @@ void kissat_mab_init(struct kissat *solver)
 }
 
 // Interface some internal functions
-void kissat_set_phase(kissat *solver, unsigned external_var, int phase)
+void kissat_mab_set_phase(kissat *solver, unsigned external_var, int phase)
 {
     if (external_var >= SIZE_STACK(solver->import))
     {
@@ -190,15 +190,15 @@ void kissat_set_phase(kissat *solver, unsigned external_var, int phase)
     solver->phases[internal_var].saved = phase;  /* for saved */
 }
 
-char kissat_check_searches(kissat *solver)
+char kissat_mab_check_searches(kissat *solver)
 {
-    return kissat_get_searches(&solver->statistics) > 0;
+    return kissat_mab_get_searches(&solver->statistics) > 0;
 }
 
-void kissat_check_model(kissat *solver)
+void kissat_mab_check_model(kissat *solver)
 {
 #ifndef NDEBUG
-    kissat_check_satisfying_assignment(solver);
+    kissat_mab_check_satisfying_assignment(solver);
 #else
     return;
 #endif

@@ -10,13 +10,13 @@
 #include <string.h>
 
 #define MB \
-  (kissat_current_resident_set_size ()/(double)(1<<20))
+  (kissat_mab_current_resident_set_size ()/(double)(1<<20))
 
 #define REMAINING_VARIABLES \
-  kissat_percent (solver->active, SIZE_STACK(solver->import))
+  kissat_mab_percent (solver->active, SIZE_STACK(solver->import))
 
 #define REPORTS \
-REP("seconds", "5.2f", kissat_time (solver)) \
+REP("seconds", "5.2f", kissat_mab_time (solver)) \
 REP("MB", "2.0f", MB) \
 REP("level", ".0f", AVERAGE (level)) \
 REP("reductions", "2" PRIu64, statistics->reductions) \
@@ -30,10 +30,10 @@ REP("variables", "2u", solver->active) \
 REP("remaining", "1.0f%%" , REMAINING_VARIABLES) \
 
 void
-kissat_report (kissat * solver, bool verbose, char type)
+kissat_mab_report (kissat * solver, bool verbose, char type)
 {
 //   statistics *statistics = &solver->statistics;
-//   const int verbosity = kissat_verbosity (solver);
+//   const int verbosity = kissat_mab_verbosity (solver);
 //   if (verbosity < 0)
 //     return;
 //   if (verbose && verbosity < 2)
@@ -145,6 +145,6 @@ kissat_report (kissat * solver, bool verbose, char type)
 
 #else
 
-int kissat_report_dummy_to_avoid_warning;
+int kissat_mab_report_dummy_to_avoid_warning;
 
 #endif

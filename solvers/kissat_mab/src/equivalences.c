@@ -3,11 +3,11 @@
 #include "logging.h"
 
 bool
-kissat_find_equivalence_gate (kissat * solver, unsigned lit)
+kissat_mab_find_equivalence_gate (kissat * solver, unsigned lit)
 {
   if (!GET_OPTION (equivalences))
     return false;
-  if (!kissat_mark_binaries (solver, lit))
+  if (!kissat_mab_mark_binaries (solver, lit))
     return false;
   value *marks = solver->marks;
   unsigned not_lit = NOT (lit);
@@ -24,15 +24,15 @@ kissat_find_equivalence_gate (kissat * solver, unsigned lit)
       replace = other;
       break;
     }
-  kissat_unmark_binaries (solver, lit);
+  kissat_mab_unmark_binaries (solver, lit);
   if (replace == INVALID_LIT)
     return false;
   LOG ("found equivalence gate %s = %s", LOGLIT (lit), LOGLIT (replace));
 
-  const watch watch1 = kissat_binary_watch (replace, false, false);
+  const watch watch1 = kissat_mab_binary_watch (replace, false, false);
   PUSH_STACK (solver->gates[1], watch1);
 
-  const watch watch0 = kissat_binary_watch (NOT (replace), false, false);
+  const watch watch0 = kissat_mab_binary_watch (NOT (replace), false, false);
   PUSH_STACK (solver->gates[0], watch0);
   solver->gate_eliminated = GATE_ELIMINATED (equivalences);
   return true;

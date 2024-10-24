@@ -145,14 +145,14 @@ static bool
 match_lits_ref (kissat * solver, const value * marks, const value * values,
 		unsigned size, reference ref)
 {
-  clause *c = kissat_dereference_clause (solver, ref);
+  clause *c = kissat_mab_dereference_clause (solver, ref);
   unsigned found = 0;
   for (all_literals_in_clause (lit, c))
     {
       const value value = values[lit];
       if (value > 0)
 	{
-	  kissat_eliminate_clause (solver, c, INVALID_LIT);
+	  kissat_mab_eliminate_clause (solver, c, INVALID_LIT);
 	  return false;
 	}
       if (value < 0)
@@ -213,7 +213,7 @@ sort_watch_pointers (kissat * solver, patches * patches)
 }
 
 bool
-kissat_find_xor_gate (kissat * solver, unsigned lit, unsigned negative)
+kissat_mab_find_xor_gate (kissat * solver, unsigned lit, unsigned negative)
 {
   if (!GET_OPTION (xors))
     return false;
@@ -269,7 +269,7 @@ kissat_find_xor_gate (kissat * solver, unsigned lit, unsigned negative)
 	break;
 
       steps++;
-      clause *c = kissat_dereference_clause (solver, p->large.ref);
+      clause *c = kissat_mab_dereference_clause (solver, p->large.ref);
       if (c->size > size_limit)
 	continue;
 

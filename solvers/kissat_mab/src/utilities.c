@@ -3,7 +3,7 @@
 #include <string.h>
 
 bool
-kissat_has_suffix (const char *str, const char *suffix)
+kissat_mab_has_suffix (const char *str, const char *suffix)
 {
   size_t l = strlen (str);
   size_t k = strlen (suffix);
@@ -13,7 +13,7 @@ kissat_has_suffix (const char *str, const char *suffix)
 }
 
 unsigned
-kissat_ldceil (word w)
+kissat_mab_ldceil (word w)
 {
   unsigned res = 0;
   word limit = 1;

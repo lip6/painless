@@ -233,8 +233,8 @@ static word const m4ri_ffff = __M4RI_CONVERT_TO_WORD(-1);
  * \param value Either 0 or 1.
  */
 
-#define __M4RI_WRITE_BIT(w, spot, value)                                                           \
-  ((w) = (((w) & ~(m4ri_one << (spot))) | (__M4RI_CONVERT_TO_WORD(value) << (spot))))
+#define __M4RI_WRITE_BIT(w, spot, value)                                                                               \
+	((w) = (((w) & ~(m4ri_one << (spot))) | (__M4RI_CONVERT_TO_WORD(value) << (spot))))
 
 /**
  * \brief Flip the spot in the word w
@@ -320,14 +320,16 @@ static word const m4ri_ffff = __M4RI_CONVERT_TO_WORD(-1);
  * \param v The word whose bits need to be reversed.
  */
 
-static inline word m4ri_swap_bits(word v) {
-  v = ((v >> 1) & 0x5555555555555555ULL) | ((v & 0x5555555555555555ULL) << 1);
-  v = ((v >> 2) & 0x3333333333333333ULL) | ((v & 0x3333333333333333ULL) << 2);
-  v = ((v >> 4) & 0x0F0F0F0F0F0F0F0FULL) | ((v & 0x0F0F0F0F0F0F0F0FULL) << 4);
-  v = ((v >> 8) & 0x00FF00FF00FF00FFULL) | ((v & 0x00FF00FF00FF00FFULL) << 8);
-  v = ((v >> 16) & 0x0000FFFF0000FFFFULL) | ((v & 0x0000FFFF0000FFFFULL) << 16);
-  v = (v >> 32) | (v << 32);
-  return v;
+static inline word
+m4ri_swap_bits(word v)
+{
+	v = ((v >> 1) & 0x5555555555555555ULL) | ((v & 0x5555555555555555ULL) << 1);
+	v = ((v >> 2) & 0x3333333333333333ULL) | ((v & 0x3333333333333333ULL) << 2);
+	v = ((v >> 4) & 0x0F0F0F0F0F0F0F0FULL) | ((v & 0x0F0F0F0F0F0F0F0FULL) << 4);
+	v = ((v >> 8) & 0x00FF00FF00FF00FFULL) | ((v & 0x00FF00FF00FF00FFULL) << 8);
+	v = ((v >> 16) & 0x0000FFFF0000FFFFULL) | ((v & 0x0000FFFF0000FFFFULL) << 16);
+	v = (v >> 32) | (v << 32);
+	return v;
 }
 
 /**
@@ -343,29 +345,48 @@ static inline word m4ri_swap_bits(word v) {
  * \see m4ri_spread_bits
  */
 
-static inline word m4ri_shrink_bits(word const from, rci_t *const Q, int const length,
-                                    int const base) {
-  word to = 0;
-  switch (length - 1) {
-  case 15: to |= (from & (m4ri_one << (Q[15] - base))) >> (Q[15] - 15 - base);
-  case 14: to |= (from & (m4ri_one << (Q[14] - base))) >> (Q[14] - 14 - base);
-  case 13: to |= (from & (m4ri_one << (Q[13] - base))) >> (Q[13] - 13 - base);
-  case 12: to |= (from & (m4ri_one << (Q[12] - base))) >> (Q[12] - 12 - base);
-  case 11: to |= (from & (m4ri_one << (Q[11] - base))) >> (Q[11] - 11 - base);
-  case 10: to |= (from & (m4ri_one << (Q[10] - base))) >> (Q[10] - 10 - base);
-  case 9: to |= (from & (m4ri_one << (Q[9] - base))) >> (Q[9] - 9 - base);
-  case 8: to |= (from & (m4ri_one << (Q[8] - base))) >> (Q[8] - 8 - base);
-  case 7: to |= (from & (m4ri_one << (Q[7] - base))) >> (Q[7] - 7 - base);
-  case 6: to |= (from & (m4ri_one << (Q[6] - base))) >> (Q[6] - 6 - base);
-  case 5: to |= (from & (m4ri_one << (Q[5] - base))) >> (Q[5] - 5 - base);
-  case 4: to |= (from & (m4ri_one << (Q[4] - base))) >> (Q[4] - 4 - base);
-  case 3: to |= (from & (m4ri_one << (Q[3] - base))) >> (Q[3] - 3 - base);
-  case 2: to |= (from & (m4ri_one << (Q[2] - base))) >> (Q[2] - 2 - base);
-  case 1: to |= (from & (m4ri_one << (Q[1] - base))) >> (Q[1] - 1 - base);
-  case 0: to |= (from & (m4ri_one << (Q[0] - base))) >> (Q[0] - 0 - base); break;
-  default: abort();
-  }
-  return to;
+static inline word
+m4ri_shrink_bits(word const from, rci_t* const Q, int const length, int const base)
+{
+	word to = 0;
+	switch (length - 1) {
+		case 15:
+			to |= (from & (m4ri_one << (Q[15] - base))) >> (Q[15] - 15 - base);
+		case 14:
+			to |= (from & (m4ri_one << (Q[14] - base))) >> (Q[14] - 14 - base);
+		case 13:
+			to |= (from & (m4ri_one << (Q[13] - base))) >> (Q[13] - 13 - base);
+		case 12:
+			to |= (from & (m4ri_one << (Q[12] - base))) >> (Q[12] - 12 - base);
+		case 11:
+			to |= (from & (m4ri_one << (Q[11] - base))) >> (Q[11] - 11 - base);
+		case 10:
+			to |= (from & (m4ri_one << (Q[10] - base))) >> (Q[10] - 10 - base);
+		case 9:
+			to |= (from & (m4ri_one << (Q[9] - base))) >> (Q[9] - 9 - base);
+		case 8:
+			to |= (from & (m4ri_one << (Q[8] - base))) >> (Q[8] - 8 - base);
+		case 7:
+			to |= (from & (m4ri_one << (Q[7] - base))) >> (Q[7] - 7 - base);
+		case 6:
+			to |= (from & (m4ri_one << (Q[6] - base))) >> (Q[6] - 6 - base);
+		case 5:
+			to |= (from & (m4ri_one << (Q[5] - base))) >> (Q[5] - 5 - base);
+		case 4:
+			to |= (from & (m4ri_one << (Q[4] - base))) >> (Q[4] - 4 - base);
+		case 3:
+			to |= (from & (m4ri_one << (Q[3] - base))) >> (Q[3] - 3 - base);
+		case 2:
+			to |= (from & (m4ri_one << (Q[2] - base))) >> (Q[2] - 2 - base);
+		case 1:
+			to |= (from & (m4ri_one << (Q[1] - base))) >> (Q[1] - 1 - base);
+		case 0:
+			to |= (from & (m4ri_one << (Q[0] - base))) >> (Q[0] - 0 - base);
+			break;
+		default:
+			abort();
+	}
+	return to;
 }
 
 /**
@@ -385,29 +406,48 @@ static inline word m4ri_shrink_bits(word const from, rci_t *const Q, int const l
  * \see m4ri_shrink_bits
  */
 
-static inline word m4ri_spread_bits(word const from, rci_t *const Q, int const length,
-                                    int const base) {
-  word to = 0;
-  switch (length - 1) {
-  case 15: to |= (from & (m4ri_one << (15))) << (Q[15] - 15 - base);
-  case 14: to |= (from & (m4ri_one << (14))) << (Q[14] - 14 - base);
-  case 13: to |= (from & (m4ri_one << (13))) << (Q[13] - 13 - base);
-  case 12: to |= (from & (m4ri_one << (12))) << (Q[12] - 12 - base);
-  case 11: to |= (from & (m4ri_one << (11))) << (Q[11] - 11 - base);
-  case 10: to |= (from & (m4ri_one << (10))) << (Q[10] - 10 - base);
-  case 9: to |= (from & (m4ri_one << (9))) << (Q[9] - 9 - base);
-  case 8: to |= (from & (m4ri_one << (8))) << (Q[8] - 8 - base);
-  case 7: to |= (from & (m4ri_one << (7))) << (Q[7] - 7 - base);
-  case 6: to |= (from & (m4ri_one << (6))) << (Q[6] - 6 - base);
-  case 5: to |= (from & (m4ri_one << (5))) << (Q[5] - 5 - base);
-  case 4: to |= (from & (m4ri_one << (4))) << (Q[4] - 4 - base);
-  case 3: to |= (from & (m4ri_one << (3))) << (Q[3] - 3 - base);
-  case 2: to |= (from & (m4ri_one << (2))) << (Q[2] - 2 - base);
-  case 1: to |= (from & (m4ri_one << (1))) << (Q[1] - 1 - base);
-  case 0: to |= (from & (m4ri_one << (0))) << (Q[0] - 0 - base); break;
-  default: abort();
-  }
-  return to;
+static inline word
+m4ri_spread_bits(word const from, rci_t* const Q, int const length, int const base)
+{
+	word to = 0;
+	switch (length - 1) {
+		case 15:
+			to |= (from & (m4ri_one << (15))) << (Q[15] - 15 - base);
+		case 14:
+			to |= (from & (m4ri_one << (14))) << (Q[14] - 14 - base);
+		case 13:
+			to |= (from & (m4ri_one << (13))) << (Q[13] - 13 - base);
+		case 12:
+			to |= (from & (m4ri_one << (12))) << (Q[12] - 12 - base);
+		case 11:
+			to |= (from & (m4ri_one << (11))) << (Q[11] - 11 - base);
+		case 10:
+			to |= (from & (m4ri_one << (10))) << (Q[10] - 10 - base);
+		case 9:
+			to |= (from & (m4ri_one << (9))) << (Q[9] - 9 - base);
+		case 8:
+			to |= (from & (m4ri_one << (8))) << (Q[8] - 8 - base);
+		case 7:
+			to |= (from & (m4ri_one << (7))) << (Q[7] - 7 - base);
+		case 6:
+			to |= (from & (m4ri_one << (6))) << (Q[6] - 6 - base);
+		case 5:
+			to |= (from & (m4ri_one << (5))) << (Q[5] - 5 - base);
+		case 4:
+			to |= (from & (m4ri_one << (4))) << (Q[4] - 4 - base);
+		case 3:
+			to |= (from & (m4ri_one << (3))) << (Q[3] - 3 - base);
+		case 2:
+			to |= (from & (m4ri_one << (2))) << (Q[2] - 2 - base);
+		case 1:
+			to |= (from & (m4ri_one << (1))) << (Q[1] - 1 - base);
+		case 0:
+			to |= (from & (m4ri_one << (0))) << (Q[0] - 0 - base);
+			break;
+		default:
+			abort();
+	}
+	return to;
 }
 
 /**
@@ -463,14 +503,16 @@ static inline word m4ri_spread_bits(word const from, rci_t *const Q, int const l
  * \param b Word
  */
 
-static inline int m4ri_lesser_LSB(word a, word b) {
-  uint64_t const ia = __M4RI_CONVERT_TO_UINT64_T(a);
-  uint64_t const ib = __M4RI_CONVERT_TO_UINT64_T(b);
-  /*
-   * If a is zero then we should always return false, otherwise
-   * if b is zero we should return true iff a has at least one bit set.
-   */
-  return !(ib ? ((ia - 1) ^ ia) & ib : !ia);
+static inline int
+m4ri_lesser_LSB(word a, word b)
+{
+	uint64_t const ia = __M4RI_CONVERT_TO_UINT64_T(a);
+	uint64_t const ib = __M4RI_CONVERT_TO_UINT64_T(b);
+	/*
+	 * If a is zero then we should always return false, otherwise
+	 * if b is zero we should return true iff a has at least one bit set.
+	 */
+	return !(ib ? ((ia - 1) ^ ia) & ib : !ia);
 }
 
 /**** Error Handling *****/
@@ -490,7 +532,8 @@ static inline int m4ri_lesser_LSB(word a, word b) {
  * \warning The provided string is not free'd.
  */
 
-void m4ri_die(const char *errormessage, ...);
+void
+m4ri_die(const char* errormessage, ...);
 
 /**** IO *****/
 
@@ -502,7 +545,8 @@ void m4ri_die(const char *errormessage, ...);
  * \param colon Insert a Colon after every 4-th bit.
  * \warning Assumes destination has m4ri_radix*1.3 bytes available
  */
-void m4ri_word_to_str(char *destination, word data, int colon);
+void
+m4ri_word_to_str(char* destination, word data, int colon);
 
 /**
  * \brief Return 1 or 0 uniformly randomly distributed.
@@ -510,12 +554,14 @@ void m4ri_word_to_str(char *destination, word data, int colon);
  * \todo Allow user to provide her own random() function.
  */
 
-static inline BIT m4ri_coin_flip() {
-  if (rand() < RAND_MAX / 2) {
-    return 0;
-  } else {
-    return 1;
-  }
+static inline BIT
+m4ri_coin_flip()
+{
+	if (rand() < RAND_MAX / 2) {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 /**
@@ -524,7 +570,8 @@ static inline BIT m4ri_coin_flip() {
  * \todo Allow user to provide her own random() function.
  */
 
-word m4ri_random_word();
+word
+m4ri_random_word();
 
 /***** Initialization *****/
 
@@ -538,7 +585,8 @@ word m4ri_random_word();
 #if defined(__GNUC__)
 void __attribute__((constructor)) m4ri_init(void);
 #else
-void m4ri_init(void);
+void
+m4ri_init(void);
 #endif
 
 #ifdef __SUNPRO_C
@@ -555,7 +603,8 @@ void m4ri_init(void);
 #if defined(__GNUC__)
 void __attribute__((destructor)) m4ri_fini(void);
 #else
-void m4ri_fini(void);
+void
+m4ri_fini(void);
 #endif
 
 #ifdef __SUNPRO_C
@@ -577,8 +626,8 @@ void m4ri_fini(void);
 #define __M4RI_CPU_L3_CACHE __M4RI_CPU_L2_CACHE
 #else
 #define __M4RI_CPU_L3_CACHE 4194304
-#endif  // __M4RI_CPU_L2_CACHE
-#endif  // __M4RI_CPU_L3_CACHE
+#endif // __M4RI_CPU_L2_CACHE
+#endif // __M4RI_CPU_L3_CACHE
 
 #if __M4RI_CPU_L2_CACHE == 0
 /*
@@ -587,7 +636,7 @@ void m4ri_fini(void);
  */
 #undef __M4RI_CPU_L2_CACHE
 #define __M4RI_CPU_L2_CACHE 262144
-#endif  // __M4RI_CPU_L2_CACHE
+#endif // __M4RI_CPU_L2_CACHE
 
 #if __M4RI_CPU_L1_CACHE == 0
 /*
@@ -596,7 +645,7 @@ void m4ri_fini(void);
  */
 #undef __M4RI_CPU_L1_CACHE
 #define __M4RI_CPU_L1_CACHE 16384
-#endif  // __M4RI_CPU_L1_CACHE
+#endif // __M4RI_CPU_L1_CACHE
 
 /// @endcond
 
@@ -611,26 +660,29 @@ void m4ri_fini(void);
  * \todo Allow user to register calloc function.
  */
 
-static inline void *m4ri_mm_calloc(size_t count, size_t size) {
-  void *newthing;
+static inline void*
+m4ri_mm_calloc(size_t count, size_t size)
+{
+	void* newthing;
 #if __M4RI_USE_MM_MALLOC
-  newthing = _mm_malloc(count * size, 64);
+	newthing = _mm_malloc(count * size, 64);
 #elif __M4RI_USE_POSIX_MEMALIGN
-  int error = posix_memalign(&newthing, 64, count * size);
-  if (error) newthing = NULL;
+	int error = posix_memalign(&newthing, 64, count * size);
+	if (error)
+		newthing = NULL;
 #else
-  newthing = calloc(count, size);
+	newthing = calloc(count, size);
 #endif
 
-  if (newthing == NULL) {
-    m4ri_die("m4ri_mm_calloc: calloc returned NULL\n");
-    return NULL; /* unreachable. */
-  }
+	if (newthing == NULL) {
+		m4ri_die("m4ri_mm_calloc: calloc returned NULL\n");
+		return NULL; /* unreachable. */
+	}
 #if __M4RI_USE_MM_MALLOC || __M4RI_USE_POSIX_MEMALIGN
-  char *b = (char *)newthing;
-  memset(b, 0, count * size);
+	char* b = (char*)newthing;
+	memset(b, 0, count * size);
 #endif
-  return newthing;
+	return newthing;
 }
 
 /**
@@ -647,24 +699,27 @@ static inline void *m4ri_mm_calloc(size_t count, size_t size) {
  * \todo Allow user to register malloc function.
  */
 
-static inline void *m4ri_mm_malloc_aligned(size_t size, size_t alignment) {
-  void *newthing;
+static inline void*
+m4ri_mm_malloc_aligned(size_t size, size_t alignment)
+{
+	void* newthing;
 
 #if __M4RI_USE_MM_MALLOC
-  newthing = _mm_malloc(size, alignment);
+	newthing = _mm_malloc(size, alignment);
 #elif __M4RI_USE_POSIX_MEMALIGN
-  int error = posix_memalign(&newthing, alignment, size);
-  if (error) newthing = NULL;
+	int error = posix_memalign(&newthing, alignment, size);
+	if (error)
+		newthing = NULL;
 #else
-  newthing = malloc(size);
+	newthing = malloc(size);
 #endif
 
-  if (newthing == NULL && (size > 0)) {
-    m4ri_die("m4ri_mm_malloc: malloc returned NULL\n");
-    return NULL; /* unreachable */
-  } else {
-    return newthing;
-  }
+	if (newthing == NULL && (size > 0)) {
+		m4ri_die("m4ri_mm_malloc: malloc returned NULL\n");
+		return NULL; /* unreachable */
+	} else {
+		return newthing;
+	}
 }
 
 /**
@@ -677,22 +732,25 @@ static inline void *m4ri_mm_malloc_aligned(size_t size, size_t alignment) {
  * \todo Allow user to register malloc function.
  */
 
-static inline void *m4ri_mm_malloc(size_t size) {
-  void *newthing;
+static inline void*
+m4ri_mm_malloc(size_t size)
+{
+	void* newthing;
 #if __M4RI_USE_MM_MALLOC
-  newthing = _mm_malloc(size, 64);
+	newthing = _mm_malloc(size, 64);
 #elif __M4RI_USE_POSIX_MEMALIGN
-  int error = posix_memalign(&newthing, 64, size);
-  if (error) newthing = NULL;
+	int error = posix_memalign(&newthing, 64, size);
+	if (error)
+		newthing = NULL;
 #else
-  newthing = malloc(size);
-#endif  //__M4RI_USE_MM_MALLOC
-  if (newthing == NULL && (size > 0)) {
-    m4ri_die("m4ri_mm_malloc: malloc returned NULL\n");
-    return NULL; /* unreachable */
-  } else {
-    return newthing;
-  }
+	newthing = malloc(size);
+#endif //__M4RI_USE_MM_MALLOC
+	if (newthing == NULL && (size > 0)) {
+		m4ri_die("m4ri_mm_malloc: malloc returned NULL\n");
+		return NULL; /* unreachable */
+	} else {
+		return newthing;
+	}
 }
 
 /**
@@ -704,11 +762,13 @@ static inline void *m4ri_mm_malloc(size_t size) {
  */
 
 /* void m4ri_mm_free(void *condemned, ...); */
-static inline void m4ri_mm_free(void *condemned, ...) {
+static inline void
+m4ri_mm_free(void* condemned, ...)
+{
 #if __M4RI_USE_MM_MALLOC
-  _mm_free(condemned);
+	_mm_free(condemned);
 #else
-  free(condemned);
+	free(condemned);
 #endif
 }
 
@@ -734,4 +794,4 @@ static inline void m4ri_mm_free(void *condemned, ...) {
 
 //// @endcond
 
-#endif  // M4RI_MISC_H
+#endif // M4RI_MISC_H

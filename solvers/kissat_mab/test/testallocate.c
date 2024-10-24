@@ -10,29 +10,29 @@ test_allocate_basic (void)
 {
   DECLARE_AND_INIT_SOLVER (solver);
 
-  int *p = kissat_malloc (solver, 1 << 30);
-  assume (kissat_aligned_pointer (p));
-  kissat_free (solver, p, 1 << 30);
+  int *p = kissat_mab_malloc (solver, 1 << 30);
+  assume (kissat_mab_aligned_pointer (p));
+  kissat_mab_free (solver, p, 1 << 30);
 #ifndef NMETRICS
   assert (!solver->statistics.allocated_current);
   assert (solver->statistics.allocated_max == 1u << 30);
 #endif
-  p = kissat_calloc (solver, 1 << 28, 4);
-  assume (kissat_aligned_pointer (p));
+  p = kissat_mab_calloc (solver, 1 << 28, 4);
+  assume (kissat_mab_aligned_pointer (p));
   for (unsigned i = 0; i < 28; i++)
     assert (!p[1u << i]);
-  kissat_dealloc (solver, p, 1 << 28, 4);
+  kissat_mab_dealloc (solver, p, 1 << 28, 4);
 #ifndef NMETRICS
   assert (!solver->statistics.allocated_current);
   assert (solver->statistics.allocated_max == 1u << 30);
 #endif
-  char *s = kissat_strdup (solver, "test");
-  assume (kissat_aligned_pointer (s));
+  char *s = kissat_mab_strdup (solver, "test");
+  assume (kissat_mab_aligned_pointer (s));
   assert (!strcmp (s, "test"));
 #ifndef NMETRICS
   assert (solver->statistics.allocated_current == 5);
 #endif
-  kissat_delstr (solver, s);
+  kissat_mab_delstr (solver, s);
 #ifndef NMETRICS
   assert (!solver->statistics.allocated_current);
 #endif
@@ -42,9 +42,9 @@ static void
 test_allocate_coverage (void)
 {
   DECLARE_AND_INIT_SOLVER (solver);
-  void *p = kissat_nrealloc (solver, 0, 0, 0, 0);
+  void *p = kissat_mab_nrealloc (solver, 0, 0, 0, 0);
   assert (!p);
-  p = kissat_realloc (solver, 0, 0, 0);
+  p = kissat_mab_realloc (solver, 0, 0, 0);
   assert (!p);
 }
 
@@ -62,18 +62,18 @@ abort_call_back (void)
 
 #define ALLOCATION_ERROR(CALL) \
 do { \
-  kissat_call_function_instead_of_abort (abort_call_back); \
+  kissat_mab_call_function_instead_of_abort (abort_call_back); \
   int val = setjmp (jump_buffer); \
   if (val) \
     { \
-      kissat_call_function_instead_of_abort (0); \
+      kissat_mab_call_function_instead_of_abort (0); \
       if (val != 42) \
 	FATAL ("expected '42' as result of 'setjmp' for '" #CALL "'"); \
     } \
   else \
     { \
       CALL; \
-      kissat_call_function_instead_of_abort (0); \
+      kissat_mab_call_function_instead_of_abort (0); \
       FATAL ("long jump not taken in '" #CALL "'"); \
     } \
 } while (0)
@@ -82,13 +82,13 @@ static void
 test_allocate_error (void)
 {
   DECLARE_AND_INIT_SOLVER (solver);
-  ALLOCATION_ERROR (kissat_malloc (solver, MAX_SIZE_T));
-  ALLOCATION_ERROR (kissat_calloc (solver, MAX_SIZE_T, MAX_SIZE_T));
-  ALLOCATION_ERROR (kissat_calloc (solver, 1, MAX_SIZE_T));
-  ALLOCATION_ERROR (kissat_calloc (solver, MAX_SIZE_T, 1));
-  ALLOCATION_ERROR (kissat_realloc (solver, 0, 0, MAX_SIZE_T));
-  ALLOCATION_ERROR (kissat_nrealloc (solver, 0, 0, MAX_SIZE_T, MAX_SIZE_T));
-  ALLOCATION_ERROR (kissat_dealloc (solver, 0, MAX_SIZE_T, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_malloc (solver, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_calloc (solver, MAX_SIZE_T, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_calloc (solver, 1, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_calloc (solver, MAX_SIZE_T, 1));
+  ALLOCATION_ERROR (kissat_mab_realloc (solver, 0, 0, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_nrealloc (solver, 0, 0, MAX_SIZE_T, MAX_SIZE_T));
+  ALLOCATION_ERROR (kissat_mab_dealloc (solver, 0, MAX_SIZE_T, MAX_SIZE_T));
 }
 
 #endif

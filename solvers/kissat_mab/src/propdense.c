@@ -19,7 +19,7 @@ non_watching_propagate_literal (kissat * solver,
   const unsigned not_lit = NOT (lit);
 
   watches *watches = &WATCHES (not_lit);
-  unsigned ticks = 1 + kissat_cache_lines (watches->size, sizeof (watch));
+  unsigned ticks = 1 + kissat_mab_cache_lines (watches->size, sizeof (watch));
 
   const word *arena = BEGIN_STACK (solver->arena);
   assigned *assigned = solver->assigned;
@@ -45,7 +45,7 @@ non_watching_propagate_literal (kissat * solver,
 	      return false;
 	    }
 	  const bool redundant = watch.binary.redundant;
-	  kissat_assign_binary (solver, values, assigned, redundant, other,
+	  kissat_mab_assign_binary (solver, values, assigned, redundant, other,
 				not_lit);
 	}
       else
@@ -82,7 +82,7 @@ non_watching_propagate_literal (kissat * solver,
 		  if (!level)
 		    {
 		      LOGCLS (c, "%s satisfied", LOGLIT (other));
-		      kissat_mark_clause_as_garbage (solver, c);
+		      kissat_mab_mark_clause_as_garbage (solver, c);
 		    }
 		  break;
 		}
@@ -101,7 +101,7 @@ non_watching_propagate_literal (kissat * solver,
 	      return false;
 	    }
 	  if (non_false == 1)
-	    kissat_assign_reference (solver, values, assigned, unit, ref, c);
+	    kissat_mab_assign_reference (solver, values, assigned, unit, ref, c);
 	}
     }
 
@@ -112,7 +112,7 @@ non_watching_propagate_literal (kissat * solver,
 }
 
 bool
-kissat_dense_propagate (kissat * solver, unsigned limit, unsigned ignore_idx)
+kissat_mab_dense_propagate (kissat * solver, unsigned limit, unsigned ignore_idx)
 {
   assert (!solver->probing);
   assert (!solver->watching);

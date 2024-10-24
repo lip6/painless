@@ -41,9 +41,9 @@ assign_and_propagate_units (kissat * solver, unsigneds * units)
 	}
       if (!value)
 	{
-	  kissat_assign_unit (solver, unit);
+	  kissat_mab_assign_unit (solver, unit);
 	  INC (failed);
-	  if (!kissat_probing_propagate (solver, 0))
+	  if (!kissat_mab_probing_propagate (solver, 0))
 	    continue;
 	  LOG ("propagation of unit failed");
 	}
@@ -60,8 +60,8 @@ static void
 determine_representatives (kissat * solver, unsigned *repr)
 {
   size_t bytes = LITS * sizeof (unsigned);
-  unsigned *mark = kissat_calloc (solver, LITS, sizeof *mark);
-  unsigned *reach = kissat_malloc (solver, LITS * sizeof *reach);
+  unsigned *mark = kissat_mab_calloc (solver, LITS, sizeof *mark);
+  unsigned *reach = kissat_mab_malloc (solver, LITS * sizeof *reach);
   watches *all_watches = solver->watches;
   const flags *flags = solver->flags;
   unsigned reached = 0;
@@ -223,8 +223,8 @@ determine_representatives (kissat * solver, unsigned *repr)
   LOG ("found %zu units", SIZE_STACK (units));
   assign_and_propagate_units (solver, &units);
   RELEASE_STACK (units);
-  kissat_free (solver, reach, bytes);
-  kissat_free (solver, mark, bytes);
+  kissat_mab_free (solver, reach, bytes);
+  kissat_mab_free (solver, mark, bytes);
   for (all_literals (lit))
     if (repr[lit] == INVALID_LIT)
       repr[lit] = lit;
@@ -235,7 +235,7 @@ add_representative_equivalences (kissat * solver, unsigned *repr)
 {
   if (solver->inconsistent)
     return 0;
-  bool *eliminate = kissat_calloc (solver, VARS, sizeof *eliminate);
+  bool *eliminate = kissat_mab_calloc (solver, VARS, sizeof *eliminate);
   for (all_variables (idx))
     {
       if (!ACTIVE (idx))
@@ -289,24 +289,24 @@ remove_representative_equivalences (kissat * solver,
 	  DELETE_BINARY_FROM_PROOF (lit, not_other);
 
 	  INC (substituted);
-	  kissat_mark_eliminated_variable (solver, idx);
+	  kissat_mab_mark_eliminated_variable (solver, idx);
 	  const value other_value = values[other];
 	  if (incremental || other_value)
 	    {
 	      if (other_value <= 0)
-		kissat_weaken_binary (solver, not_lit, other);
+		kissat_mab_weaken_binary (solver, not_lit, other);
 	      if (other_value >= 0)
-		kissat_weaken_binary (solver, lit, not_other);
+		kissat_mab_weaken_binary (solver, lit, not_other);
 	    }
 	  else
 	    {
-	      kissat_weaken_binary (solver, not_lit, other);
-	      kissat_weaken_unit (solver, lit);
+	      kissat_mab_weaken_binary (solver, not_lit, other);
+	      kissat_mab_weaken_unit (solver, lit);
 	    }
 	}
     }
   if (eliminate)
-    kissat_dealloc (solver, eliminate, VARS, sizeof *eliminate);
+    kissat_mab_dealloc (solver, eliminate, VARS, sizeof *eliminate);
 }
 
 static void
@@ -343,7 +343,7 @@ substitute_binaries (kissat * solver, unsigned *repr)
 	      if (lit < other)
 		{
 		  removed++;
-		  kissat_delete_binary (solver,
+		  kissat_mab_delete_binary (solver,
 					src.binary.redundant,
 					src.binary.hyper, lit, other);
 		}
@@ -360,7 +360,7 @@ substitute_binaries (kissat * solver, unsigned *repr)
 		  CHECK_AND_ADD_UNIT (unit);
 		  ADD_UNIT_TO_PROOF (unit);
 
-		  kissat_delete_binary (solver,
+		  kissat_mab_delete_binary (solver,
 					src.binary.redundant,
 					src.binary.hyper, lit, other);
 		}
@@ -496,7 +496,7 @@ substitute_clauses (kissat * solver, unsigned *repr)
 	}
       if (satisfied || tautological)
 	{
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  removed++;
 	}
       else if (substitute || shrink)
@@ -523,7 +523,7 @@ substitute_clauses (kissat * solver, unsigned *repr)
 	      CHECK_AND_ADD_UNIT (unit);
 	      ADD_UNIT_TO_PROOF (unit);
 
-	      kissat_mark_clause_as_garbage (solver, c);
+	      kissat_mab_mark_clause_as_garbage (solver, c);
 	    }
 	  else if (size == 2)
 	    {
@@ -535,8 +535,8 @@ substitute_clauses (kissat * solver, unsigned *repr)
 	      const bool redundant = c->redundant;
 	      LOGBINARY (first, second, "substituted %s",
 			 redundant ? "redundant" : "irredundant");
-	      kissat_new_binary_clause (solver, redundant, first, second);
-	      kissat_mark_clause_as_garbage (solver, c);
+	      kissat_mab_new_binary_clause (solver, redundant, first, second);
+	      kissat_mab_mark_clause_as_garbage (solver, c);
 	    }
 	  else
 	    {
@@ -589,19 +589,19 @@ substitute_round (kissat * solver, unsigned round)
   assert (!solver->inconsistent);
   const unsigned active = solver->active;
   size_t bytes = LITS * sizeof (unsigned);
-  unsigned *repr = kissat_malloc (solver, bytes);
+  unsigned *repr = kissat_mab_malloc (solver, bytes);
   memset (repr, 0xff, bytes);
   determine_representatives (solver, repr);
   bool *eliminate = add_representative_equivalences (solver, repr);
   substitute_binaries (solver, repr);
   substitute_clauses (solver, repr);
   remove_representative_equivalences (solver, repr, eliminate);
-  kissat_dealloc (solver, repr, LITS, sizeof *repr);
+  kissat_mab_dealloc (solver, repr, LITS, sizeof *repr);
   unsigned removed = active - solver->active;
-  kissat_phase (solver, "substitute", GET (substitutions),
+  kissat_mab_phase (solver, "substitute", GET (substitutions),
 		"round %u removed %u variables %.0f%%",
-		round, removed, kissat_percent (removed, active));
-  kissat_check_statistics (solver);
+		round, removed, kissat_mab_percent (removed, active));
+  kissat_mab_check_statistics (solver);
   REPORT (!removed, 'd');
 #ifdef QUIET
   (void) round;
@@ -622,9 +622,9 @@ substitute_rounds (kissat * solver)
       break;
   if (!solver->inconsistent)
     {
-      kissat_watch_large_clauses (solver);
+      kissat_mab_watch_large_clauses (solver);
       solver->propagated = 0;
-      if (kissat_probing_propagate (solver, 0))
+      if (kissat_mab_probing_propagate (solver, 0))
 	{
 	  LOG ("unit propagation after substitution results in conflict");
 	  CHECK_AND_ADD_EMPTY ();
@@ -632,13 +632,13 @@ substitute_rounds (kissat * solver)
 	  solver->inconsistent = true;
 	}
       else if (solver->unflushed)
-	kissat_flush_trail (solver);
+	kissat_mab_flush_trail (solver);
     }
   STOP (substitute);
 }
 
 void
-kissat_substitute (kissat * solver, bool first)
+kissat_mab_substitute (kissat * solver, bool first)
 {
   if (solver->inconsistent)
     return;

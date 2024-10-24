@@ -28,14 +28,14 @@ function repeat_char() {
 
 function title_in_center() {
     local text=$1
-    local terminalCols=$(tput cols)
+    local terminalCols=$(tput cols || echo 80)  # Default to 80 columns if tput fails
     echo "$(repeat_char '#' $terminalCols)"
     echo -e "$(repeat_char ' ' $(((terminalCols - ${#text}) / 2 - 1))) $text"
     echo "$(repeat_char '#' $terminalCols)"
 }
 
 function echo_in_center() {
-    local terminalCols=$(tput cols)
+    local terminalCols=$(tput cols || echo 80)
     # les if sont juste là pour les options -n et -e de la commande echo
     if [ $# -eq 2 ]; then
         local text=$2
@@ -59,7 +59,7 @@ function echo_progressBar() {
 
     local progress=$1
     local fullProgress=$2
-    local terminalCols=$(($(tput cols) - 10)) # pour eviter la surcharge de la ligne et ainsi le retour carriage n'aura plus aucun effet
+    local terminalCols=$(($(tput cols || echo 80) - 10)) # pour eviter la surcharge de la ligne et ainsi le retour carriage n'aura plus aucun effet
 
     percentage=$(((progress * 100) / (fullProgress)))
     # terminalCols => 100%

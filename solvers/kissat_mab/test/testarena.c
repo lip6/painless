@@ -8,19 +8,19 @@ static void
 test_arena_basic (void)
 {
   assert (sizeof (word) == sizeof (void *));
-  assert (kissat_aligned_word (sizeof (word)));
-  assert (kissat_aligned_pointer (0));
+  assert (kissat_mab_aligned_word (sizeof (word)));
+  assert (kissat_mab_aligned_pointer (0));
   DECLARE_AND_INIT_SOLVER (solver);
   unsigned size = 3;
   while (size < 20)
-    kissat_allocate_clause (solver, size++);
+    kissat_mab_allocate_clause (solver, size++);
   while (size <= (1u << 23))
-    kissat_allocate_clause (solver, size *= 2);
+    kissat_mab_allocate_clause (solver, size *= 2);
   const int n = tissat_big ? 407 : 10;
   for (int i = 0; i < n; i++)
     {
       printf ("iteration %d\n", i);
-      (void) kissat_allocate_clause (solver, size);
+      (void) kissat_mab_allocate_clause (solver, size);
     }
   RELEASE_STACK (solver->arena);
 #ifndef NMETRICS
@@ -36,7 +36,7 @@ test_arena_realloc (void)
   DECLARE_AND_INIT_SOLVER (solver);
 #ifndef QUIET
   const char *formatted =
-    kissat_format_bytes (&format, kissat_maximum_resident_set_size ());
+    kissat_mab_format_bytes (&format, kissat_mab_maximum_resident_set_size ());
   printf ("before allocating arena %s\n", formatted);
 #endif
   const unsigned bytes = (1u << 22);
@@ -44,15 +44,15 @@ test_arena_realloc (void)
   const unsigned n = tissat_big ? (1u << 8) : (1u << 3);
   for (unsigned i = 0; i < n; i++)
     {
-      reference ref = kissat_allocate_clause (solver, size);
-      clause *c = kissat_unchecked_dereference_clause (solver, ref);
+      reference ref = kissat_mab_allocate_clause (solver, size);
+      clause *c = kissat_mab_unchecked_dereference_clause (solver, ref);
       c->size = size;
       c->shrunken = false;
       for (unsigned i = 0; i < size; i++)
 	c->lits[i] = 42;
 #ifndef QUIET
-      formatted = kissat_format_bytes (&format,
-				       kissat_maximum_resident_set_size ());
+      formatted = kissat_mab_format_bytes (&format,
+				       kissat_mab_maximum_resident_set_size ());
       printf ("after allocated %u size %u clause %s\n",
 	      i + 1, size, formatted);
 #endif
@@ -77,8 +77,8 @@ test_arena_traverse (void)
   const unsigned n = 1000;
   for (unsigned size = 3; size < n + 3; size++)
     {
-      reference ref = kissat_allocate_clause (solver, size);
-      clause *c = kissat_unchecked_dereference_clause (solver, ref);
+      reference ref = kissat_mab_allocate_clause (solver, size);
+      clause *c = kissat_mab_unchecked_dereference_clause (solver, ref);
       c->size = size;
       c->shrunken = false;
       for (unsigned i = 0; i < size; i++)
@@ -113,11 +113,11 @@ abort_call_back (void)
 static void
 test_arena_fatal (void)
 {
-  kissat_call_function_instead_of_abort (abort_call_back);
+  kissat_mab_call_function_instead_of_abort (abort_call_back);
   int val = setjmp (jump_buffer);
   if (val)
     {
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_call_function_instead_of_abort (0);
       if (val != 42)
 	FATAL ("expected '42' as result from 'setjmp'");
     }
@@ -140,9 +140,9 @@ test_arena_fatal (void)
 			FORMAT_BYTES (capacity * sizeof (word)));
 	assert (capacity == MAX_ARENA);
 	assert (size + 1 == MAX_ARENA);
-	kissat_allocate_clause (solver, 3);
+	kissat_mab_allocate_clause (solver, 3);
       }
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_call_function_instead_of_abort (0);
       FATAL ("long jump not taken");
     }
 }

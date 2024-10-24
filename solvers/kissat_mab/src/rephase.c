@@ -11,13 +11,13 @@
 
 #include <inttypes.h>
 
-void kissat_reset_rephased(kissat *solver)
+void kissat_mab_reset_rephased(kissat *solver)
 {
   LOG("reset rephase type and counter");
   solver->rephased.type = 0;
 }
 
-void kissat_reset_target_assigned(kissat *solver)
+void kissat_mab_reset_target_assigned(kissat *solver)
 {
   if (!solver->target_assigned)
     return;
@@ -28,7 +28,7 @@ void kissat_reset_target_assigned(kissat *solver)
     solver->target_assigned = solver->target_assigned * 0.9;
 }
 
-void kissat_reset_consistently_assigned(kissat *solver)
+void kissat_mab_reset_consistently_assigned(kissat *solver)
 {
   if (!solver->consistently_assigned)
     return;
@@ -36,7 +36,7 @@ void kissat_reset_consistently_assigned(kissat *solver)
   solver->consistently_assigned = 0;
 }
 
-bool kissat_rephasing(kissat *solver)
+bool kissat_mab_rephasing(kissat *solver)
 {
   if (!GET_OPTION(rephase))
     return false;
@@ -52,7 +52,7 @@ rephase_best(kissat *solver)
   return 'B';
 }
 
-char kissat_rephase_best(kissat *solver)
+char kissat_mab_rephase_best(kissat *solver)
 {
   return rephase_best(solver);
 }
@@ -87,7 +87,7 @@ static char
 rephase_random(kissat *solver)
 {
   for (all_phases(p))
-    p->saved = (kissat_pick_bool(&solver->random) ? 1 : -1);
+    p->saved = (kissat_mab_pick_bool(&solver->random) ? 1 : -1);
   return '#';
 }
 
@@ -95,9 +95,9 @@ static char
 rephase_walking(kissat *solver)
 {
   STOP(rephase);
-  char res = kissat_walk(solver);
+  char res = kissat_mab_walk(solver);
   if (res == 'W')
-    kissat_autarky(solver);
+    kissat_mab_autarky(solver);
   START(rephase);
   if (!res)
     res = rephase_best(solver);
@@ -108,11 +108,11 @@ static void
 reset_phases(kissat *solver)
 {
   if (GET_OPTION(targetinc))
-    kissat_reset_target_assigned(solver);
+    kissat_mab_reset_target_assigned(solver);
   else if (!GET_OPTION(ccanr))
   {
-    kissat_clear_target_phases(solver);
-    kissat_reset_target_assigned(solver);
+    kissat_mab_clear_target_phases(solver);
+    kissat_mab_reset_target_assigned(solver);
   }
   const uint64_t count = solver->rephased.count++;
 
@@ -190,7 +190,7 @@ reset_phases(kissat *solver)
       break;
     }
     assert(type_as_string);
-    kissat_phase(solver, "rephase", GET(rephased),
+    kissat_mab_phase(solver, "rephase", GET(rephased),
                 "%s phases in %s search mode",
                 type_as_string, solver->stable ? "stable" : "focused");
   #endif
@@ -223,11 +223,11 @@ reset_phases(kissat *solver)
   UPDATE_CONFLICT_LIMIT(rephase, rephased, LINEAR, false);
 }
 
-void kissat_rephase(kissat *solver)
+void kissat_mab_rephase(kissat *solver)
 {
-  kissat_backtrack_propagate_and_flush_trail(solver);
+  kissat_mab_backtrack_propagate_and_flush_trail(solver);
   assert(!solver->inconsistent);
-  kissat_autarky(solver);
+  kissat_mab_autarky(solver);
   if (TERMINATED(10))
     return;
   START(rephase);

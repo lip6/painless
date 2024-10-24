@@ -3,6 +3,7 @@
 
 struct kissat;
 
-unsigned kissat_import_literal (struct kissat *solver, int lit);
+unsigned
+kissat_mab_import_literal(struct kissat* solver, int lit);
 
 #endif

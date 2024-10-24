@@ -3,6 +3,7 @@
 
 struct kissat;
 
-void kissat_minimize_clause (struct kissat *);
+void
+kissat_mab_minimize_clause(struct kissat*);
 
 #endif

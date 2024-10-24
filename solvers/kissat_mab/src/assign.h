@@ -20,35 +20,34 @@ struct clause;
 
 struct assigned
 {
-  unsigned level:LD_MAX_LEVEL;
-  unsigned analyzed:2;
-  bool redundant:1;
-  bool binary:1;
-  unsigned reason;
+	unsigned level : LD_MAX_LEVEL;
+	unsigned analyzed : 2;
+	bool redundant : 1;
+	bool binary : 1;
+	unsigned reason;
 };
 
-#define ASSIGNED(LIT) \
-  (assert (VALID_INTERNAL_LITERAL (LIT)), \
-   solver->assigned + IDX (LIT))
+#define ASSIGNED(LIT) (assert(VALID_INTERNAL_LITERAL(LIT)), solver->assigned + IDX(LIT))
 
-#define LEVEL(LIT) \
-  (ASSIGNED(LIT)->level)
+#define LEVEL(LIT) (ASSIGNED(LIT)->level)
 
-#define REASON(LIT) \
-  (ASSIGNED(LIT)->reason)
+#define REASON(LIT) (ASSIGNED(LIT)->reason)
 
 #ifndef INLINE_ASSIGN
 
 struct kissat;
 struct clause;
 
-void kissat_assign_unit (struct kissat *, unsigned lit);
-void kissat_assign_decision (struct kissat *, unsigned lit);
+void
+kissat_mab_assign_unit(struct kissat*, unsigned lit);
+void
+kissat_mab_assign_decision(struct kissat*, unsigned lit);
 
-void kissat_assign_binary (struct kissat *, bool, unsigned, unsigned);
+void
+kissat_mab_assign_binary(struct kissat*, bool, unsigned, unsigned);
 
-void kissat_assign_reference (struct kissat *, unsigned lit,
-			      reference, struct clause *);
+void
+kissat_mab_assign_reference(struct kissat*, unsigned lit, reference, struct clause*);
 
 #endif
 

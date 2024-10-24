@@ -49,7 +49,7 @@ test_endianess (void)
   PRINT (((union type) { .raw = (1u<<31)}).last.bit);
   PRINT (((union type) { .raw = (1u<<31)}).last.rest);
   printf ("\n");
-#ifdef KISSAT_IS_BIG_ENDIAN
+#ifdef kissat_mab_IS_BIG_ENDIAN
   if (((union type) { .raw = 1u}).last.bit)
     printf ("big endian as expected\n");
   else if (((union type) { .raw = 1u}).first.bit)

@@ -23,7 +23,7 @@ add_unassigned_variable_back_to_queue(kissat *solver,
   assert(!solver->stable);
   const unsigned idx = IDX(lit);
   if (links[idx].stamp > solver->queue.search.stamp)
-    kissat_update_queue(solver, links, idx);
+    kissat_mab_update_queue(solver, links, idx);
 }
 
 static inline void
@@ -32,8 +32,8 @@ add_unassigned_variable_back_to_heap(kissat *solver,
 {
   assert(solver->stable);
   const unsigned idx = IDX(lit);
-  if (!kissat_heap_contains(scores, idx))
-    kissat_push_heap(solver, scores, idx);
+  if (!kissat_mab_heap_contains(scores, idx))
+    kissat_mab_push_heap(solver, scores, idx);
 }
 
 static void
@@ -46,14 +46,14 @@ update_phases(kissat *solver)
   {
     if (!GET_OPTION(ccanr))
       if (reset)
-        kissat_reset_target_assigned(solver);
+        kissat_mab_reset_target_assigned(solver);
 
     if (solver->target_assigned < solver->consistently_assigned)
     {
       LOG("updating target assigned from %u to %u",
           solver->target_assigned, solver->consistently_assigned);
       solver->target_assigned = solver->consistently_assigned;
-      kissat_save_target_phases(solver);
+      kissat_mab_save_target_phases(solver);
     }
 
     if (solver->best_assigned < solver->consistently_assigned)
@@ -61,10 +61,10 @@ update_phases(kissat *solver)
       LOG("updating best assigned from %u to %u",
           solver->best_assigned, solver->consistently_assigned);
       solver->best_assigned = solver->consistently_assigned;
-      kissat_save_best_phases(solver);
+      kissat_mab_save_best_phases(solver);
     }
 
-    kissat_reset_consistently_assigned(solver);
+    kissat_mab_reset_consistently_assigned(solver);
   }
 
   if (reset)
@@ -74,7 +74,7 @@ update_phases(kissat *solver)
   }
 }
 
-void kissat_backtrack(kissat *solver, unsigned new_level)
+void kissat_mab_backtrack(kissat *solver, unsigned new_level)
 {
   assert(solver->level >= new_level);
   if (solver->level == new_level)
@@ -155,21 +155,21 @@ void kissat_backtrack(kissat *solver, unsigned new_level)
   assert(!solver->extended);
 }
 
-void kissat_backtrack_propagate_and_flush_trail(kissat *solver)
+void kissat_mab_backtrack_propagate_and_flush_trail(kissat *solver)
 {
   if (solver->level)
   {
     assert(solver->watching);
     assert(solver->level > 0);
-    kissat_backtrack(solver, 0);
+    kissat_mab_backtrack(solver, 0);
 #ifndef NDEBUG
     clause *conflict =
 #endif
-        kissat_search_propagate(solver);
+        kissat_mab_search_propagate(solver);
     assert(!conflict);
   }
   else
-    assert(kissat_propagated(solver));
+    assert(kissat_mab_propagated(solver));
   if (solver->unflushed)
-    kissat_flush_trail(solver);
+    kissat_mab_flush_trail(solver);
 }

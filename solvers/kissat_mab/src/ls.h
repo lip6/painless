@@ -4,7 +4,9 @@
 
 struct kissat;
 
-bool kissat_ccanring (struct kissat *);
-int kissat_ccanr (struct kissat *);
+bool
+kissat_mab_ccanring(struct kissat*);
+int
+kissat_mab_ccanr(struct kissat*);
 
 #endif

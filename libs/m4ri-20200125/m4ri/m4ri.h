@@ -45,13 +45,14 @@
 
 #if defined(__M4RI_HAVE_SSE2) && __M4RI_HAVE_SSE2
 #if !defined(__SSE2__) || !__SSE2__
-#error                                                                                             \
-    "Your current compiler and / or CFLAGS setting doesn't allow SSE2 code. Please change that or these to the setting(s) you used when compiling M4RI."
+#error                                                                                                                 \
+	"Your current compiler and / or CFLAGS setting doesn't allow SSE2 code. Please change that or these to the setting(s) you used when compiling M4RI."
 #endif
 #endif
 
 #if defined(__cplusplus) && !defined(_MSC_VER)
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <m4ri/brilliantrussian.h>
@@ -74,4 +75,4 @@ extern "C" {
 }
 #endif
 
-#endif  // M4RI_M4RI_H
+#endif // M4RI_M4RI_H

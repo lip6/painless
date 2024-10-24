@@ -112,7 +112,7 @@ void
 tissat_signal (int sig, const char *fmt, ...)
 {
   tissat_start_fatal_or_error_message ("unexpected signal");
-  fprintf (stderr, "Caught signal '%d' (%s) ", sig, kissat_signal_name (sig));
+  fprintf (stderr, "Caught signal '%d' (%s) ", sig, kissat_mab_signal_name (sig));
   va_list ap;
   va_start (ap, fmt);
   vfprintf (stderr, fmt, ap);

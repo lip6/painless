@@ -30,8 +30,8 @@ static const opt table[] = {
 
 #define size_table (sizeof table / sizeof * table)
 
-const opt *kissat_options_begin = table;
-const opt *kissat_options_end = table + size_table;
+const opt *kissat_mab_options_begin = table;
+const opt *kissat_mab_options_end = table + size_table;
 
 static void
 check_table_sorted (void)
@@ -40,14 +40,14 @@ check_table_sorted (void)
   const opt *p = 0;
   for (all_options (o))
     if (p && strcmp (p->name, o->name) >= 0)
-      kissat_fatal ("option '%s' before option '%s'", p->name, o->name);
+      kissat_mab_fatal ("option '%s' before option '%s'", p->name, o->name);
     else
       p = o;
 #endif
 }
 
 const opt *
-kissat_options_has (const char *name)
+kissat_mab_options_has (const char *name)
 {
   size_t l = 0, m, r = size_table;
   int tmp;
@@ -70,7 +70,7 @@ kissat_options_has (const char *name)
 }
 
 bool
-kissat_parse_option_value (const char *val_str, int *res_ptr)
+kissat_mab_parse_option_value (const char *val_str, int *res_ptr)
 {
   if (!strcmp (val_str, "true"))
     {
@@ -178,7 +178,7 @@ kissat_parse_option_value (const char *val_str, int *res_ptr)
 }
 
 const char *
-kissat_parse_option_name (const char *arg, const char *name)
+kissat_mab_parse_option_name (const char *arg, const char *name)
 {
   if (arg[0] != '-' || arg[1] != '-')
     return 0;
@@ -195,15 +195,15 @@ kissat_parse_option_name (const char *arg, const char *name)
 #ifdef NOPTIONS
 
 void
-kissat_init_options (void)
+kissat_mab_init_options (void)
 {
   check_table_sorted ();
 }
 
 int
-kissat_options_get (const char *name)
+kissat_mab_options_get (const char *name)
 {
-  const opt *o = kissat_options_has (name);
+  const opt *o = kissat_mab_options_has (name);
   return o ? o->value : 0;
 }
 
@@ -216,7 +216,7 @@ kissat_options_get (const char *name)
 #include <stdlib.h>
 
 static void
-kissat_printf_usage (const char *option, const char *fmt, ...)
+kissat_mab_printf_usage (const char *option, const char *fmt, ...)
 {
   va_list ap;
   printf ("  %-26s ", option);
@@ -232,13 +232,13 @@ check_ranges (void)
 #define OPTION(N,V,L,H,D) \
 do { \
   if ((int)(L) > (int)(H)) \
-    kissat_fatal ("minimum '%d' of option '%s' above maximum '%d'", \
+    kissat_mab_fatal ("minimum '%d' of option '%s' above maximum '%d'", \
       (int)(L), #N, (int)(H)); \
   if ((int)(V) < (int)(L)) \
-    kissat_fatal ("default value '%d' of option '%s' below minimum '%d'", \
+    kissat_mab_fatal ("default value '%d' of option '%s' below minimum '%d'", \
       (int)(V), #N, (int)(L)); \
   if ((int)(V) > (int)(H)) \
-    kissat_fatal ("default value '%d' of option '%s' above maximum '%d'", \
+    kissat_mab_fatal ("default value '%d' of option '%s' above maximum '%d'", \
       (int)(V), #N, (int)(H)); \
 } while (0);
   OPTIONS
@@ -250,27 +250,27 @@ check_name_length (void)
 {
 #ifndef NDEBUG
 #define OPTION(N,V,L,H,D) \
-  if (strlen (#N) + 1 > kissat_options_max_name_buffer_size) \
-    kissat_fatal ("option '%s' name length %zu " \
+  if (strlen (#N) + 1 > kissat_mab_options_max_name_buffer_size) \
+    kissat_mab_fatal ("option '%s' name length %zu " \
       "exceeds maximum name buffer size %zu", \
-      #N, strlen (#N), kissat_options_max_name_buffer_size);
+      #N, strlen (#N), kissat_mab_options_max_name_buffer_size);
   OPTIONS
 #undef OPTION
 #endif
 }
 
 int
-kissat_options_get (const options * options, const char *name)
+kissat_mab_options_get (const options * options, const char *name)
 {
-  const int *p = kissat_options_ref (options, kissat_options_has (name));
+  const int *p = kissat_mab_options_ref (options, kissat_mab_options_has (name));
   return p ? *p : 0;
 }
 
 int
-kissat_options_set_opt (options * options, const opt * o, int value)
+kissat_mab_options_set_opt (options * options, const opt * o, int value)
 {
-  assert (kissat_options_begin <= o);
-  assert (o < kissat_options_end);
+  assert (kissat_mab_options_begin <= o);
+  assert (o < kissat_mab_options_end);
   int *p = (int *) options + (o - table);
   int res = *p;
   if (value == res)
@@ -284,16 +284,16 @@ kissat_options_set_opt (options * options, const opt * o, int value)
 }
 
 int
-kissat_options_set (options * options, const char *name, int value)
+kissat_mab_options_set (options * options, const char *name, int value)
 {
-  const opt *o = kissat_options_has (name);
+  const opt *o = kissat_mab_options_has (name);
   if (!o)
     return 0;
-  return kissat_options_set_opt (options, o, value);
+  return kissat_mab_options_set_opt (options, o, value);
 }
 
 void
-kissat_init_options (options * options)
+kissat_mab_init_options (options * options)
 {
   check_ranges ();
   check_name_length ();
@@ -308,10 +308,10 @@ kissat_init_options (options * options)
 
 #define FORMAT_OPTION_LIMIT(V) \
   (((V) == INT_MIN || (V) == INT_MAX) ? \
-    "." : kissat_format_value (&format, false, (V)))
+    "." : kissat_mab_format_value (&format, false, (V)))
 
 void
-kissat_options_usage (void)
+kissat_mab_options_usage (void)
 {
   check_ranges ();
   check_name_length ();
@@ -330,15 +330,15 @@ kissat_options_usage (void)
 	const char * high_str = FORMAT_OPTION_LIMIT ((H)); \
 	sprintf (buffer, "--%s=%s..%s", #N, low_str, high_str); \
       } \
-    const char * val_str = kissat_format_value (&format, b, (V)); \
-    kissat_printf_usage (buffer, "%s [%s]", D, val_str); \
+    const char * val_str = kissat_mab_format_value (&format, b, (V)); \
+    kissat_mab_printf_usage (buffer, "%s [%s]", D, val_str); \
   } while (0);
   OPTIONS
 #undef OPTION
 }
 
 bool
-kissat_options_parse_arg (const char *arg, char *buffer, int *val_ptr)
+kissat_mab_options_parse_arg (const char *arg, char *buffer, int *val_ptr)
 {
   if (arg[0] != '-' || arg[1] != '-')
     return false;
@@ -350,15 +350,15 @@ kissat_options_parse_arg (const char *arg, char *buffer, int *val_ptr)
     {
       assert (ch == '=');
       const size_t len = p - name;
-      if (len >= kissat_options_max_name_buffer_size)
+      if (len >= kissat_mab_options_max_name_buffer_size)
 	return false;
       memcpy (buffer, name, len);
       buffer[len] = 0;
-      const opt *o = kissat_options_has (buffer);
+      const opt *o = kissat_mab_options_has (buffer);
       if (!o)
 	return false;
       int value;
-      if (!kissat_parse_option_value (p + 1, &value))
+      if (!kissat_mab_parse_option_value (p + 1, &value))
 	return false;
       if (value < o->low || value > o->high)
 	return false;
@@ -370,17 +370,17 @@ kissat_options_parse_arg (const char *arg, char *buffer, int *val_ptr)
       if (arg[2] == 'n' && arg[3] == 'o' && arg[4] == '-')
 	{
 	  name += 3;
-	  const opt *o = kissat_options_has (name);
+	  const opt *o = kissat_mab_options_has (name);
 	  if (!o || o->low > (value = 0))
 	    return false;
 	}
       else
 	{
-	  const opt *o = kissat_options_has (name);
+	  const opt *o = kissat_mab_options_has (name);
 	  if (!o || o->high < (value = 1))
 	    return false;
 	}
-      assert (strlen (name) < kissat_options_max_name_buffer_size);
+      assert (strlen (name) < kissat_mab_options_max_name_buffer_size);
       strcpy (buffer, name);
       *val_ptr = value;
     }
@@ -403,7 +403,7 @@ ignore_embedded_option_for_fuzzing (const char *name)
 }
 
 void
-kissat_print_embedded_option_list (void)
+kissat_mab_print_embedded_option_list (void)
 {
 #define OPTION(N,V,L,H,D) \
   if (!ignore_embedded_option_for_fuzzing (#N)) \
@@ -439,7 +439,7 @@ ignore_range_option_for_fuzzing (const char *name)
 }
 
 void
-kissat_print_option_range_list (void)
+kissat_mab_print_option_range_list (void)
 {
 #define OPTION(N,V,L,H,D) \
   if (!ignore_range_option_for_fuzzing (#N)) \

@@ -13,22 +13,22 @@ test_format (void)
 
   memset (&format, 0, sizeof format);
 
-  (void) kissat_next_format_string (&format);	// coverage ...
+  (void) kissat_mab_next_format_string (&format);	// coverage ...
 
 #define FORMAT(TYPE,EXPR,EXPECTED) \
 do { \
-  const char * RES = kissat_format_ ## TYPE (&format, EXPR); \
+  const char * RES = kissat_mab_format_ ## TYPE (&format, EXPR); \
   if (strcmp (RES, EXPECTED)) \
-    FATAL ("kissat_format_" #TYPE " (.., " #EXPR ") = \"%s\" but expected \"%s\"", RES, EXPECTED); \
-  printf ("kissat_format_" #TYPE " (.., " #EXPR ") = \"%s\" as expected\n", RES); \
+    FATAL ("kissat_mab_format_" #TYPE " (.., " #EXPR ") = \"%s\" but expected \"%s\"", RES, EXPECTED); \
+  printf ("kissat_mab_format_" #TYPE " (.., " #EXPR ") = \"%s\" as expected\n", RES); \
 } while (0)
 
 #define FORMAT_signs(SIZE,SIGNS,EXPECTED) \
 do { \
-  const char * RES = kissat_format_signs (&format, SIZE, SIGNS); \
+  const char * RES = kissat_mab_format_signs (&format, SIZE, SIGNS); \
   if (strcmp (RES, EXPECTED)) \
-    FATAL ("kissat_format_signs (.., " #SIZE ", " #SIGNS ") = \"%s\" but expected \"%s\"", RES, EXPECTED); \
-  printf ("kissat_format_signs (.., " #SIZE ", " #SIGNS ") = \"%s\" as expected\n", RES); \
+    FATAL ("kissat_mab_format_signs (.., " #SIZE ", " #SIGNS ") = \"%s\" but expected \"%s\"", RES, EXPECTED); \
+  printf ("kissat_mab_format_signs (.., " #SIZE ", " #SIGNS ") = \"%s\" as expected\n", RES); \
 } while (0)
 
   FORMAT (count, 0, "0");
@@ -109,10 +109,10 @@ do { \
 
 #define FORMAT(EXPR,BOOLEAN,EXPECTED) \
 do { \
-  const char * res = kissat_format_value (&format, BOOLEAN, EXPR); \
+  const char * res = kissat_mab_format_value (&format, BOOLEAN, EXPR); \
   if (strcmp (res, EXPECTED)) \
-    FATAL ("kissat_format_value (.., " #BOOLEAN ", " #EXPR ") = \"%s\" but expected \"%s\"", res, EXPECTED); \
-  printf ("kissat_format_value (.., " #BOOLEAN ", " #EXPR ") = \"%s\" as expected\n", res); \
+    FATAL ("kissat_mab_format_value (.., " #BOOLEAN ", " #EXPR ") = \"%s\" but expected \"%s\"", res, EXPECTED); \
+  printf ("kissat_mab_format_value (.., " #BOOLEAN ", " #EXPR ") = \"%s\" as expected\n", res); \
 } while (0)
 
   FORMAT (0, true, "false");

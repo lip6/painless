@@ -38,7 +38,7 @@ watch_hyper_delayed (kissat * solver, unsigneds * delayed)
 	  const unsigned blocking = watch.blocking.lit;
 	  LOGREF (ref, "watching %s blocking %s in", LOGLIT (lit),
 		  LOGLIT (blocking));
-	  kissat_push_blocking_watch (solver, lit_watches, blocking, ref);
+	  kissat_mab_push_blocking_watch (solver, lit_watches, blocking, ref);
 	}
     }
   CLEAR_STACK (*delayed);
@@ -48,7 +48,7 @@ static inline void
 delay_watching_hyper (kissat * solver, unsigneds * delayed,
 		      unsigned lit, unsigned other)
 {
-  const watch watch = kissat_binary_watch (other, true, true);
+  const watch watch = kissat_mab_binary_watch (other, true, true);
   PUSH_STACK (*delayed, lit);
   PUSH_STACK (*delayed, watch.raw);
 }
@@ -96,11 +96,11 @@ binary_propagate_literal (kissat * solver, unsigned lit)
       const bool redundant = head.binary.redundant;
       if (other_value < 0)
 	{
-	  res = kissat_binary_conflict (solver, redundant, not_lit, other);
+	  res = kissat_mab_binary_conflict (solver, redundant, not_lit, other);
 	  break;
 	}
       assert (!other_value);
-      kissat_assign_binary (solver, values, assigned, redundant, other,
+      kissat_mab_assign_binary (solver, values, assigned, redundant, other,
 			    not_lit);
     }
   return res;
@@ -134,7 +134,7 @@ hyper_propagate (kissat * solver, const clause * ignore)
 }
 
 clause *
-kissat_hyper_propagate (kissat * solver, const clause * ignore)
+kissat_mab_hyper_propagate (kissat * solver, const clause * ignore)
 {
   assert (solver->probing);
   assert (solver->watching);
@@ -147,7 +147,7 @@ kissat_hyper_propagate (kissat * solver, const clause * ignore)
   solver->ticks = 0;
   const unsigned propagated = solver->propagated;
   clause *conflict = hyper_propagate (solver, ignore);
-  kissat_update_probing_propagation_statistics (solver, propagated);
+  kissat_mab_update_probing_propagation_statistics (solver, propagated);
 
   STOP (propagate);
 

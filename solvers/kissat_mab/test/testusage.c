@@ -34,7 +34,7 @@ tissat_schedule_usage (void)
 
       APP (20, "../test/cnf/add8.cnf --no-simplify");
 
-      if (kissat_file_readable ("../test/cnf/add32.cnf"))
+      if (kissat_mab_file_readable ("../test/cnf/add32.cnf"))
 	APP (20, "../test/cnf/add32.cnf --no-compact");
 
       APP (20, "../test/cnf/add8.cnf --no-probe");

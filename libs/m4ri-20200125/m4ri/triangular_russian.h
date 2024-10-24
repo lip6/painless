@@ -40,7 +40,8 @@
  * \param k Size of Gray code tables or zero for automatic choice (recommended).
  */
 
-void _mzd_trsm_lower_left_russian(mzd_t const *L, mzd_t *B, int k);
+void
+_mzd_trsm_lower_left_russian(mzd_t const* L, mzd_t* B, int k);
 
 /**
  * \brief Solves U X = B with X and B matrices and U upper triangular using Gray code tables.
@@ -52,7 +53,8 @@ void _mzd_trsm_lower_left_russian(mzd_t const *L, mzd_t *B, int k);
  * \param k Size of Gray code tables or zero for automatic choice (recommended).
  */
 
-void _mzd_trsm_upper_left_russian(mzd_t const *U, mzd_t *B, int k);
+void
+_mzd_trsm_upper_left_russian(mzd_t const* U, mzd_t* B, int k);
 
 /**
  * \brief Invert the upper triangular matrix A using Kronrod's method.
@@ -63,6 +65,7 @@ void _mzd_trsm_upper_left_russian(mzd_t const *U, mzd_t *B, int k);
  * \return Inverse of A or throws an error
  */
 
-mzd_t *mzd_trtri_upper_russian(mzd_t *A, int k);
+mzd_t*
+mzd_trtri_upper_russian(mzd_t* A, int k);
 
-#endif  // M4RI_TRIANGULAR_RUSSIAN
+#endif // M4RI_TRIANGULAR_RUSSIAN

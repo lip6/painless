@@ -12,13 +12,13 @@ large_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
   assert (lits[0] == lit || lits[1] == lit);
   INC (on_the_fly_strengthened);
 #ifndef NDEBUG
-  clause *old_next = kissat_next_clause (c);
+  clause *old_next = kissat_mab_next_clause (c);
 #endif
   if (lits[0] == lit)
     SWAP (unsigned, lits[0], lits[1]);
   assert (lits[1] == lit);
-  const reference ref = kissat_reference_clause (solver, c);
-  kissat_unwatch_blocking (solver, lit, ref);
+  const reference ref = kissat_mab_reference_clause (solver, c);
+  kissat_mab_unwatch_blocking (solver, lit, ref);
   SHRINK_CLAUSE_IN_PROOF (c, lit, lits[0]);
   CHECK_SHRINK_CLAUSE (c, lit, lits[0]);
   {
@@ -33,13 +33,13 @@ large_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
 	  continue;
 	lits[new_size++] = other;
 	if (irredundant)
-	  kissat_mark_added_literal (solver, other);
+	  kissat_mab_mark_added_literal (solver, other);
       }
     assert (new_size > 2);
     c->size = new_size;
     c->searched = 2;
     if (c->redundant && c->glue >= new_size)
-      kissat_promote_clause (solver, c, new_size - 1);
+      kissat_mab_promote_clause (solver, c, new_size - 1);
     if (!c->shrunken)
       {
 	c->shrunken = true;
@@ -65,7 +65,7 @@ large_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
     if (highest_pos != 1)
       SWAP (unsigned, lits[1], lits[highest_pos]);
     LOGCLS (c, "sorted on-the-fly strengthened");
-    kissat_watch_blocking (solver, lits[1], lits[0], ref);
+    kissat_mab_watch_blocking (solver, lits[1], lits[0], ref);
   }
   {
     watches *watches = &WATCHES (lits[0]);
@@ -90,7 +90,7 @@ large_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
 	    LOGLIT (lits[0]), LOGLIT (lits[1]));
   }
 #ifndef NDEBUG
-  clause *new_next = kissat_next_clause (c);
+  clause *new_next = kissat_mab_next_clause (c);
   assert (old_next == new_next);
 #endif
   LOGCLS (c, "conflicting");
@@ -136,24 +136,24 @@ binary_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
   assert (second != INVALID_LIT);
   const bool redundant = c->redundant;
   LOGBINARY (first, second, "on-the-fly strengthened");
-  kissat_new_binary_clause (solver, redundant, first, second);
-  const reference ref = kissat_reference_clause (solver, c);
-  kissat_unwatch_blocking (solver, c->lits[0], ref);
-  kissat_unwatch_blocking (solver, c->lits[1], ref);
-  kissat_mark_clause_as_garbage (solver, c);
+  kissat_mab_new_binary_clause (solver, redundant, first, second);
+  const reference ref = kissat_mab_reference_clause (solver, c);
+  kissat_mab_unwatch_blocking (solver, c->lits[0], ref);
+  kissat_mab_unwatch_blocking (solver, c->lits[1], ref);
+  kissat_mab_mark_clause_as_garbage (solver, c);
   clause *conflict =
-    kissat_binary_conflict (solver, redundant, first, second);
+    kissat_mab_binary_conflict (solver, redundant, first, second);
   INC (conflicts);
   return conflict;
 }
 
 clause *
-kissat_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
+kissat_mab_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
 {
   assert (!c->garbage);
   assert (solver->antecedent_size > 2);
   if (!c->redundant)
-    kissat_mark_removed_literal (solver, lit);
+    kissat_mab_mark_removed_literal (solver, lit);
   clause *res;
   if (solver->antecedent_size == 3)
     res = binary_on_the_fly_strengthen (solver, c, lit);
@@ -163,7 +163,7 @@ kissat_on_the_fly_strengthen (kissat * solver, clause * c, unsigned lit)
 }
 
 void
-kissat_on_the_fly_subsume (kissat * solver, clause * c, clause * d)
+kissat_mab_on_the_fly_subsume (kissat * solver, clause * c, clause * d)
 {
   LOGCLS (c, "on-the-fly subsuming");
   LOGCLS (d, "on-the-fly subsumed");
@@ -171,7 +171,7 @@ kissat_on_the_fly_subsume (kissat * solver, clause * c, clause * d)
   assert (!d->garbage);
   assert (c->size > 1);
   assert (c->size <= d->size);
-  kissat_mark_clause_as_garbage (solver, d);
+  kissat_mab_mark_clause_as_garbage (solver, d);
   INC (on_the_fly_subsumed);
   if (d->redundant)
     return;
@@ -198,11 +198,11 @@ kissat_on_the_fly_subsume (kissat * solver, clause * c, clause * d)
     {
       c->redundant = false;
       LOGCLS (c, "turned");
-      clause *last_irredundant = kissat_last_irredundant_clause (solver);
+      clause *last_irredundant = kissat_mab_last_irredundant_clause (solver);
       if (!last_irredundant || last_irredundant < c)
 	{
 	  LOGCLS (c, "updating last irredundant clause as");
-	  reference ref = kissat_reference_clause (solver, c);
+	  reference ref = kissat_mab_reference_clause (solver, c);
 	  solver->last_irredundant = ref;
 	}
     }

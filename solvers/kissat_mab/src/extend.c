@@ -15,7 +15,7 @@ undo_eliminated_assignment (kissat * solver)
     }
 
   LOG ("unassigning %zu eliminated variables %.0f%%",
-       size_etrail, kissat_percent (size_etrail, size_eliminated));
+       size_etrail, kissat_mab_percent (size_etrail, size_eliminated));
 
   value *values = BEGIN_STACK (solver->eliminated);
 
@@ -42,13 +42,13 @@ extend_assign (kissat * solver, value * values, int lit)
   assert (pos < SIZE_STACK (solver->eliminated));
   const value value = lit < 0 ? -1 : 1;
   values[pos] = value;
-  assert (kissat_value (solver, lit) == lit);
+  assert (kissat_mab_value (solver, lit) == lit);
   LOG ("assigned eliminated[%u] external literal %d", pos, value * idx);
   PUSH_STACK (solver->etrail, pos);
 }
 
 void
-kissat_extend (kissat * solver)
+kissat_mab_extend (kissat * solver)
 {
   assert (!EMPTY_STACK (solver->extend));
   assert (!solver->extended);
@@ -191,9 +191,9 @@ kissat_extend (kissat * solver)
 #ifdef LOGGING
   size_t total = SIZE_STACK (solver->eliminated);
   LOG ("assigned %zu external variables %.0f%% out of %zu eliminated",
-       assigned, kissat_percent (assigned, total), total);
+       assigned, kissat_mab_percent (assigned, total), total);
   LOG ("flipped %zu external variables %.0f%% out of %zu assigned",
-       flipped, kissat_percent (flipped, assigned), assigned);
+       flipped, kissat_mab_percent (flipped, assigned), assigned);
   LOG ("extended assignment complete");
 #endif
 

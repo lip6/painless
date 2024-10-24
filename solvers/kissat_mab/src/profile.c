@@ -8,7 +8,7 @@
 #include <string.h>
 
 void
-kissat_init_profiles (profiles * profiles)
+kissat_mab_init_profiles (profiles * profiles)
 {
 #define PROF(NAME,LEVEL) \
   profiles->NAME = (profile) { LEVEL, #NAME, 0, 0 };
@@ -32,7 +32,7 @@ static void
 print_profile (profile * p, double total)
 {
   printf ("c %14.2f %7.2f %%  %s\n",
-	  p->time, kissat_percent (p->time, total), p->name);
+	  p->time, kissat_mab_percent (p->time, total), p->name);
 }
 
 static double
@@ -59,10 +59,10 @@ push_profile (kissat * solver, profile * profile, double now)
 }
 
 void
-kissat_profiles_print (kissat * solver)
+kissat_mab_profiles_print (kissat * solver)
 {
   profiles *named = &solver->profiles;
-  double now = kissat_process_time ();
+  double now = kissat_mab_process_time ();
   flush_profiles (named, now);
   profile *unsorted = (profile *) named;
   profile *sorted[SIZE_PROFS];
@@ -82,27 +82,27 @@ kissat_profiles_print (kissat * solver)
 }
 
 void
-kissat_start (kissat * solver, profile * profile)
+kissat_mab_start (kissat * solver, profile * profile)
 {
-  const double now = kissat_process_time ();
+  const double now = kissat_mab_process_time ();
   push_profile (solver, profile, now);
 }
 
 void
-kissat_stop (kissat * solver, profile * profile)
+kissat_mab_stop (kissat * solver, profile * profile)
 {
   assert (TOP_STACK (solver->profiles.stack) == profile);
   (void) POP_STACK (solver->profiles.stack);
-  const double now = kissat_process_time ();
+  const double now = kissat_mab_process_time ();
   flush_profile (profile, now);
 }
 
 void
-kissat_stop_search_and_start_simplifier (kissat * solver, profile * profile)
+kissat_mab_stop_search_and_start_simplifier (kissat * solver, profile * profile)
 {
   struct profile *search = &PROFILE (search);
   assert (search->level <= GET_OPTION (profile));
-  const double now = kissat_process_time ();
+  const double now = kissat_mab_process_time ();
   while (TOP_STACK (solver->profiles.stack) != search)
     {
       struct profile *mode = POP_STACK (solver->profiles.stack);
@@ -126,11 +126,11 @@ kissat_stop_search_and_start_simplifier (kissat * solver, profile * profile)
 }
 
 void
-kissat_stop_simplifier_and_resume_search (kissat * solver, profile * profile)
+kissat_mab_stop_simplifier_and_resume_search (kissat * solver, profile * profile)
 {
   struct profile *simplify = &PROFILE (simplify);
   struct profile *top = POP_STACK (solver->profiles.stack);
-  const double now = kissat_process_time ();
+  const double now = kissat_mab_process_time ();
   const double delta = flush_profile (simplify, now);
 #ifndef NDEBUG
   const double entered = now - delta;
@@ -162,13 +162,13 @@ kissat_stop_simplifier_and_resume_search (kissat * solver, profile * profile)
 }
 
 double
-kissat_time (kissat * solver)
+kissat_mab_time (kissat * solver)
 {
-  const double now = kissat_process_time ();
+  const double now = kissat_mab_process_time ();
   flush_profiles (&solver->profiles, now);
   return PROFILE (total).time;
 }
 
 #else
-int kissat_profile_dummy_to_avoid_warning;
+int kissat_mab_profile_dummy_to_avoid_warning;
 #endif

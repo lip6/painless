@@ -11,7 +11,7 @@
 static void
 new_mode_limit (kissat * solver)
 {
-  kissat_init_averages (solver, &AVERAGES);
+  kissat_mab_init_averages (solver, &AVERAGES);
 
   limits *limits = &solver->limits;
   statistics *statistics = &solver->statistics;
@@ -27,7 +27,7 @@ new_mode_limit (kissat * solver)
       ticks *= bias;
 
       limits->mode.ticks = statistics->search_ticks + ticks;
-      kissat_phase (solver, "stable", GET (stable_modes),
+      kissat_mab_phase (solver, "stable", GET (stable_modes),
 		    "new focused mode switching limit of %s "
 		    "after %s search ticks bias %.0f%%",
 		    FORMAT_COUNT (limits->mode.ticks),
@@ -37,9 +37,9 @@ new_mode_limit (kissat * solver)
     {
       const uint64_t interval = GET_OPTION (modeint);
       const uint64_t count = statistics->stable_modes;
-      const uint64_t delta = interval * (kissat_quadratic (count) + 1);
+      const uint64_t delta = interval * (kissat_mab_quadratic (count) + 1);
       limits->mode.conflicts = CONFLICTS + delta;
-      kissat_phase (solver, "focus", GET (focused_modes),
+      kissat_mab_phase (solver, "focus", GET (focused_modes),
 		    "new stable mode switching limit of %s "
 		    "after %s conflicts",
 		    FORMAT_COUNT (limits->mode.conflicts),
@@ -47,7 +47,7 @@ new_mode_limit (kissat * solver)
     }
 
 
-  kissat_reset_rephased (solver);
+  kissat_mab_reset_rephased (solver);
 #ifndef QUIET
   solver->mode.conflicts = statistics->conflicts;
 #ifndef NMETRICS
@@ -61,10 +61,10 @@ static void
 report_switching_from_mode (kissat * solver)
 {
 #ifndef QUIET
-  if (kissat_verbosity (solver) < 2)
+  if (kissat_mab_verbosity (solver) < 2)
     return;
 
-  const double current_time = kissat_process_time ();
+  const double current_time = kissat_mab_process_time ();
   const double delta_time = current_time - solver->mode.entered;
 
   statistics *statistics = &solver->statistics;
@@ -80,7 +80,7 @@ report_switching_from_mode (kissat * solver)
   solver->mode.entered = current_time;
 
   // *INDENT-OFF*
-  kissat_very_verbose (solver, "%s mode took %.2f seconds "
+  kissat_mab_very_verbose (solver, "%s mode took %.2f seconds "
     "(%" PRIu64 " conflicts, %" PRIu64 " ticks"
 #ifndef NMETRICS
     ", %" PRIu64 " propagations"
@@ -105,7 +105,7 @@ switch_to_focused_mode (kissat * solver)
   REPORT (0, ']');
   STOP (stable);
   INC (focused_modes);
-  kissat_phase (solver, "focus", GET (focused_modes),
+  kissat_mab_phase (solver, "focus", GET (focused_modes),
 		"switching to focused mode after %" PRIu64
 		" conflicts", CONFLICTS);
   solver->stable = false;
@@ -114,17 +114,17 @@ switch_to_focused_mode (kissat * solver)
   REPORT (0, '{');
   const unsigned last = solver->queue.last;
   assert (!DISCONNECTED (last));
-  kissat_update_queue (solver, solver->links, last);
-  kissat_new_focused_restart_limit (solver);
+  kissat_mab_update_queue (solver, solver->links, last);
+  kissat_mab_new_focused_restart_limit (solver);
 }
 
 void
-kissat_update_scores (kissat * solver)
+kissat_mab_update_scores (kissat * solver)
 {
   heap *scores = solver->heuristic==0?&solver->scores:&solver->scores_chb;
   for (all_variables (idx))
-    if (ACTIVE (idx) && !kissat_heap_contains (scores, idx))
-      kissat_push_heap (solver, scores, idx);
+    if (ACTIVE (idx) && !kissat_mab_heap_contains (scores, idx))
+      kissat_mab_push_heap (solver, scores, idx);
 }
 
 static void
@@ -136,18 +136,18 @@ switch_to_stable_mode (kissat * solver)
   STOP (focused);
   INC (stable_modes);
   solver->stable = true;
-  kissat_phase (solver, "stable", GET (stable_modes),
+  kissat_mab_phase (solver, "stable", GET (stable_modes),
 		"switched to stable mode after %" PRIu64
 		" conflicts", CONFLICTS);
   new_mode_limit (solver);
   START (stable);
   REPORT (0, '[');
-  kissat_init_reluctant (solver);
-  kissat_update_scores (solver);
+  kissat_mab_init_reluctant (solver);
+  kissat_mab_update_scores (solver);
 }
 
 void
-kissat_switch_search_mode (kissat * solver)
+kissat_mab_switch_search_mode (kissat * solver)
 {
   assert (!solver->inconsistent);
   if (solver->rephased.type)

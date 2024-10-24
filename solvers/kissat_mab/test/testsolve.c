@@ -9,7 +9,7 @@ static void
 schedule_solve_job_with_option (int expected,
 				const char *opt, const char *path)
 {
-  if (!kissat_file_readable (path))
+  if (!kissat_mab_file_readable (path))
     {
       tissat_warning ("Skipping unreadable '%s'", path);
       return;

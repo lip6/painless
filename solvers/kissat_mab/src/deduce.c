@@ -15,9 +15,9 @@ mark_clause_as_used (kissat * solver, clause * c)
   c->used = 1;
   if (c->hyper)
     return;
-  const unsigned new_glue = kissat_recompute_glue (solver, c);
+  const unsigned new_glue = kissat_mab_recompute_glue (solver, c);
   if (new_glue < c->glue)
-    kissat_promote_clause (solver, c, new_glue);
+    kissat_mab_promote_clause (solver, c, new_glue);
   else if (used && c->glue <= (unsigned) GET_OPTION (tier2))
     c->used = 2;
 }
@@ -58,7 +58,7 @@ analyze_literal (kissat * solver,
 }
 
 clause *
-kissat_deduce_first_uip_clause (kissat * solver, clause * conflict)
+kissat_mab_deduce_first_uip_clause (kissat * solver, clause * conflict)
 {
   START (deduce);
   assert (EMPTY_STACK (solver->analyzed));
@@ -118,7 +118,7 @@ kissat_deduce_first_uip_clause (kissat * solver, clause * conflict)
 	{
 	  const reference ref = a->reason;
 	  LOGREF (ref, "resolving %s reason", LOGLIT (uip));
-	  clause *reason = kissat_dereference_clause (solver, ref);
+	  clause *reason = kissat_mab_dereference_clause (solver, ref);
 	  for (all_literals_in_clause (lit, reason))
 	    if (lit != uip &&
 		analyze_literal (solver, all_assigned, frames, lit))
@@ -144,14 +144,14 @@ kissat_deduce_first_uip_clause (kissat * solver, clause * conflict)
 	{
 	  assert (!a->binary);
 	  assert (solver->antecedent_size && solver->resolvent_size + 1);
-	  clause *reason = kissat_dereference_clause (solver, a->reason);
+	  clause *reason = kissat_mab_dereference_clause (solver, a->reason);
 	  assert (!reason->garbage);
-	  clause *res = kissat_on_the_fly_strengthen (solver, reason, uip);
+	  clause *res = kissat_mab_on_the_fly_strengthen (solver, reason, uip);
 	  if (resolved == 1 && solver->resolvent_size < conflict_size)
 	    {
 	      assert (!conflict->garbage);
 	      assert (conflict_size > 2);
-	      kissat_on_the_fly_subsume (solver, res, conflict);
+	      kissat_mab_on_the_fly_subsume (solver, res, conflict);
 	    }
 	  STOP (deduce);
 	  return res;

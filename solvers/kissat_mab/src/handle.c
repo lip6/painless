@@ -24,7 +24,7 @@ SIGNALS
 #undef SIGNAL
 
 const char *
-kissat_signal_name (int sig)
+kissat_mab_signal_name (int sig)
 {
 #define SIGNAL(SIG) \
   if (sig == SIG) return #SIG;
@@ -36,7 +36,7 @@ kissat_signal_name (int sig)
 }
 
 void
-kissat_reset_signal_handler (void)
+kissat_mab_reset_signal_handler (void)
 {
   if (!handler_set)
     return;
@@ -59,12 +59,12 @@ catch_signal (int sig)
   assert (handler_set);
   assert (handler);
   handler (sig);
-  kissat_reset_signal_handler ();
+  kissat_mab_reset_signal_handler ();
   raise (sig);
 }
 
 void
-kissat_init_signal_handler (void (*h) (int sig))
+kissat_mab_init_signal_handler (void (*h) (int sig))
 {
   assert (!handler);
   handler = h;
@@ -94,7 +94,7 @@ catch_alarm (int sig)
 }
 
 void
-kissat_init_alarm (void (*handler) (void))
+kissat_mab_init_alarm (void (*handler) (void))
 {
   assert (handler);
   assert (!caught_alarm);
@@ -105,7 +105,7 @@ kissat_init_alarm (void (*handler) (void))
 }
 
 void
-kissat_reset_alarm (void)
+kissat_mab_reset_alarm (void)
 {
   assert (alarm_handler_set);
   assert (handle_alarm);

@@ -20,7 +20,7 @@ test_main_version (void)
   if (WIFSIGNALED (wstatus))
     {
       const int sig = WTERMSIG (wstatus);
-      const char *name = kissat_signal_name (sig);
+      const char *name = kissat_mab_signal_name (sig);
       FATAL ("caught unexpected signal '%d' (%s) in 'system (\"%s\")'",
 	     sig, name, cmd);
     }
@@ -49,7 +49,7 @@ execute_solver_and_send_signal (int sig)
   const char *arg = "../test/cnf/hard.cnf";
   tissat_verbose ("executing '%s %s'", path, arg);
 
-  const char *name = kissat_signal_name (sig);
+  const char *name = kissat_mab_signal_name (sig);
   tissat_verbose ("sending and catching signal %d ('%s')", sig, name);
 
   int child = fork ();
@@ -82,7 +82,7 @@ execute_solver_and_send_signal (int sig)
 		      const int term_sig = WTERMSIG (wstatus);
 		      FATAL ("child terminated by signal '%d' (%s) "
 			     "but expected it to exit",
-			     term_sig, kissat_signal_name (term_sig));
+			     term_sig, kissat_mab_signal_name (term_sig));
 		    }
 		  else if (!WIFEXITED (wstatus))
 		    FATAL ("could not get exit status of child");
@@ -112,7 +112,7 @@ execute_solver_and_send_signal (int sig)
 		      if (term_sig != sig)
 			FATAL ("child terminated by signal '%d' (%s) "
 			       "and not as expected by '%d' (%s)",
-			       term_sig, kissat_signal_name (term_sig),
+			       term_sig, kissat_mab_signal_name (term_sig),
 			       sig, name);
 		      else
 			tissat_verbose ("caught signal '%d' (%s) as expected",
@@ -124,7 +124,7 @@ execute_solver_and_send_signal (int sig)
     }
   else
     {
-      kissat_reset_signal_handler ();
+      kissat_mab_reset_signal_handler ();
       execl (path, path, arg, (char *) 0);
       exit (0);
     }

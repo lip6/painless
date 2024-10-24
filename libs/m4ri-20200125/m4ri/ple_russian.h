@@ -36,11 +36,12 @@
 /**
  * \brief PLE Elimination Tables
  */
-typedef struct {
-  mzd_t *T; /*!< the actual table with 2^k entries */
-  rci_t *M; /*!< lookup for multiplication */
-  rci_t *E; /*!< lookup for elimination */
-  word *B;  /*!< cache of first 64 entries in each row */
+typedef struct
+{
+	mzd_t* T; /*!< the actual table with 2^k entries */
+	rci_t* M; /*!< lookup for multiplication */
+	rci_t* E; /*!< lookup for elimination */
+	word* B;  /*!< cache of first 64 entries in each row */
 } ple_table_t;
 
 /**
@@ -50,7 +51,8 @@ typedef struct {
  * \param ncols Number of columns.
  */
 
-ple_table_t *ple_table_init(int k, rci_t ncols);
+ple_table_t*
+ple_table_init(int k, rci_t ncols);
 
 /**
  * \brief Delete table T
@@ -58,7 +60,8 @@ ple_table_t *ple_table_init(int k, rci_t ncols);
  * \param T PLE table.
  */
 
-void ple_table_free(ple_table_t *T);
+void
+ple_table_free(ple_table_t* T);
 
 /**
  * \brief PLE matrix decomposition of A using Gray codes.
@@ -78,7 +81,8 @@ void ple_table_free(ple_table_t *T);
  * \return Rank of A.
  */
 
-rci_t _mzd_ple_russian(mzd_t *A, mzp_t *P, mzp_t *Q, int k);
+rci_t
+_mzd_ple_russian(mzd_t* A, mzp_t* P, mzp_t* Q, int k);
 
 /**
  * \brief PLUQ matrix decomposition of A using Gray codes.
@@ -95,7 +99,8 @@ rci_t _mzd_ple_russian(mzd_t *A, mzp_t *P, mzp_t *Q, int k);
  * \return Rank of A.
  */
 
-rci_t _mzd_pluq_russian(mzd_t *A, mzp_t *P, mzp_t *Q, int k);
+rci_t
+_mzd_pluq_russian(mzd_t* A, mzp_t* P, mzp_t* Q, int k);
 
 /**
  * \brief PLE matrix decomposition of a submatrix for up to k columns
@@ -119,9 +124,18 @@ rci_t _mzd_pluq_russian(mzd_t *A, mzp_t *P, mzp_t *Q, int k);
  * \retval knar rank of the considered submatrix
  */
 
-int _mzd_ple_submatrix(mzd_t *A, rci_t const start_row, rci_t const stop_row, rci_t const start_col,
-                       int const k, mzp_t *P, mzp_t *Q, rci_t *pivots, rci_t *done, rci_t *done_row,
-                       wi_t const splitblock);
+int
+_mzd_ple_submatrix(mzd_t* A,
+				   rci_t const start_row,
+				   rci_t const stop_row,
+				   rci_t const start_col,
+				   int const k,
+				   mzp_t* P,
+				   mzp_t* Q,
+				   rci_t* pivots,
+				   rci_t* done,
+				   rci_t* done_row,
+				   wi_t const splitblock);
 
 /**
  * \brief Extract the k x A::ncols echelon form submatrix of A starting at row r and column c.
@@ -134,7 +148,8 @@ int _mzd_ple_submatrix(mzd_t *A, rci_t const start_row, rci_t const stop_row, rc
  * \param k Map from i to column of i-th pivot.
  * \param offsets Encodes which columns contain pivots
  */
-mzd_t *_mzd_ple_to_e(mzd_t *E, mzd_t const *A, rci_t r, rci_t c, int k, rci_t *offsets);
+mzd_t*
+_mzd_ple_to_e(mzd_t* E, mzd_t const* A, rci_t r, rci_t c, int k, rci_t* offsets);
 
 /**
  * \brief add rows T[0],T[1] to M between startrow and stoprow, starting at startcol.
@@ -147,8 +162,8 @@ mzd_t *_mzd_ple_to_e(mzd_t *E, mzd_t const *A, rci_t r, rci_t c, int k, rci_t *o
  * \param T        PLE Table with 2^k[i] rows
  */
 
-void _mzd_process_rows_ple_2(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t startcol, int const *k,
-                             const ple_table_t **T);
+void
+_mzd_process_rows_ple_2(mzd_t* M, rci_t startrow, rci_t stoprow, rci_t startcol, int const* k, const ple_table_t** T);
 
 /**
  * \brief add rows T[0],T[1],T[2] to M between startrow and stoprow, starting at startcol.
@@ -161,8 +176,8 @@ void _mzd_process_rows_ple_2(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t star
  * \param T        PLE Table with 2^k[i] rows
  */
 
-void _mzd_process_rows_ple_3(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t startcol, int const *k,
-                             const ple_table_t **T);
+void
+_mzd_process_rows_ple_3(mzd_t* M, rci_t startrow, rci_t stoprow, rci_t startcol, int const* k, const ple_table_t** T);
 
 /**
  * \brief add rows T[0],T[1],T[2],T[3] to M between startrow and stoprow, starting at startcol.
@@ -175,8 +190,8 @@ void _mzd_process_rows_ple_3(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t star
  * \param T        PLE Table with 2^k[i] rows
  */
 
-void _mzd_process_rows_ple_4(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t startcol, int const *k,
-                             const ple_table_t **T);
+void
+_mzd_process_rows_ple_4(mzd_t* M, rci_t startrow, rci_t stoprow, rci_t startcol, int const* k, const ple_table_t** T);
 
 /**
  * \brief add rows T[0],T[1],T[2],T[3],T[4] to M between startrow and stoprow, starting at startcol.
@@ -189,8 +204,8 @@ void _mzd_process_rows_ple_4(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t star
  * \param T        PLE Table with 2^k[i] rows
  */
 
-void _mzd_process_rows_ple_5(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t startcol, int const *k,
-                             const ple_table_t **T);
+void
+_mzd_process_rows_ple_5(mzd_t* M, rci_t startrow, rci_t stoprow, rci_t startcol, int const* k, const ple_table_t** T);
 
 /**
  * \brief add rows T[0],T[1],T[2],T[3],T[4],T[5] to M between startrow and stoprow, starting at
@@ -204,7 +219,7 @@ void _mzd_process_rows_ple_5(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t star
  * \param T        PLE Table with 2^k[i] rows
  */
 
-void _mzd_process_rows_ple_6(mzd_t *M, rci_t startrow, rci_t stoprow, rci_t startcol, int const *k,
-                             const ple_table_t **T);
+void
+_mzd_process_rows_ple_6(mzd_t* M, rci_t startrow, rci_t stoprow, rci_t startcol, int const* k, const ple_table_t** T);
 
-#endif  // M4RI_PLE_RUSSIAN
+#endif // M4RI_PLE_RUSSIAN

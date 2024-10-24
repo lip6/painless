@@ -4,13 +4,13 @@
 #ifndef QUIET
 
 void
-kissat_report_termination (kissat * solver, int bit,
+kissat_mab_report_termination (kissat * solver, int bit,
 			   const char *file, long lineno, const char *fun)
 {
-  kissat_very_verbose (solver, "%s:%ld: %s: TERMINATED (%d)",
+  kissat_mab_very_verbose (solver, "%s:%ld: %s: TERMINATED (%d)",
 		       file, lineno, fun, bit);
 }
 
 #else
-int kissat_terminate_dummy_to_avoid_warning;
+int kissat_mab_terminate_dummy_to_avoid_warning;
 #endif

@@ -47,7 +47,8 @@
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-void mzd_trsm_upper_right(mzd_t const *U, mzd_t *B, const int cutoff);
+void
+mzd_trsm_upper_right(mzd_t const* U, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves X U = B with X and B matrices and U upper triangular.
@@ -61,7 +62,8 @@ void mzd_trsm_upper_right(mzd_t const *U, mzd_t *B, const int cutoff);
  * \param B Input matrix, being overwritten by the solution matrix X
  * \param cutoff Minimal dimension for Strassen recursion.
  */
-void _mzd_trsm_upper_right(mzd_t const *U, mzd_t *B, const int cutoff);
+void
+_mzd_trsm_upper_right(mzd_t const* U, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves X L = B with X and B matrices and L lower triangular.
@@ -79,7 +81,8 @@ void _mzd_trsm_upper_right(mzd_t const *U, mzd_t *B, const int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-void mzd_trsm_lower_right(mzd_t const *L, mzd_t *B, const int cutoff);
+void
+mzd_trsm_lower_right(mzd_t const* L, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves X L = B with X and B with matrices and L lower
@@ -97,7 +100,8 @@ void mzd_trsm_lower_right(mzd_t const *L, mzd_t *B, const int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  *
  */
-void _mzd_trsm_lower_right(mzd_t const *L, mzd_t *B, const int cutoff);
+void
+_mzd_trsm_lower_right(mzd_t const* L, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves L X = B with X and B matrices and L lower triangular.
@@ -112,7 +116,8 @@ void _mzd_trsm_lower_right(mzd_t const *L, mzd_t *B, const int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-void mzd_trsm_lower_left(mzd_t const *L, mzd_t *B, const int cutoff);
+void
+mzd_trsm_lower_left(mzd_t const* L, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves L X = B with X and B matrices and L lower triangular.
@@ -124,7 +129,8 @@ void mzd_trsm_lower_left(mzd_t const *L, mzd_t *B, const int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-void _mzd_trsm_lower_left(mzd_t const *L, mzd_t *B, const int cutoff);
+void
+_mzd_trsm_lower_left(mzd_t const* L, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves U X = B with X and B matrices and U upper triangular.
@@ -139,7 +145,8 @@ void _mzd_trsm_lower_left(mzd_t const *L, mzd_t *B, const int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-void mzd_trsm_upper_left(mzd_t const *U, mzd_t *B, const int cutoff);
+void
+mzd_trsm_upper_left(mzd_t const* U, mzd_t* B, const int cutoff);
 
 /**
  * \brief Solves U X = B with X and B matrices and U upper triangular.
@@ -150,7 +157,8 @@ void mzd_trsm_upper_left(mzd_t const *U, mzd_t *B, const int cutoff);
  * \param B Input matrix, being overwritten by the solution matrix X
  * \param cutoff Minimal dimension for Strassen recursion.
  */
-void _mzd_trsm_upper_left(mzd_t const *U, mzd_t *B, const int cutoff);
+void
+_mzd_trsm_upper_left(mzd_t const* U, mzd_t* B, const int cutoff);
 
 /**
  * \brief Invert the upper triangular matrix A by reduction to matrix multiplication.
@@ -160,6 +168,7 @@ void _mzd_trsm_upper_left(mzd_t const *U, mzd_t *B, const int cutoff);
  * \return Inverse of A or throws an error
  */
 
-mzd_t *mzd_trtri_upper(mzd_t *A);
+mzd_t*
+mzd_trtri_upper(mzd_t* A);
 
-#endif  // M4RI_TRSM_H
+#endif // M4RI_TRSM_H

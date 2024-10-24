@@ -3,7 +3,9 @@
 
 struct kissat;
 
-void kissat_backtrack (struct kissat *, unsigned level);
-void kissat_backtrack_propagate_and_flush_trail (struct kissat *);
+void
+kissat_mab_backtrack(struct kissat*, unsigned level);
+void
+kissat_mab_backtrack_propagate_and_flush_trail(struct kissat*);
 
 #endif

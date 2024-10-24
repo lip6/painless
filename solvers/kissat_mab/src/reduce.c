@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include <math.h>
 
-bool kissat_reducing(kissat *solver)
+bool kissat_mab_reducing(kissat *solver)
 {
   if (!GET_OPTION(reduce))
     return false;
@@ -46,7 +46,7 @@ collect_reducibles(kissat *solver, reducibles *reds, reference start_ref)
   const clause *end = (clause *)END_STACK(solver->arena);
   assert(start < end);
   while (start != end && (!start->redundant || start->keep))
-    start = kissat_next_clause(start);
+    start = kissat_mab_next_clause(start);
   if (start == end)
   {
     solver->first_reducible = INVALID_REF;
@@ -68,7 +68,7 @@ collect_reducibles(kissat *solver, reducibles *reds, reference start_ref)
   size_t flushed_hyper_ternary_clauses = 0;
   size_t used_hyper_ternary_clauses = 0;
 #endif
-  for (clause *c = start; c != end; c = kissat_next_clause(c))
+  for (clause *c = start; c != end; c = kissat_mab_next_clause(c))
   {
     if (!c->redundant)
       continue;
@@ -91,7 +91,7 @@ collect_reducibles(kissat *solver, reducibles *reds, reference start_ref)
 #ifndef QUIET
         flushed_hyper_ternary_clauses++;
 #endif
-        kissat_mark_clause_as_garbage(solver, c);
+        kissat_mab_mark_clause_as_garbage(solver, c);
       }
       continue;
     }
@@ -104,7 +104,7 @@ collect_reducibles(kissat *solver, reducibles *reds, reference start_ref)
         continue;
     }
     assert(!c->garbage);
-    assert(kissat_clause_in_arena(solver, c));
+    assert(kissat_mab_clause_in_arena(solver, c));
     reducible red;
     const uint64_t negative_size = (1u << LD_MAX_VAR) - c->size;
     const uint64_t negative_glue = (1u << LD_MAX_GLUE) - c->glue;
@@ -117,10 +117,10 @@ collect_reducibles(kissat *solver, reducibles *reds, reference start_ref)
   size_t total_hyper_ternary_clauses =
       flushed_hyper_ternary_clauses + used_hyper_ternary_clauses;
   if (flushed_hyper_ternary_clauses)
-    kissat_phase(solver, "reduced", GET(reductions),
+    kissat_mab_phase(solver, "reduced", GET(reductions),
                  "reduced %zu unused hyper ternary clauses %.0f%% out of %zu",
                  flushed_hyper_ternary_clauses,
-                 kissat_percent(flushed_hyper_ternary_clauses,
+                 kissat_mab_percent(flushed_hyper_ternary_clauses,
                                 total_hyper_ternary_clauses),
                  total_hyper_ternary_clauses);
 // *INDENT-ON*
@@ -152,12 +152,12 @@ mark_less_useful_clauses_as_garbage(kissat *solver, reducibles *reds)
   statistics *statistics = &solver->statistics;
   const size_t clauses =
       statistics->clauses_irredundant + statistics->clauses_redundant;
-  kissat_phase(solver, "reduce",
+  kissat_mab_phase(solver, "reduce",
                GET(reductions),
                "reducing %zu (%.0f%%) out of %zu (%.0f%%) "
                "reducible clauses",
-               target, kissat_percent(target, size),
-               size, kissat_percent(size, clauses));
+               target, kissat_mab_percent(target, size),
+               size, kissat_mab_percent(size, clauses));
 #endif
   unsigned reduced = 0;
   word *arena = BEGIN_STACK(solver->arena);
@@ -166,13 +166,13 @@ mark_less_useful_clauses_as_garbage(kissat *solver, reducibles *reds)
   for (const reducible *p = begin; p != end && target--; p++)
   {
     clause *c = (clause *)(arena + p->ref);
-    assert(kissat_clause_in_arena(solver, c));
+    assert(kissat_mab_clause_in_arena(solver, c));
     assert(!c->garbage);
     assert(!c->keep);
     assert(!c->reason);
     assert(c->redundant);
     LOGCLS(c, "reducing");
-    kissat_mark_clause_as_garbage(solver, c);
+    kissat_mab_mark_clause_as_garbage(solver, c);
     reduced++;
   }
   ADD(clauses_reduced, reduced);
@@ -187,8 +187,8 @@ compacting(kissat *solver)
   unsigned limit = GET_OPTION(compactlim) / 1e2 * solver->vars;
   bool compact = (inactive > limit);
   LOG("%u inactive variables %.0f%% <= limit %u %.0f%%",
-      inactive, kissat_percent(inactive, solver->vars),
-      limit, kissat_percent(limit, solver->vars));
+      inactive, kissat_mab_percent(inactive, solver->vars),
+      limit, kissat_mab_percent(limit, solver->vars));
   return compact;
 }
 
@@ -199,15 +199,15 @@ force_restart_before_reduction(kissat *solver)
     return;
   if (!solver->stable && (GET_OPTION(reducerestart) < 2))
     return;
-  kissat_restart_and_flush_trail(solver);
+  kissat_mab_restart_and_flush_trail(solver);
 }
 
-int kissat_reduce(kissat *solver)
+int kissat_mab_reduce(kissat *solver)
 {
   START(reduce);
   INC(reductions);
   LOG("beginreduce");
-  kissat_phase(solver, "reduce", GET(reductions),
+  kissat_mab_phase(solver, "reduce", GET(reductions),
                "reduce limit %" PRIu64 " hit after %" PRIu64
                " conflicts",
                solver->limits.reduce.conflicts, CONFLICTS);
@@ -220,14 +220,14 @@ int kissat_reduce(kissat *solver)
     size_t arena_size = SIZE_STACK(solver->arena);
     size_t words_to_sweep = arena_size - start;
     size_t bytes_to_sweep = sizeof(word) * words_to_sweep;
-    kissat_phase(solver, "reduce", GET(reductions),
+    kissat_mab_phase(solver, "reduce", GET(reductions),
                  "reducing clauses after offset %zu in arena", start);
-    kissat_phase(solver, "reduce", GET(reductions),
+    kissat_mab_phase(solver, "reduce", GET(reductions),
                  "sweeping %zu words %s %.0f%%",
                  words_to_sweep, FORMAT_BYTES(bytes_to_sweep),
-                 kissat_percent(words_to_sweep, arena_size));
+                 kissat_mab_percent(words_to_sweep, arena_size));
 #endif
-    if (kissat_flush_and_mark_reason_clauses(solver, start))
+    if (kissat_mab_flush_and_mark_reason_clauses(solver, start))
     {
       reducibles reds;
       INIT_STACK(reds);
@@ -236,18 +236,18 @@ int kissat_reduce(kissat *solver)
         sort_reducibles(solver, &reds);
         mark_less_useful_clauses_as_garbage(solver, &reds);
         RELEASE_STACK(reds);
-        kissat_sparse_collect(solver, compact, start);
+        kissat_mab_sparse_collect(solver, compact, start);
       }
       else if (compact)
-        kissat_sparse_collect(solver, compact, start);
+        kissat_mab_sparse_collect(solver, compact, start);
       else
-        kissat_unmark_reason_clauses(solver, start);
+        kissat_mab_unmark_reason_clauses(solver, start);
     }
     else
       assert(solver->inconsistent);
   }
   else
-    kissat_phase(solver, "reduce", GET(reductions), "nothing to reduce");
+    kissat_mab_phase(solver, "reduce", GET(reductions), "nothing to reduce");
   UPDATE_CONFLICT_LIMIT(reduce, reductions, NDIVLOGN, false);
   REPORT(0, '-');
   STOP(reduce);

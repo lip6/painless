@@ -41,7 +41,8 @@
  * \param i Row to print
  */
 
-void mzd_fprint_row(FILE *stream, mzd_t const *M, const rci_t i);
+void
+mzd_fprint_row(FILE* stream, mzd_t const* M, const rci_t i);
 
 /**
  * \brief Print row i of M to stdout.
@@ -52,7 +53,11 @@ void mzd_fprint_row(FILE *stream, mzd_t const *M, const rci_t i);
  * \param i Row to print
  */
 
-static inline void mzd_print_row(mzd_t const *M, const rci_t i) { mzd_fprint_row(stdout, M, i); }
+static inline void
+mzd_print_row(mzd_t const* M, const rci_t i)
+{
+	mzd_fprint_row(stdout, M, i);
+}
 
 /**
  * \brief Print a matrix to an output stream.
@@ -63,8 +68,12 @@ static inline void mzd_print_row(mzd_t const *M, const rci_t i) { mzd_fprint_row
  * \param M Matrix
  */
 
-static inline void mzd_fprint(FILE *stream, mzd_t const *M) {
-  for (rci_t i = 0; i < M->nrows; ++i) { mzd_fprint_row(stream, M, i); }
+static inline void
+mzd_fprint(FILE* stream, mzd_t const* M)
+{
+	for (rci_t i = 0; i < M->nrows; ++i) {
+		mzd_fprint_row(stream, M, i);
+	}
 }
 
 /**
@@ -75,7 +84,11 @@ static inline void mzd_fprint(FILE *stream, mzd_t const *M) {
  * \param M Matrix
  */
 
-static inline void mzd_print(mzd_t const *M) { mzd_fprint(stdout, M); }
+static inline void
+mzd_print(mzd_t const* M)
+{
+	mzd_fprint(stdout, M);
+}
 
 /**
  * \brief Print compact information about the matrix to stdout.
@@ -86,7 +99,8 @@ static inline void mzd_print(mzd_t const *M) { mzd_fprint(stdout, M); }
  * \param do_rank Also display the rank (expensive)
  */
 
-void mzd_info(const mzd_t *A, int do_rank);
+void
+mzd_info(const mzd_t* A, int do_rank);
 
 #if __M4RI_HAVE_LIBPNG
 
@@ -100,7 +114,8 @@ void mzd_info(const mzd_t *A, int do_rank);
  * \param verbose Print error message to stdout if != 0
  */
 
-mzd_t *mzd_from_png(const char *fn, int verbose);
+mzd_t*
+mzd_from_png(const char* fn, int verbose);
 
 /**
  * \brief Write matrix to 1-bit PNG image.
@@ -126,10 +141,10 @@ mzd_t *mzd_from_png(const char *fn, int verbose);
  * \param verbose Print error message to stdout if != 0
  */
 
-int mzd_to_png(const mzd_t *A, const char *fn, int compression_level, const char *comment,
-               int verbose);
+int
+mzd_to_png(const mzd_t* A, const char* fn, int compression_level, const char* comment, int verbose);
 
-#endif  //__M4RI_HAVE_LIBPNG
+#endif //__M4RI_HAVE_LIBPNG
 
 /**
  * \brief Read matrix from ASCII file in JCF format.
@@ -169,7 +184,8 @@ column_index
  * \param verbose Print error message to stdout if != 0
  */
 
-mzd_t *mzd_from_jcf(const char *fn, int verbose);
+mzd_t*
+mzd_from_jcf(const char* fn, int verbose);
 
 /**
  * \brief Create matrix from dense ASCII string
@@ -189,6 +205,7 @@ mzd_t *A = mzd_from_str(4, 4, "1000010000100001");
  * \param str String containing ASCII zeros and ones of length m*n
  */
 
-mzd_t *mzd_from_str(rci_t m, rci_t n, const char *str);
+mzd_t*
+mzd_from_str(rci_t m, rci_t n, const char* str);
 
-#endif  // M4RI_IO_H
+#endif // M4RI_IO_H

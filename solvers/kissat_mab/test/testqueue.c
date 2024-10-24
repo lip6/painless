@@ -45,16 +45,16 @@ test_queue (void)
   solver.links = links;
   solver.vars = size;
   queue *queue = &solver.queue;
-  kissat_init_queue (queue);
+  kissat_mab_init_queue (queue);
   for (int i = 0; i < size; i++)
-    kissat_enqueue (&solver, i);
+    kissat_mab_enqueue (&solver, i);
   int c = 0;
   for (int i = queue->first; i >= 0; i = links[i].next, c++)
     assert (i == c);
-  kissat_move_to_front (&solver, queue->last);
+  kissat_mab_move_to_front (&solver, queue->last);
   print_queue (queue, links);
   for (int i = 0; i < size; i += 2)
-    kissat_move_to_front (&solver, i);
+    kissat_mab_move_to_front (&solver, i);
   print_queue (queue, links);
   unsigned search = queue->search.idx;
   assert (search != queue->last);
@@ -62,7 +62,7 @@ test_queue (void)
   assert (!values[2 * search + 1]);
   values[2 * search] = 1;
   values[2 * search + 1] = -1;
-  kissat_move_to_front (&solver, search);
+  kissat_mab_move_to_front (&solver, search);
   print_queue (queue, links);
   for (unsigned idx = 0; idx < size; idx++)
     {
@@ -80,12 +80,12 @@ test_queue (void)
 	c = 0;
     }
   for (int i = 1; i < size; i += 2)
-    kissat_move_to_front (&solver, i);
+    kissat_mab_move_to_front (&solver, i);
   print_queue (queue, links);
   queue->stamp = queue->search.stamp = links[queue->last].stamp = UINT_MAX;
   print_queue (queue, links);
   for (int i = size - 1; i >= 0; i--)
-    kissat_move_to_front (&solver, i);
+    kissat_mab_move_to_front (&solver, i);
   print_queue (queue, links);
   c = size - 1;
   for (int i = queue->first; i >= 0; i = links[i].next, c--)

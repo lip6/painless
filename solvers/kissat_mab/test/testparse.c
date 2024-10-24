@@ -24,15 +24,15 @@ test_parse (bool expect_parse_error, unsigned strict, const char *path)
     }
   tissat_verbose ("Parsing %svalid '%s' in '%s' mode.",
 		  expect_parse_error ? "in" : "", path, type);
-  kissat *solver = kissat_init ();
+  kissat *solver = kissat_mab_init ();
   tissat_init_solver (solver);
   file file;
-  if (!kissat_open_to_read_file (&file, path))
+  if (!kissat_mab_open_to_read_file (&file, path))
     FATAL ("could not open '%s' for reading", path);
   uint64_t lineno;
   int max_var;
   const char *error =
-    kissat_parse_dimacs (solver, strict, &file, &lineno, &max_var);
+    kissat_mab_parse_dimacs (solver, strict, &file, &lineno, &max_var);
   if (expect_parse_error)
     {
       if (!error)
@@ -45,8 +45,8 @@ test_parse (bool expect_parse_error, unsigned strict, const char *path)
 	     type, path, lineno, error);
       tissat_verbose ("found maximum variable '%d' in '%s'", max_var, path);
     }
-  kissat_close_file (&file);
-  kissat_release (solver);
+  kissat_mab_close_file (&file);
+  kissat_mab_release (solver);
   return false;
 }
 

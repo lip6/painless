@@ -7,7 +7,7 @@ static bool
 get_ternary_clause (kissat * solver, reference ref,
 		    unsigned *p, unsigned *q, unsigned *r)
 {
-  clause *clause = kissat_dereference_clause (solver, ref);
+  clause *clause = kissat_mab_dereference_clause (solver, ref);
   if (clause->garbage)
     return false;
   const value *values = solver->values;
@@ -18,7 +18,7 @@ get_ternary_clause (kissat * solver, reference ref,
       const value value = values[other];
       if (value > 0)
 	{
-	  kissat_eliminate_clause (solver, clause, INVALID_LIT);
+	  kissat_mab_eliminate_clause (solver, clause, INVALID_LIT);
 	  return false;
 	}
       if (value < 0)
@@ -47,7 +47,7 @@ static bool
 match_ternary_ref (kissat * solver, reference ref,
 		   unsigned a, unsigned b, unsigned c)
 {
-  clause *clause = kissat_dereference_clause (solver, ref);
+  clause *clause = kissat_mab_dereference_clause (solver, ref);
   const value *values = solver->values;
   unsigned found = 0;
   for (all_literals_in_clause (other, clause))
@@ -55,7 +55,7 @@ match_ternary_ref (kissat * solver, reference ref,
       const value value = values[other];
       if (value > 0)
 	{
-	  kissat_eliminate_clause (solver, clause, INVALID_LIT);
+	  kissat_mab_eliminate_clause (solver, clause, INVALID_LIT);
 	  return false;
 	}
       if (value < 0)
@@ -106,7 +106,7 @@ find_ternary_clause (kissat * solver, uint64_t * steps,
 }
 
 bool
-kissat_find_if_then_else_gate (kissat * solver,
+kissat_mab_find_if_then_else_gate (kissat * solver,
 			       unsigned lit, unsigned negative)
 {
   if (!GET_OPTION (ifthenelse))

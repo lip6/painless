@@ -10,7 +10,7 @@ BF16_PACKET_FUNCTION(Packet16f, Packet16bf, perf)
 F16_PACKET_FUNCTION(Packet16f, Packet16h, pndtri)
 BF16_PACKET_FUNCTION(Packet16f, Packet16bf, pndtri)
 
-}  // namespace internal
-}  // namespace Eigen
+} // namespace internal
+} // namespace Eigen
 
-#endif  // EIGEN_AVX512_SPECIAL_FUNCTIONS_H
+#endif // EIGEN_AVX512_SPECIAL_FUNCTIONS_H

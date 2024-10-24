@@ -30,13 +30,13 @@ test_real_fatal_error (void)
 	  if (sig != SIGABRT)
 	    FATAL ("child terminated by signal '%d' (%s) "
 		   "and not as expected by '%d' (SIGABRT)",
-		   sig, kissat_signal_name (sig), (int) (SIGABRT));
+		   sig, kissat_mab_signal_name (sig), (int) (SIGABRT));
 	}
     }
   else
     {
-      kissat_reset_signal_handler ();
-      kissat_fatal ("real fatal error message triggering 'abort'");
+      kissat_mab_reset_signal_handler ();
+      kissat_mab_fatal ("real fatal error message triggering 'abort'");
       exit (0);
     }
 }
@@ -54,18 +54,18 @@ abort_call_back (void)
 static void
 test_fake_fatal_error (void)
 {
-  kissat_call_function_instead_of_abort (abort_call_back);
+  kissat_mab_call_function_instead_of_abort (abort_call_back);
   int val = setjmp (jump_buffer);
   if (val)
     {
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_call_function_instead_of_abort (0);
       if (val != 42)
 	FATAL ("expected '42' as result from 'setjmp'");
     }
   else
     {
-      kissat_fatal ("faked fatal error message triggering long jump");
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_fatal ("faked fatal error message triggering long jump");
+      kissat_mab_call_function_instead_of_abort (0);
       FATAL ("long jump not taken");
     }
 }
@@ -78,14 +78,14 @@ just_return_call_back (void)
 static void
 test_just_return_from_fatal_error (void)
 {
-  kissat_call_function_instead_of_abort (just_return_call_back);
-  kissat_fatal ("faked just returning fatal error message");
+  kissat_mab_call_function_instead_of_abort (just_return_call_back);
+  kissat_mab_fatal ("faked just returning fatal error message");
 }
 
 static void
 test_start_of_fatal_error_message (void)
 {
-  kissat_fatal_message_start ();
+  kissat_mab_fatal_message_start ();
   printf ("after starting a fatal error message printing this message\n");
   fflush (stdout);
 }

@@ -4,7 +4,7 @@
 #include "sort.c"
 
 void
-kissat_remove_blocking_watch (kissat * solver,
+kissat_mab_remove_blocking_watch (kissat * solver,
 			      watches * watches, reference ref)
 {
   assert (solver->watching);
@@ -35,11 +35,11 @@ kissat_remove_blocking_watch (kissat * solver,
   end[-2] = end[-1] = empty;
   assert (solver->vectors.usable < MAX_SECTOR - 2);
   solver->vectors.usable += 2;
-  kissat_check_vectors (solver);
+  kissat_mab_check_vectors (solver);
 }
 
 void
-kissat_flush_large_watches (kissat * solver)
+kissat_mab_flush_large_watches (kissat * solver)
 {
   assert (solver->watching);
   LOG ("flush large clause watches");
@@ -57,7 +57,7 @@ kissat_flush_large_watches (kissat * solver)
 }
 
 void
-kissat_watch_large_clauses (kissat * solver)
+kissat_mab_watch_large_clauses (kissat * solver)
 {
   LOG ("watching all large clauses");
   assert (solver->watching);
@@ -73,25 +73,25 @@ kissat_watch_large_clauses (kissat * solver)
 	continue;
 
       unsigned *lits = c->lits;
-      kissat_sort_literals (solver, values, assigned, c->size, lits);
+      kissat_mab_sort_literals (solver, values, assigned, c->size, lits);
       c->searched = 2;
 
       const reference ref = (word *) c - arena;
       const unsigned l0 = lits[0];
       const unsigned l1 = lits[1];
 
-      kissat_push_blocking_watch (solver, watches + l0, l1, ref);
-      kissat_push_blocking_watch (solver, watches + l1, l0, ref);
+      kissat_mab_push_blocking_watch (solver, watches + l0, l1, ref);
+      kissat_mab_push_blocking_watch (solver, watches + l1, l0, ref);
     }
 }
 
 void
-kissat_connect_irredundant_large_clauses (kissat * solver)
+kissat_mab_connect_irredundant_large_clauses (kissat * solver)
 {
   assert (!solver->watching);
   LOG ("connecting all large irredundant clauses");
 
-  clause *last_irredundant = kissat_last_irredundant_clause (solver);
+  clause *last_irredundant = kissat_mab_last_irredundant_clause (solver);
 
   const value *values = solver->values;
   watches *all_watches = solver->watches;
@@ -117,16 +117,16 @@ kissat_connect_irredundant_large_clauses (kissat * solver)
 	}
       if (satisfied)
 	{
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  continue;
 	}
       const reference ref = (word *) c - arena;
-      kissat_inlined_connect_clause (solver, all_watches, c, ref);
+      kissat_mab_inlined_connect_clause (solver, all_watches, c, ref);
     }
 }
 
 void
-kissat_flush_large_connected (kissat * solver)
+kissat_mab_flush_large_connected (kissat * solver)
 {
   assert (!solver->watching);
   LOG ("flushing large connected clause references");

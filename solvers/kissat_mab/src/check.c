@@ -11,7 +11,7 @@
 #include <limits.h>
 
 void
-kissat_check_satisfying_assignment (kissat * solver)
+kissat_mab_check_satisfying_assignment (kissat * solver)
 {
   // LOG ("checking satisfying assignment");
   printf("c checking satisfying assignment\n");
@@ -25,20 +25,20 @@ kissat_check_satisfying_assignment (kissat * solver)
       bool satisfied = false;
       int lit;
       for (q = p; (lit = *q); q++)
-	if (!satisfied && kissat_value (solver, lit) == lit)
+	if (!satisfied && kissat_mab_value (solver, lit) == lit)
 	  satisfied = true;
 #ifdef LOGGING
       count++;
 #endif
       if (satisfied)
 	continue;
-      kissat_fatal_message_start ();
+      kissat_mab_fatal_message_start ();
       fputs ("e unsatisfied clause:\n", stderr);
       for (q = p; (lit = *q); q++)
 	fprintf (stderr, "%d ", lit);
       fputs ("0\n", stderr);
       fflush (stderr);
-      kissat_abort ();
+      kissat_mab_abort ();
     }
   // LOG ("assignment satisfies all %zu original clauses", count);
   #ifdef LOGGING
@@ -148,7 +148,7 @@ init_nonces (kissat * solver, checker * checker)
 {
   generator random = 42;
   for (unsigned i = 0; i < MAX_NONCES; i++)
-    checker->nonces[i] = 1 | kissat_next_random32 (&random);
+    checker->nonces[i] = 1 | kissat_mab_next_random32 (&random);
   LOG3 ("initialized %zu checker nonces", MAX_NONCES);
 #ifndef LOGGING
   (void) solver;
@@ -156,10 +156,10 @@ init_nonces (kissat * solver, checker * checker)
 }
 
 void
-kissat_init_checker (kissat * solver)
+kissat_mab_init_checker (kissat * solver)
 {
   LOG ("initializing internal proof checker");
-  checker *checker = kissat_calloc (solver, 1, sizeof (struct checker));
+  checker *checker = kissat_mab_calloc (solver, 1, sizeof (struct checker));
   solver->checker = checker;
   init_nonces (solver, checker);
 }
@@ -172,10 +172,10 @@ release_hash (kissat * solver, checker * checker)
       for (line * line = checker->table[h], *next; line; line = next)
 	{
 	  next = line->next;
-	  kissat_free (solver, line, bytes_line (line->size));
+	  kissat_mab_free (solver, line, bytes_line (line->size));
 	}
     }
-  kissat_dealloc (solver, checker->table, checker->hashed, sizeof (line *));
+  kissat_mab_dealloc (solver, checker->table, checker->hashed, sizeof (line *));
 }
 
 static void
@@ -184,22 +184,22 @@ release_watches (kissat * solver, checker * checker)
   const unsigned lits = 2 * checker->vars;
   for (unsigned i = 0; i < lits; i++)
     RELEASE_STACK (checker->watches[i]);
-  kissat_dealloc (solver, checker->watches, 2 * checker->size,
+  kissat_mab_dealloc (solver, checker->watches, 2 * checker->size,
 		  sizeof (lines));
 }
 
 void
-kissat_release_checker (kissat * solver)
+kissat_mab_release_checker (kissat * solver)
 {
   LOG ("releasing internal proof checker");
   checker *checker = solver->checker;
   release_hash (solver, checker);
   RELEASE_STACK (checker->imported);
   RELEASE_STACK (checker->trail);
-  kissat_free (solver, checker->marks, 2 * checker->size * sizeof (bool));
-  kissat_free (solver, checker->values, 2 * checker->size);
+  kissat_mab_free (solver, checker->marks, 2 * checker->size * sizeof (bool));
+  kissat_mab_free (solver, checker->values, 2 * checker->size);
   release_watches (solver, checker);
-  kissat_free (solver, checker, sizeof (struct checker));
+  kissat_mab_free (solver, checker, sizeof (struct checker));
 }
 
 #ifndef QUIET
@@ -207,10 +207,10 @@ kissat_release_checker (kissat * solver)
 #include <inttypes.h>
 
 #define PERCENT_ADDED(NAME) \
-  kissat_percent (checker->NAME, checker->added)
+  kissat_mab_percent (checker->NAME, checker->added)
 
 void
-kissat_print_checker_statistics (kissat * solver, bool verbose)
+kissat_mab_print_checker_statistics (kissat * solver, bool verbose)
 {
   checker *checker = solver->checker;
   if (verbose)
@@ -219,13 +219,13 @@ kissat_print_checker_statistics (kissat * solver, bool verbose)
 	      PERCENT_ADDED (checked), "%", "added");
   if (verbose)
     PRINT_STAT ("checker_collisions", checker->collisions,
-		kissat_percent (checker->collisions, checker->searches),
+		kissat_mab_percent (checker->collisions, checker->searches),
 		"%", "per search");
   PRINT_STAT ("checker_decisions", checker->decisions,
-	      kissat_average (checker->decisions, checker->checked),
+	      kissat_mab_average (checker->decisions, checker->checked),
 	      "", "per check");
   PRINT_STAT ("checker_propagations", checker->propagations,
-	      kissat_average (checker->propagations, checker->checked),
+	      kissat_mab_average (checker->propagations, checker->checked),
 	      "", "per check");
   PRINT_STAT ("checker_removed", checker->removed,
 	      PERCENT_ADDED (removed), "%", "added");
@@ -257,7 +257,7 @@ resize_hash (kissat * solver, checker * checker)
   const unsigned old_hashed = checker->hashed;
   assert (old_hashed < MAX_SIZE);
   const unsigned new_hashed = old_hashed ? 2 * old_hashed : 1;
-  line **table = kissat_calloc (solver, new_hashed, sizeof (line *));
+  line **table = kissat_mab_calloc (solver, new_hashed, sizeof (line *));
   line **old_table = checker->table;
   for (unsigned i = 0; i < old_hashed; i++)
     {
@@ -269,7 +269,7 @@ resize_hash (kissat * solver, checker * checker)
 	  table[reduced] = line;
 	}
     }
-  kissat_dealloc (solver, checker->table, old_hashed, sizeof (line *));
+  kissat_mab_dealloc (solver, checker->table, old_hashed, sizeof (line *));
   checker->hashed = new_hashed;
   checker->table = table;
 }
@@ -277,7 +277,7 @@ resize_hash (kissat * solver, checker * checker)
 static line *
 new_line (kissat * solver, checker * checker, unsigned size, unsigned hash)
 {
-  line *res = kissat_malloc (solver, bytes_line (size));
+  line *res = kissat_mab_malloc (solver, bytes_line (size));
   res->next = 0;
   res->size = size;
   res->hash = hash;
@@ -553,12 +553,12 @@ resize_checker (kissat * solver, checker * checker, unsigned new_vars)
       const unsigned size2 = 2 * size;
       const unsigned new_size2 = 2 * new_size;
       checker->marks =
-	kissat_realloc (solver, checker->marks, size2,
+	kissat_mab_realloc (solver, checker->marks, size2,
 			new_size2 * sizeof (bool));
       checker->values =
-	kissat_realloc (solver, checker->values, size2, new_size2);
+	kissat_mab_realloc (solver, checker->values, size2, new_size2);
       checker->watches =
-	kissat_realloc (solver, checker->watches,
+	kissat_mab_realloc (solver, checker->watches,
 			size2 * sizeof *checker->watches,
 			new_size2 * sizeof *checker->watches);
       checker->size = new_size;
@@ -593,7 +593,7 @@ import_external_checker (kissat * solver, checker * checker, int elit)
 static inline unsigned
 import_internal_checker (kissat * solver, checker * checker, unsigned ilit)
 {
-  const int elit = kissat_export_literal (solver, ilit);
+  const int elit = kissat_mab_export_literal (solver, ilit);
   return import_external_checker (solver, checker, elit);
 }
 
@@ -631,17 +631,17 @@ remove_line (kissat * solver, checker * checker, size_t size)
   line *line = find_line (solver, checker, size, true);
   if (!line)
     {
-      kissat_fatal_message_start ();
+      kissat_mab_fatal_message_start ();
       fputs ("trying to remove non-existing clause:\n", stderr);
       for (all_stack (unsigned, lit, checker->imported))
 	  fprintf (stderr, "%d ", export_checker (checker, lit));
       fputs ("0\n", stderr);
       fflush (stderr);
-      kissat_abort ();
+      kissat_mab_abort ();
     }
   unwatch_line (solver, checker, line);
   LOGLINE3 ("removed checker");
-  kissat_free (solver, line, bytes_line (size));
+  kissat_mab_free (solver, line, bytes_line (size));
   assert (checker->lines > 0);
   checker->lines--;
   checker->removed++;
@@ -652,7 +652,7 @@ import_external_literals (kissat * solver, checker * checker,
 			  size_t size, int *elits)
 {
   if (size > UINT_MAX)
-    kissat_fatal ("can not check handle original clause of size %zu", size);
+    kissat_mab_fatal ("can not check handle original clause of size %zu", size);
   CLEAR_STACK (checker->imported);
   for (size_t i = 0; i < size; i++)
     {
@@ -788,16 +788,16 @@ line_redundant (kissat * solver, checker * checker, size_t size)
       return true;
     }
   if (!size)
-    kissat_fatal ("checker can not remove empty checker clause");
+    kissat_mab_fatal ("checker can not remove empty checker clause");
   if (size == 1)
     {
       const unsigned unit = PEEK_STACK (checker->imported, 0);
       const signed char value = checker->values[unit];
       if (value < 0 && !checker->inconsistent)
-	kissat_fatal ("consistent checker can not remove falsified unit %d",
+	kissat_mab_fatal ("consistent checker can not remove falsified unit %d",
 		      export_checker (checker, unit));
       if (!value)
-	kissat_fatal ("checker can not remove unassigned unit %d",
+	kissat_mab_fatal ("checker can not remove unassigned unit %d",
 		      export_checker (checker, unit));
       LOG3 ("checker skips removal of satisfied unit %u", unit);
       return true;
@@ -872,20 +872,20 @@ check_line (kissat * solver, checker * checker)
   checker->decisions += decisions;
   if (!satisfied && checker_propagate (solver, checker))
     {
-      kissat_fatal_message_start ();
+      kissat_mab_fatal_message_start ();
       fputs ("failed to check clause:\n", stderr);
       for (all_stack (unsigned, lit, checker->imported))
 	  fprintf (stderr, "%d ", export_checker (checker, lit));
       fputs ("0\n", stderr);
       fflush (stderr);
-      kissat_abort ();
+      kissat_mab_abort ();
     }
   LOG3 ("checker imported clause unit implied");
   checker_backtrack (checker, saved);
 }
 
 void
-kissat_add_unchecked_external (kissat * solver, size_t size, int *elits)
+kissat_mab_add_unchecked_external (kissat * solver, size_t size, int *elits)
 {
   LOGINTS3 (size, elits, "adding unchecked external checker");
   checker *checker = solver->checker;
@@ -895,7 +895,7 @@ kissat_add_unchecked_external (kissat * solver, size_t size, int *elits)
 }
 
 void
-kissat_add_unchecked_internal (kissat * solver, size_t size, unsigned *lits)
+kissat_mab_add_unchecked_internal (kissat * solver, size_t size, unsigned *lits)
 {
   LOGLITS3 (size, lits, "adding unchecked internal checker");
   checker *checker = solver->checker;
@@ -906,7 +906,7 @@ kissat_add_unchecked_internal (kissat * solver, size_t size, unsigned *lits)
 }
 
 void
-kissat_check_and_add_binary (kissat * solver, unsigned a, unsigned b)
+kissat_mab_check_and_add_binary (kissat * solver, unsigned a, unsigned b)
 {
   LOGBINARY3 (a, b, "checking and adding internal checker");
   checker *checker = solver->checker;
@@ -918,7 +918,7 @@ kissat_check_and_add_binary (kissat * solver, unsigned a, unsigned b)
 }
 
 void
-kissat_check_and_add_clause (kissat * solver, clause * clause)
+kissat_mab_check_and_add_clause (kissat * solver, clause * clause)
 {
   LOGCLS3 (clause, "checking and adding internal checker");
   checker *checker = solver->checker;
@@ -928,7 +928,7 @@ kissat_check_and_add_clause (kissat * solver, clause * clause)
 }
 
 void
-kissat_check_and_add_empty (kissat * solver)
+kissat_mab_check_and_add_empty (kissat * solver)
 {
   LOG3 ("checking and adding empty checker clause");
   checker *checker = solver->checker;
@@ -938,7 +938,7 @@ kissat_check_and_add_empty (kissat * solver)
 }
 
 void
-kissat_check_and_add_internal (kissat * solver, size_t size, unsigned *lits)
+kissat_mab_check_and_add_internal (kissat * solver, size_t size, unsigned *lits)
 {
   LOGLITS3 (size, lits, "checking and adding internal checker");
   checker *checker = solver->checker;
@@ -948,7 +948,7 @@ kissat_check_and_add_internal (kissat * solver, size_t size, unsigned *lits)
 }
 
 void
-kissat_check_and_add_unit (kissat * solver, unsigned a)
+kissat_mab_check_and_add_unit (kissat * solver, unsigned a)
 {
   LOG3 ("checking and adding internal checker internal unit %u", a);
   checker *checker = solver->checker;
@@ -959,7 +959,7 @@ kissat_check_and_add_unit (kissat * solver, unsigned a)
 }
 
 void
-kissat_check_shrink_clause (kissat * solver, clause * c,
+kissat_mab_check_shrink_clause (kissat * solver, clause * c,
 			    unsigned remove, unsigned keep)
 {
   LOGCLS3 (c, "checking and shrinking by %u internal checker", remove);
@@ -983,7 +983,7 @@ kissat_check_shrink_clause (kissat * solver, clause * c,
 }
 
 void
-kissat_remove_checker_binary (kissat * solver, unsigned a, unsigned b)
+kissat_mab_remove_checker_binary (kissat * solver, unsigned a, unsigned b)
 {
   LOGBINARY3 (a, b, "removing internal checker");
   checker *checker = solver->checker;
@@ -994,7 +994,7 @@ kissat_remove_checker_binary (kissat * solver, unsigned a, unsigned b)
 }
 
 void
-kissat_remove_checker_clause (kissat * solver, clause * clause)
+kissat_mab_remove_checker_clause (kissat * solver, clause * clause)
 {
   LOGCLS3 (clause, "removing internal checker");
   checker *checker = solver->checker;
@@ -1003,7 +1003,7 @@ kissat_remove_checker_clause (kissat * solver, clause * clause)
 }
 
 bool
-kissat_checker_contains_clause (kissat * solver, clause * clause)
+kissat_mab_checker_contains_clause (kissat * solver, clause * clause)
 {
   checker *checker = solver->checker;
   import_clause (solver, checker, clause);
@@ -1014,7 +1014,7 @@ kissat_checker_contains_clause (kissat * solver, clause * clause)
 }
 
 void
-kissat_remove_checker_external (kissat * solver, size_t size, int *elits)
+kissat_mab_remove_checker_external (kissat * solver, size_t size, int *elits)
 {
   LOGINTS3 (size, elits, "removing external checker");
   checker *checker = solver->checker;
@@ -1023,7 +1023,7 @@ kissat_remove_checker_external (kissat * solver, size_t size, int *elits)
 }
 
 void
-kissat_remove_checker_internal (kissat * solver, size_t size, unsigned *ilits)
+kissat_mab_remove_checker_internal (kissat * solver, size_t size, unsigned *ilits)
 {
   LOGLITS3 (size, ilits, "removing internal checker");
   checker *checker = solver->checker;
@@ -1057,5 +1057,5 @@ dump_checker (kissat * solver)
 }
 
 #else
-int kissat_check_dummy_to_avoid_warning;
+int kissat_mab_check_dummy_to_avoid_warning;
 #endif

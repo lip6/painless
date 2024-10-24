@@ -9,7 +9,7 @@
 #include <inttypes.h>
 
 unsigned *
-kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
+kissat_mab_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
 {
   unsigneds *stack = &vectors->stack;
   LOG2 ("enlarging vector %" SECTOR_FORMAT "[%" SECTOR_FORMAT "] at %p",
@@ -19,7 +19,7 @@ kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
   const sector new_vector_size = old_vector_size ? 2 * old_vector_size : 1;
   size_t old_stack_size = SIZE_STACK (*stack);
   size_t capacity = CAPACITY_STACK (*stack);
-  assert (kissat_is_power_of_two (MAX_VECTORS));
+  assert (kissat_mab_is_power_of_two (MAX_VECTORS));
   assert (capacity <= MAX_VECTORS);
   size_t available = capacity - old_stack_size;
   if (new_vector_size > available)
@@ -30,14 +30,14 @@ kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
       unsigned enlarged = 0;
       do
 	{
-	  assert (kissat_is_zero_or_power_of_two (capacity));
+	  assert (kissat_mab_is_zero_or_power_of_two (capacity));
 
 	  if (capacity == MAX_VECTORS)
-	    kissat_fatal ("maximum vector stack size "
+	    kissat_mab_fatal ("maximum vector stack size "
 			  "of 2^%u entries %s exhausted", LD_MAX_VECTORS,
 			  FORMAT_BYTES (MAX_VECTORS * sizeof (unsigned)));
 	  enlarged++;
-	  kissat_stack_enlarge (solver, (chars *) stack, sizeof (unsigned));
+	  kissat_mab_stack_enlarge (solver, (chars *) stack, sizeof (unsigned));
 
 	  capacity = CAPACITY_STACK (*stack);
 	  available = capacity - old_stack_size;
@@ -50,7 +50,7 @@ kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
 #ifndef QUIET
 	  unsigned *new_begin = BEGIN_STACK (*stack);
 	  const uintptr_t moved = new_begin - old_begin;
-	  kissat_phase (solver, "vectors",
+	  kissat_mab_phase (solver, "vectors",
 			GET (vectors_enlarged),
 			"enlarged to %s entries %s (%s)",
 			FORMAT_COUNT (capacity),
@@ -61,7 +61,7 @@ kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
       assert (capacity <= MAX_VECTORS);
       assert (new_vector_size <= available);
     }
-  unsigned *begin_old_vector = kissat_begin_vector (vectors, vector);
+  unsigned *begin_old_vector = kissat_mab_begin_vector (vectors, vector);
   unsigned *begin_new_vector = END_STACK (*stack);
   unsigned *middle_new_vector = begin_new_vector + old_vector_size;
   unsigned *end_new_vector = begin_new_vector + new_vector_size;
@@ -72,7 +72,7 @@ kissat_enlarge_vector (kissat * solver, vectors * vectors, vector * vector)
   memcpy (begin_new_vector, begin_old_vector, old_bytes);
   memset (begin_old_vector, 0xff, old_bytes);
   solver->vectors.usable += old_vector_size;
-  kissat_add_usable (vectors, delta_size);
+  kissat_mab_add_usable (vectors, delta_size);
   memset (middle_new_vector, 0xff, delta_bytes);
   const uint64_t offset = SIZE_STACK (*stack);
   assert (offset <= MAX_VECTORS);
@@ -96,7 +96,7 @@ rank_offset (vector * unsorted, unsigned i)
 #define RADIX_SORT_DEFRAG_LENGTH 16
 
 void
-kissat_defrag_vectors (kissat * solver, vectors * vectors,
+kissat_mab_defrag_vectors (kissat * solver, vectors * vectors,
 		       unsigned size_unsorted, vector * unsorted)
 {
   START (defrag);
@@ -109,7 +109,7 @@ kissat_defrag_vectors (kissat * solver, vectors * vectors,
        " usable %" SECTOR_FORMAT,
        size_vectors, CAPACITY_STACK (*stack), solver->vectors.usable);
   size_t bytes = size_unsorted * sizeof (unsigned);
-  unsigned *sorted = kissat_malloc (solver, bytes);
+  unsigned *sorted = kissat_mab_malloc (solver, bytes);
   unsigned size_sorted = 0;
   for (unsigned i = 0; i < size_unsorted; i++)
     {
@@ -136,28 +136,28 @@ kissat_defrag_vectors (kissat * solver, vectors * vectors,
       memmove (p, q, size * sizeof (unsigned));
       p += size;
     }
-  kissat_free (solver, sorted, bytes);
+  kissat_mab_free (solver, sorted, bytes);
 #ifndef QUIET
   const size_t freed = END_STACK (*stack) - p;
-  double freed_fraction = kissat_percent (freed, size_vectors);
-  kissat_phase (solver, "defrag", GET (defragmentations),
+  double freed_fraction = kissat_mab_percent (freed, size_vectors);
+  kissat_mab_phase (solver, "defrag", GET (defragmentations),
 		"freed %zu usable entries %.0f%%", freed, freed_fraction);
   assert (freed == solver->vectors.usable);
 #endif
   SET_END_OF_STACK (*stack, p);
   SHRINK_STACK (*stack);
   solver->vectors.usable = 0;
-  kissat_check_vectors (solver);
+  kissat_mab_check_vectors (solver);
   STOP (defrag);
 }
 
 void
-kissat_remove_from_vector (kissat * solver,
+kissat_mab_remove_from_vector (kissat * solver,
 			   vectors * vectors, vector * vector,
 			   unsigned remove)
 {
-  unsigned *begin = kissat_begin_vector (vectors, vector), *p = begin;
-  const unsigned *end = kissat_end_vector (vectors, vector);
+  unsigned *begin = kissat_mab_begin_vector (vectors, vector), *p = begin;
+  const unsigned *end = kissat_mab_end_vector (vectors, vector);
   assert (p != end);
   while (*p != remove)
     p++, assert (p != end);
@@ -165,15 +165,15 @@ kissat_remove_from_vector (kissat * solver,
     p[-1] = *p;
   p[-1] = INVALID_VECTOR_ELEMENT;
   vector->size--;
-  kissat_inc_usable (vectors);
-  kissat_check_vectors (solver);
+  kissat_mab_inc_usable (vectors);
+  kissat_mab_check_vectors (solver);
 #ifndef CHECK_VECTORS
   (void) solver;
 #endif
 }
 
 void
-kissat_resize_vector (kissat * solver, vectors * vectors, vector * vector,
+kissat_mab_resize_vector (kissat * solver, vectors * vectors, vector * vector,
 		      sector new_size)
 {
   const sector old_size = vector->size;
@@ -181,42 +181,42 @@ kissat_resize_vector (kissat * solver, vectors * vectors, vector * vector,
   if (new_size == old_size)
     return;
   vector->size = new_size;
-  unsigned *begin = kissat_begin_vector (vectors, vector);
+  unsigned *begin = kissat_mab_begin_vector (vectors, vector);
   unsigned *end = begin + new_size;
   size_t delta = old_size - new_size;
-  kissat_add_usable (vectors, delta);
+  kissat_mab_add_usable (vectors, delta);
   size_t bytes = delta * sizeof (unsigned);
   memset (end, 0xff, bytes);
-  kissat_check_vectors (solver);
+  kissat_mab_check_vectors (solver);
 #ifndef CHECK_VECTORS
   (void) solver;
 #endif
 }
 
 void
-kissat_release_vector (kissat * solver, vectors * vectors, vector * vector)
+kissat_mab_release_vector (kissat * solver, vectors * vectors, vector * vector)
 {
-  kissat_resize_vector (solver, vectors, vector, 0);
+  kissat_mab_resize_vector (solver, vectors, vector, 0);
 }
 
 #ifdef CHECK_VECTORS
 
 void
-kissat_check_vector (vectors * vectors, vector * vector)
+kissat_mab_check_vector (vectors * vectors, vector * vector)
 {
-  const unsigned *begin = kissat_begin_vector (vectors, vector);
-  const unsigned *end = kissat_end_vector (vectors, vector);
+  const unsigned *begin = kissat_mab_begin_vector (vectors, vector);
+  const unsigned *end = kissat_mab_end_vector (vectors, vector);
   for (const unsigned *p = begin; p != end; p++)
     assert (*p != INVALID_VECTOR_ELEMENT);
 }
 
 void
-kissat_check_vectors (kissat * solver)
+kissat_mab_check_vectors (kissat * solver)
 {
   for (all_literals (lit))
     {
       vector *vector = &WATCHES (lit);
-      kissat_check_vector (&solver->vectors, vector);
+      kissat_mab_check_vector (&solver->vectors, vector);
     }
   vectors *vectors = &solver->vectors;
   unsigneds *stack = &vectors->stack;

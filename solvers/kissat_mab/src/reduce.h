@@ -5,7 +5,9 @@
 
 struct kissat;
 
-bool kissat_reducing (struct kissat *);
-int kissat_reduce (struct kissat *);
+bool
+kissat_mab_reducing(struct kissat*);
+int
+kissat_mab_reduce(struct kissat*);
 
 #endif

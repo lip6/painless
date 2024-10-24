@@ -12,24 +12,27 @@
 
 #include <vector>
 
-namespace Eigen
-{
-template <typename Scalar, typename Base = std::vector<Scalar>>
+namespace Eigen {
+template<typename Scalar, typename Base = std::vector<Scalar>>
 struct MovableScalar : public Base
 {
-  MovableScalar() = default;
-  ~MovableScalar() = default;
-  MovableScalar(const MovableScalar&) = default;
-  MovableScalar(MovableScalar&& other) = default;
-  MovableScalar& operator=(const MovableScalar&) = default;
-  MovableScalar& operator=(MovableScalar&& other) = default;
-  MovableScalar(Scalar scalar) : Base(100, scalar) {}
+	MovableScalar() = default;
+	~MovableScalar() = default;
+	MovableScalar(const MovableScalar&) = default;
+	MovableScalar(MovableScalar&& other) = default;
+	MovableScalar& operator=(const MovableScalar&) = default;
+	MovableScalar& operator=(MovableScalar&& other) = default;
+	MovableScalar(Scalar scalar)
+		: Base(100, scalar)
+	{
+	}
 
-  operator Scalar() const { return this->size() > 0 ? this->back() : Scalar(); }
+	operator Scalar() const { return this->size() > 0 ? this->back() : Scalar(); }
 };
 
-template<> struct NumTraits<MovableScalar<float>> : GenericNumTraits<float> {};
+template<>
+struct NumTraits<MovableScalar<float>> : GenericNumTraits<float>
+{};
 }
 
 #endif
-

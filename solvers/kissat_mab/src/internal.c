@@ -17,20 +17,20 @@
 #include <stdio.h>
 
 kissat *
-kissat_init(void)
+kissat_mab_init(void)
 {
-  kissat *solver = kissat_calloc(0, 1, sizeof *solver);
+  kissat *solver = kissat_mab_calloc(0, 1, sizeof *solver);
 #ifndef NOPTIONS
-  kissat_init_options(&solver->options);
+  kissat_mab_init_options(&solver->options);
 #else
-  kissat_init_options();
+  kissat_mab_init_options();
 #endif
 #ifndef QUIET
-  kissat_init_profiles(&solver->profiles);
+  kissat_mab_init_profiles(&solver->profiles);
 #endif
   START(total);
-  kissat_init_queue(&solver->queue);
-  kissat_push_frame(solver, INVALID_LIT);
+  kissat_mab_init_queue(&solver->queue);
+  kissat_mab_push_frame(solver, INVALID_LIT);
   solver->ls_call_num = 0;
   solver->ls_bms = 20;
   solver->ls_best_unsat_num = INT32_MAX;
@@ -61,7 +61,7 @@ kissat_init(void)
   solver->mab_decisions = 0;
   solver->mab_chosen_tot = 0;
 #ifndef NDEBUG
-  kissat_init_checker(solver);
+  kissat_mab_init_checker(solver);
   // added code for debug
   // INIT_STACK(solver->exportk);
   // INIT_STACK(solver->import);
@@ -74,7 +74,7 @@ kissat_init(void)
   do                                                                     \
   {                                                                      \
     const size_t block_size = ELEMENTS_PER_BLOCK * sizeof *solver->NAME; \
-    kissat_dealloc(solver, solver->NAME, solver->size, block_size);      \
+    kissat_mab_dealloc(solver, solver->NAME, solver->size, block_size);      \
     solver->NAME = 0;                                                    \
   } while (0)
 
@@ -97,19 +97,19 @@ kissat_init(void)
     DEALLOC_LITERAL_INDEXED(NAME);                       \
   } while (0)
 
-void kissat_release(kissat *solver)
+void kissat_mab_release(kissat *solver)
 {
-  kissat_require_initialized(solver);
+  kissat_mab_require_initialized(solver);
 
-  kissat_release_heap(solver, &solver->scores);
+  kissat_mab_release_heap(solver, &solver->scores);
 
   // CHB
-  kissat_release_heap(solver, &solver->scores_chb);
+  kissat_mab_release_heap(solver, &solver->scores_chb);
   DEALLOC_VARIABLE_INDEXED(conflicted_chb);
 
-  kissat_release_heap(solver, &solver->schedule);
+  kissat_mab_release_heap(solver, &solver->schedule);
 
-  kissat_release_clueue(solver, &solver->clueue);
+  kissat_mab_release_clueue(solver, &solver->clueue);
 
   RELEASE_STACK(solver->exportk);
   RELEASE_STACK(solver->import);
@@ -180,7 +180,7 @@ void kissat_release(kissat *solver)
 #endif
 
 #ifndef NDEBUG
-  kissat_release_checker(solver);
+  kissat_mab_release_checker(solver);
 #endif
 #if !defined(NDEBUG) && !defined(NMETRICS)
   uint64_t leaked = solver->statistics.allocated_current;
@@ -188,16 +188,16 @@ void kissat_release(kissat *solver)
     if (!getenv("LEAK"))
     {
       printf("d Internally leaking %" PRIu64 " bytes\n", leaked);
-      // kissat_fatal("internally leaking %" PRIu64 " bytes", leaked);
+      // kissat_mab_fatal("internally leaking %" PRIu64 " bytes", leaked);
     }
 #endif
 
-  kissat_free(0, solver, sizeof *solver);
+  kissat_mab_free(0, solver, sizeof *solver);
 }
 
 // Begin Painless
 // TODO : check the effectivness of this shuffle
-static inline void kissat_init_shuffle(kissat *solver, int max_var)
+static inline void kissat_mab_init_shuffle(kissat *solver, int max_var)
 {
   if (GET_OPTION(initshuffle))
   {
@@ -215,63 +215,63 @@ static inline void kissat_init_shuffle(kissat *solver, int max_var)
       id[j] = x;
     }
     for (int i = 1; i <= max_var; i++)
-      solver->init_phase[kissat_import_literal(solver, i) >> 1] = 0;
+      solver->init_phase[kissat_mab_import_literal(solver, i) >> 1] = 0;
     for (int i = 1; i <= max_var; i++)
-      kissat_activate_literal(solver, kissat_import_literal(solver, id[i]));
+      kissat_mab_activate_literal(solver, kissat_mab_import_literal(solver, id[i]));
     free(id);
   }
   else
   {
     for (int i = 1; i <= max_var; i++)
-      solver->init_phase[kissat_import_literal(solver, i) >> 1] = 0;
+      solver->init_phase[kissat_mab_import_literal(solver, i) >> 1] = 0;
   }
 }
 // End Painless
 
-void kissat_reserve(kissat *solver, int max_var)
+void kissat_mab_reserve(kissat *solver, int max_var)
 {
-  kissat_require_initialized(solver);
-  kissat_require(0 <= max_var,
+  kissat_mab_require_initialized(solver);
+  kissat_mab_require(0 <= max_var,
                  "negative maximum variable argument '%d'", max_var);
-  kissat_require(max_var <= EXTERNAL_MAX_VAR,
+  kissat_mab_require(max_var <= EXTERNAL_MAX_VAR,
                  "invalid maximum variable argument '%d'", max_var);
-  kissat_increase_size(solver, (unsigned)max_var);
+  kissat_mab_increase_size(solver, (unsigned)max_var);
   // Begin Painless
-  kissat_init_shuffle(solver, max_var);
+  kissat_mab_init_shuffle(solver, max_var);
   // End Painless
 }
 
-int kissat_get_option(kissat *solver, const char *name)
+int kissat_mab_get_option(kissat *solver, const char *name)
 {
-  kissat_require_initialized(solver);
-  kissat_require(name, "name zero pointer");
+  kissat_mab_require_initialized(solver);
+  kissat_mab_require(name, "name zero pointer");
 #ifndef NOPTIONS
-  return kissat_options_get(&solver->options, name);
+  return kissat_mab_options_get(&solver->options, name);
 #else
   (void)solver;
-  return kissat_options_get(name);
+  return kissat_mab_options_get(name);
 #endif
 }
 
-int kissat_set_option(kissat *solver, const char *name, int new_value)
+int kissat_mab_set_option(kissat *solver, const char *name, int new_value)
 {
 #ifndef NOPTIONS
-  kissat_require_initialized(solver);
-  kissat_require(name, "name zero pointer");
+  kissat_mab_require_initialized(solver);
+  kissat_mab_require(name, "name zero pointer");
 #ifndef NOPTIONS
-  return kissat_options_set(&solver->options, name, new_value);
+  return kissat_mab_options_set(&solver->options, name, new_value);
 #else
-  return kissat_options_set(name, new_value);
+  return kissat_mab_options_set(name, new_value);
 #endif
 #else
   (void)solver, (void)new_value;
-  return kissat_options_get(name);
+  return kissat_mab_options_get(name);
 #endif
 }
 
-void kissat_set_decision_limit(kissat *solver, unsigned limit)
+void kissat_mab_set_decision_limit(kissat *solver, unsigned limit)
 {
-  kissat_require_initialized(solver);
+  kissat_mab_require_initialized(solver);
   limits *limits = &solver->limits;
   limited *limited = &solver->limited;
   statistics *statistics = &solver->statistics;
@@ -282,9 +282,9 @@ void kissat_set_decision_limit(kissat *solver, unsigned limit)
       limits->decisions, limit);
 }
 
-void kissat_set_conflict_limit(kissat *solver, unsigned limit)
+void kissat_mab_set_conflict_limit(kissat *solver, unsigned limit)
 {
-  kissat_require_initialized(solver);
+  kissat_mab_require_initialized(solver);
   limits *limits = &solver->limits;
   limited *limited = &solver->limited;
   statistics *statistics = &solver->statistics;
@@ -295,22 +295,22 @@ void kissat_set_conflict_limit(kissat *solver, unsigned limit)
       limits->conflicts, limit);
 }
 
-void kissat_print_statistics(kissat *solver)
+void kissat_mab_print_statistics(kissat *solver)
 {
 #ifndef QUIET
-  kissat_require_initialized(solver);
-  const int verbosity = kissat_verbosity(solver);
+  kissat_mab_require_initialized(solver);
+  const int verbosity = kissat_mab_verbosity(solver);
   if (verbosity < 0)
     return;
   if (GET_OPTION(profile))
   {
-    kissat_section(solver, "profiling");
-    kissat_profiles_print(solver);
+    kissat_mab_section(solver, "profiling");
+    kissat_mab_profiles_print(solver);
   }
   const bool complete = GET_OPTION(statistics);
-  kissat_section(solver, "statistics");
+  kissat_mab_section(solver, "statistics");
   const bool verbose = (complete || verbosity > 0);
-  kissat_statistics_print(solver, verbose);
+  kissat_mab_statistics_print(solver, verbose);
   if (solver->mab)
   {
     printf("c MAB stats : ");
@@ -321,42 +321,42 @@ void kissat_print_statistics(kissat *solver)
 #ifndef NPROOFS
   if (solver->proof)
   {
-    kissat_section(solver, "proof");
-    kissat_print_proof_statistics(solver, verbose);
+    kissat_mab_section(solver, "proof");
+    kissat_mab_print_proof_statistics(solver, verbose);
   }
 #endif
 #ifndef NDEBUG
   if (GET_OPTION(check) > 1)
   {
-    kissat_section(solver, "checker");
-    kissat_print_checker_statistics(solver, verbose);
+    kissat_mab_section(solver, "checker");
+    kissat_mab_print_checker_statistics(solver, verbose);
   }
 #endif
-  kissat_section(solver, "resources");
-  kissat_print_resources(solver);
+  kissat_mab_section(solver, "resources");
+  kissat_mab_print_resources(solver);
 #endif
   (void)solver;
 }
 
-void kissat_add(kissat *solver, int elit)
+void kissat_mab_add(kissat *solver, int elit)
 {
-  kissat_require_initialized(solver);
-  kissat_require(!GET(searches), "incremental solving not supported");
+  kissat_mab_require_initialized(solver);
+  kissat_mab_require(!GET(searches), "incremental solving not supported");
 
 #if !defined(NDEBUG) || !defined(NPROOFS) || defined(LOGGING)
-  const int checking = kissat_checking(solver);
-  const bool logging = kissat_logging(solver);
-  const bool proving = kissat_proving(solver);
+  const int checking = kissat_mab_checking(solver);
+  const bool logging = kissat_mab_logging(solver);
+  const bool proving = kissat_mab_proving(solver);
 #endif
   if (elit) // elit != 0
   {
-    kissat_require_valid_external_internal(elit);
+    kissat_mab_require_valid_external_internal(elit);
 #if !defined(NDEBUG) || !defined(NPROOFS) || defined(LOGGING)
     if (checking || logging || proving)
       PUSH_STACK(solver->original, elit);
 #endif
-    unsigned ilit = kissat_import_literal(solver, elit);
-    /* After kissat_import_literal:
+    unsigned ilit = kissat_mab_import_literal(solver, elit);
+    /* After kissat_mab_import_literal:
       exportk[iidx]=eidx
       import[eidx].lit=ilit
     */
@@ -364,15 +364,15 @@ void kissat_add(kissat *solver, int elit)
     const mark mark = MARK(ilit); // if the literal was already seen and was not assigned in the current clause
     if (!mark)                    // literal or its negation were never seen in the current clause
     {
-      const value value = kissat_fixed(solver, ilit); // returns 0 if ilit is not assigned or is assigned at level > 0. If assigned at level 0 returns -1 or 1
+      const value value = kissat_mab_fixed(solver, ilit); // returns 0 if ilit is not assigned or is assigned at level > 0. If assigned at level 0 returns -1 or 1
       if (value > 0)                                  // ilit is assigned at root and is true
       {
         /**
          *  to remember : since solver is global, it must be initialized to false
-         * Clearly at kissat_init():
+         * Clearly at kissat_mab_init():
          * (gdb) print solver->clause
             $1 = {satisfied = false, shrink = false, trivial = false, lits = {begin = 0x0, end = 0x0, allocated = 0x0}}
-          * It is the same values at kissat_add(), but more checks are needed to be sure that solver->clause was not touched after kissat_init()
+          * It is the same values at kissat_mab_add(), but more checks are needed to be sure that solver->clause was not touched after kissat_mab_init()
         */
         if (!solver->clause.satisfied) // the current original clause is satisfied
         {
@@ -433,7 +433,7 @@ void kissat_add(kissat *solver, int elit)
     unsigned *ilits = BEGIN_STACK(solver->clause.lits);
     assert(isize < (unsigned)INT_MAX);
 
-    if (solver->inconsistent) // previous kissat_add can make the solver inconsistent
+    if (solver->inconsistent) // previous kissat_mab_add can make the solver inconsistent
       LOG("inconsistent thus skipping original clause");
     else if (solver->clause.satisfied)
       LOG("skipping satisfied original clause");
@@ -445,7 +445,7 @@ void kissat_add(kissat *solver, int elit)
        * enqueue all variables and set the flags activate, eliminate and subsume to all the variables of the clause
        * If a variable is already active it will pass to the next without doing anything
        */
-      kissat_activate_literals(solver, isize, ilits);
+      kissat_mab_activate_literals(solver, isize, ilits);
 
       if (!isize) // no literal was added, all falsfied or none exists "0 0"
       {
@@ -471,11 +471,11 @@ void kissat_add(kissat *solver, int elit)
         else // originally unit
           LOGUNARY(unit, "found original");
 
-        kissat_assign_unit(solver, unit);
+        kissat_mab_assign_unit(solver, unit);
 
         if (!solver->level) // to be sure to be at root
         {
-          clause *conflict = kissat_search_propagate(solver);
+          clause *conflict = kissat_mab_search_propagate(solver);
           if (conflict) // Conflict at root : problem UNSAT
           {
             LOG("propagation of root level unit failed");
@@ -488,9 +488,9 @@ void kissat_add(kissat *solver, int elit)
       else // isize >= 2
       {
         // the index of the original clause in the arena stack
-        reference res = kissat_new_original_clause(solver);
+        reference res = kissat_mab_new_original_clause(solver);
 
-        // two watch initialization, kissat_sort_literals in kissat_new_original_clause iterates through the literals to choose the watchers
+        // two watch initialization, kissat_mab_sort_literals in kissat_mab_new_original_clause iterates through the literals to choose the watchers
         const unsigned a = ilits[0]; // literal to propagate if b is false
         const unsigned b = ilits[1]; // sentinel literal if can only be false, propagate
 
@@ -515,7 +515,7 @@ void kissat_add(kissat *solver, int elit)
           LOG("both watches falsified at level @%u", k);
           assert(v < 0);
           assert(k > 0); // otherwise unsat
-          kissat_backtrack(solver, k - 1);
+          kissat_mab_backtrack(solver, k - 1);
         }
         else if (u < 0) // both falsified but at different levels (k > l)
         {
@@ -555,19 +555,19 @@ void kissat_add(kissat *solver, int elit)
           {
             assert(res == INVALID_REF);
             /**
-             * void kissat_assign_binary(kissat *solver,
+             * void kissat_mab_assign_binary(kissat *solver,
                 #ifdef INLINE_ASSIGN
                          value *values, assigned *assigned,
                 #endif
                          bool redundant, unsigned lit, unsigned other)
             */
-            kissat_assign_binary(solver, false, a, b);
+            kissat_mab_assign_binary(solver, false, a, b);
           }
           else // isize > 2
           {
             assert(res != INVALID_REF);
-            clause *c = kissat_dereference_clause(solver, res);
-            kissat_assign_reference(solver, a, res, c);
+            clause *c = kissat_mab_dereference_clause(solver, res);
+            kissat_mab_assign_reference(solver, a, res, c);
           }
         }
       }
@@ -578,11 +578,11 @@ void kissat_add(kissat *solver, int elit)
     {
 #ifndef NDEBUG
       if (checking > 1)
-        kissat_remove_checker_external(solver, esize, elits);
+        kissat_mab_remove_checker_external(solver, esize, elits);
 #endif
 #ifndef NPROOFS
       if (proving)
-        kissat_delete_external_from_proof(solver, esize, elits);
+        kissat_mab_delete_external_from_proof(solver, esize, elits);
 #endif
     }
     else if (solver->clause.shrink)
@@ -590,15 +590,15 @@ void kissat_add(kissat *solver, int elit)
 #ifndef NDEBUG
       if (checking > 1)
       {
-        kissat_check_and_add_internal(solver, isize, ilits);
-        kissat_remove_checker_external(solver, esize, elits);
+        kissat_mab_check_and_add_internal(solver, isize, ilits);
+        kissat_mab_remove_checker_external(solver, esize, elits);
       }
 #endif
 #ifndef NPROOFS
       if (proving)
       {
-        kissat_add_lits_to_proof(solver, isize, ilits);
-        kissat_delete_external_from_proof(solver, esize, elits);
+        kissat_mab_add_lits_to_proof(solver, isize, ilits);
+        kissat_mab_delete_external_from_proof(solver, esize, elits);
       }
 #endif
     }
@@ -631,24 +631,24 @@ void kissat_add(kissat *solver, int elit)
   }
 }
 
-int kissat_solve(kissat *solver)
+int kissat_mab_solve(kissat *solver)
 {
-  kissat_require(EMPTY_STACK(solver->clause.lits), "incomplete clause (terminating zero not added)");
-  kissat_require(!GET(searches), "incremental solving not supported");
-  return kissat_search(solver);
+  kissat_mab_require(EMPTY_STACK(solver->clause.lits), "incomplete clause (terminating zero not added)");
+  kissat_mab_require(!GET(searches), "incremental solving not supported");
+  return kissat_mab_search(solver);
 }
 
-void kissat_terminate(kissat *solver)
+void kissat_mab_terminate(kissat *solver)
 {
-  kissat_require_initialized(solver);
+  kissat_mab_require_initialized(solver);
   solver->terminate = ~(unsigned)0;
   assert(solver->terminate);
 }
 
-int kissat_value(kissat *solver, int elit)
+int kissat_mab_value(kissat *solver, int elit)
 {
-  kissat_require_initialized(solver);
-  kissat_require_valid_external_internal(elit);
+  kissat_mab_require_initialized(solver);
+  kissat_mab_require_valid_external_internal(elit);
   const unsigned eidx = ABS(elit);
   if (eidx >= SIZE_STACK(solver->import))
     return 0;
@@ -659,7 +659,7 @@ int kissat_value(kissat *solver, int elit)
   if (import->eliminated)
   {
     if (!solver->extended && !EMPTY_STACK(solver->extend))
-      kissat_extend(solver);
+      kissat_mab_extend(solver);
     const unsigned eliminated = import->lit;
     tmp = PEEK_STACK(solver->eliminated, eliminated);
   }

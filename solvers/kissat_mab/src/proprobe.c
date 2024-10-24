@@ -27,7 +27,7 @@ probing_propagate (kissat * solver, clause * ignore)
 }
 
 clause *
-kissat_probing_propagate (kissat * solver, clause * ignore)
+kissat_mab_probing_propagate (kissat * solver, clause * ignore)
 { 
   assert (solver->probing);
   assert (solver->watching);
@@ -38,7 +38,7 @@ kissat_probing_propagate (kissat * solver, clause * ignore)
   solver->ticks = 0;
   const unsigned propagated = solver->propagated;
   clause *conflict = probing_propagate (solver, ignore);
-  kissat_update_probing_propagation_statistics (solver, propagated);
+  kissat_mab_update_probing_propagation_statistics (solver, propagated);
 
   STOP (propagate);
 

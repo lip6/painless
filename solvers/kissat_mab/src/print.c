@@ -28,7 +28,7 @@ verbosity (kissat * solver)
 }
 
 void
-kissat_warning (kissat * solver, const char *fmt, ...)
+kissat_mab_warning (kissat * solver, const char *fmt, ...)
 {
   if (verbosity (solver) < 0)
     return;
@@ -49,14 +49,14 @@ kissat_warning (kissat * solver, const char *fmt, ...)
 }
 
 void
-kissat_signal (kissat * solver, const char *type, int sig)
+kissat_mab_signal (kissat * solver, const char *type, int sig)
 {
   if (verbosity (solver) < 0)
     return;
   TERMINAL (stdout, 1);
   fputs ("c ", stdout);
   COLOR (BOLD RED);
-  printf ("%s signal %d (%s)", type, sig, kissat_signal_name (sig));
+  printf ("%s signal %d (%s)", type, sig, kissat_mab_signal_name (sig));
   COLOR (NORMAL);
   fputc ('\n', stdout);
   fflush (stdout);
@@ -75,13 +75,13 @@ print_message (const char *color, const char *fmt, va_list * ap)
 }
 
 int
-kissat_verbosity (kissat * solver)
+kissat_mab_verbosity (kissat * solver)
 {
   return verbosity (solver);
 }
 
 void
-kissat_message (kissat * solver, const char *fmt, ...)
+kissat_mab_message (kissat * solver, const char *fmt, ...)
 {
   if (verbosity (solver) < 0)
     return;
@@ -92,7 +92,7 @@ kissat_message (kissat * solver, const char *fmt, ...)
 }
 
 void
-kissat_verbose (kissat * solver, const char *fmt, ...)
+kissat_mab_verbose (kissat * solver, const char *fmt, ...)
 {
   if (verbosity (solver) < 1)
     return;
@@ -103,7 +103,7 @@ kissat_verbose (kissat * solver, const char *fmt, ...)
 }
 
 void
-kissat_very_verbose (kissat * solver, const char *fmt, ...)
+kissat_mab_very_verbose (kissat * solver, const char *fmt, ...)
 {
   if (verbosity (solver) < 2)
     return;
@@ -114,7 +114,7 @@ kissat_very_verbose (kissat * solver, const char *fmt, ...)
 }
 
 void
-kissat_extremely_verbose (kissat * solver, const char *fmt, ...)
+kissat_mab_extremely_verbose (kissat * solver, const char *fmt, ...)
 {
   if (verbosity (solver) < 3)
     return;
@@ -125,7 +125,7 @@ kissat_extremely_verbose (kissat * solver, const char *fmt, ...)
 }
 
 void
-kissat_section (kissat * solver, const char *name)
+kissat_mab_section (kissat * solver, const char *name)
 {
   if (verbosity (solver) < 0)
     return;
@@ -149,7 +149,7 @@ kissat_section (kissat * solver, const char *name)
 }
 
 void
-kissat_phase (kissat * solver, const char *name, uint64_t count,
+kissat_mab_phase (kissat * solver, const char *name, uint64_t count,
 	      const char *fmt, ...)
 {
   if (verbosity (solver) < 1)
@@ -174,5 +174,5 @@ kissat_phase (kissat * solver, const char *name, uint64_t count,
 }
 
 #else
-int kissat_print_dummy_to_avoid_warning;
+int kissat_mab_print_dummy_to_avoid_warning;
 #endif

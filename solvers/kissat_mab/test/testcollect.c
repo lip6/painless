@@ -15,9 +15,9 @@
 static void
 flush_unit (kissat * solver)
 {
-  clause *conflict = kissat_search_propagate (solver);
+  clause *conflict = kissat_mab_search_propagate (solver);
   assert (!conflict);
-  kissat_flush_trail (solver);
+  kissat_mab_flush_trail (solver);
 }
 
 static void
@@ -25,7 +25,7 @@ add_unit_to_satisfy_redundant_clause (kissat * solver)
 {
   if (solver->values[REDUNDANT_LITERAL])
     return;
-  kissat_assign_unit (solver, REDUNDANT_LITERAL);
+  kissat_mab_assign_unit (solver, REDUNDANT_LITERAL);
   flush_unit (solver);
 }
 
@@ -34,7 +34,7 @@ add_unit_to_satisfy_irredundant_clause (kissat * solver)
 {
   if (solver->values[IRREDUNDANT_LITERAL])
     return;
-  kissat_assign_unit (solver, IRREDUNDANT_LITERAL);
+  kissat_mab_assign_unit (solver, IRREDUNDANT_LITERAL);
   flush_unit (solver);
 }
 
@@ -42,18 +42,18 @@ static void
 just_import_and_activate_four_variables (kissat * solver)
 {
   int ilit;
-  ilit = kissat_import_literal (solver, 1);
+  ilit = kissat_mab_import_literal (solver, 1);
   assert (ilit == 0);
-  kissat_activate_literal (solver, ilit);
-  ilit = kissat_import_literal (solver, 2);
+  kissat_mab_activate_literal (solver, ilit);
+  ilit = kissat_mab_import_literal (solver, 2);
   assert (ilit == 2);
-  kissat_activate_literal (solver, ilit);
-  ilit = kissat_import_literal (solver, 3);
+  kissat_mab_activate_literal (solver, ilit);
+  ilit = kissat_mab_import_literal (solver, 3);
   assert (ilit == 4);
-  kissat_activate_literal (solver, ilit);
-  ilit = kissat_import_literal (solver, 4);
+  kissat_mab_activate_literal (solver, ilit);
+  ilit = kissat_mab_import_literal (solver, 4);
   assert (ilit == 6);
-  kissat_activate_literal (solver, ilit);
+  kissat_mab_activate_literal (solver, ilit);
 }
 
 static void
@@ -63,7 +63,7 @@ add_large_redundant_clause (kissat * solver)
   PUSH_STACK (solver->clause.lits, 0);
   PUSH_STACK (solver->clause.lits, REDUNDANT_LITERAL);
   PUSH_STACK (solver->clause.lits, 6);
-  kissat_new_redundant_clause (solver, 2);
+  kissat_mab_new_redundant_clause (solver, 2);
 }
 
 static void
@@ -73,7 +73,7 @@ add_large_irredundant_clause (kissat * solver)
   PUSH_STACK (solver->clause.lits, 0);
   PUSH_STACK (solver->clause.lits, IRREDUNDANT_LITERAL);
   PUSH_STACK (solver->clause.lits, 6);
-  kissat_new_irredundant_clause (solver);
+  kissat_mab_new_irredundant_clause (solver);
 }
 
 static void
@@ -81,7 +81,7 @@ mark_redundant_clauses_as_garbage (kissat * solver)
 {
   for (all_clauses (c))
     if (c->redundant)
-      kissat_mark_clause_as_garbage (solver, c);
+      kissat_mab_mark_clause_as_garbage (solver, c);
 }
 
 static void
@@ -89,7 +89,7 @@ mark_irredundant_clauses_as_garbage (kissat * solver)
 {
   for (all_clauses (c))
     if (!c->redundant)
-      kissat_mark_clause_as_garbage (solver, c);
+      kissat_mab_mark_clause_as_garbage (solver, c);
 }
 
 #define IFBIT(BIT,FUNCTION) \
@@ -108,7 +108,7 @@ test_collect (void)
       if (!(i & ((i << 7) | (i << 9) | (i << 11))))
 	continue;
 
-      kissat *solver = kissat_init ();
+      kissat *solver = kissat_mab_init ();
       tissat_init_solver (solver);
 #if !defined(NDEBUG)
       solver->options.check = 0;
@@ -141,7 +141,7 @@ test_collect (void)
       if (i & (i << 7))
 	{
 	  bool compact = !(i & (i << 8));
-	  kissat_sparse_collect (solver, compact, 0);
+	  kissat_mab_sparse_collect (solver, compact, 0);
 	}
       else if (i & (i << 8))
 	{
@@ -154,10 +154,10 @@ test_collect (void)
 
       if (i & (i << 9))
 	{
-	  kissat_enter_dense_mode (solver, 0, 0);
-	  kissat_dense_collect (solver);
+	  kissat_mab_enter_dense_mode (solver, 0, 0);
+	  kissat_mab_dense_collect (solver);
 	  bool flush = !(i & (i << 10));
-	  kissat_resume_sparse_mode (solver, flush, 0, 0);
+	  kissat_mab_resume_sparse_mode (solver, flush, 0, 0);
 	}
       else if (i & (i << 10))
 	{
@@ -170,10 +170,10 @@ test_collect (void)
       if (i & (i << 11))
 	{
 	  bool compact = !(i & (i << 12));
-	  kissat_sparse_collect (solver, compact, 0);
+	  kissat_mab_sparse_collect (solver, compact, 0);
 	}
 
-      kissat_release (solver);
+      kissat_mab_release (solver);
     }
 }
 

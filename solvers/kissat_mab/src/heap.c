@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-void kissat_release_heap(kissat *solver, heap *heap)
+void kissat_mab_release_heap(kissat *solver, heap *heap)
 {
   RELEASE_STACK(heap->stack);
   DEALLOC(heap->pos, heap->size);
@@ -17,7 +17,7 @@ void kissat_release_heap(kissat *solver, heap *heap)
 
 #ifndef NDEBUG
 
-void kissat_check_heap(heap *heap)
+void kissat_mab_check_heap(heap *heap)
 {
   const unsigned *stack = BEGIN_STACK(heap->stack);
   const unsigned end = SIZE_STACK(heap->stack);
@@ -48,7 +48,7 @@ void kissat_check_heap(heap *heap)
 
 #endif
 
-void kissat_resize_heap(kissat *solver, heap *heap, unsigned new_size)
+void kissat_mab_resize_heap(kissat *solver, heap *heap, unsigned new_size)
 {
   const unsigned old_size = heap->size;
   if (old_size >= new_size)
@@ -56,22 +56,22 @@ void kissat_resize_heap(kissat *solver, heap *heap, unsigned new_size)
   LOG("resizing %s heap from %u to %u",
       (heap->tainted ? "tainted" : "untainted"), old_size, new_size);
 
-  heap->pos = kissat_nrealloc(solver, heap->pos,
+  heap->pos = kissat_mab_nrealloc(solver, heap->pos,
                               old_size, new_size, sizeof(unsigned));
   if (heap->tainted)
   {
-    heap->score = kissat_nrealloc(solver, heap->score,
+    heap->score = kissat_mab_nrealloc(solver, heap->score,
                                   old_size, new_size, sizeof(double));
   }
   else
   {
     if (old_size)
       DEALLOC(heap->score, old_size);
-    heap->score = kissat_calloc(solver, new_size, sizeof(double));
+    heap->score = kissat_mab_calloc(solver, new_size, sizeof(double));
   }
   heap->size = new_size;
 #ifdef CHECK_HEAP
-  kissat_check_heap(heap);
+  kissat_mab_check_heap(heap);
 #endif
 }
 
@@ -183,20 +183,20 @@ enlarge_heap(kissat *solver, heap *heap, unsigned new_vars)
       enlarge_heap(solver, heap, (IDX) + 1); \
   } while (0)
 
-void kissat_push_heap(kissat *solver, heap *heap, unsigned idx)
+void kissat_mab_push_heap(kissat *solver, heap *heap, unsigned idx)
 {
   LOG("push heap %u", idx);
-  assert(!kissat_heap_contains(heap, idx));
+  assert(!kissat_mab_heap_contains(heap, idx));
   IMPORT(idx);
   heap->pos[idx] = SIZE_STACK(heap->stack);
   PUSH_STACK(heap->stack, idx);
   bubble_up(solver, heap, idx);
 }
 
-void kissat_pop_heap(kissat *solver, heap *heap, unsigned idx)
+void kissat_mab_pop_heap(kissat *solver, heap *heap, unsigned idx)
 {
   LOG("pop heap %u", idx);
-  assert(kissat_heap_contains(heap, idx));
+  assert(kissat_mab_heap_contains(heap, idx));
   IMPORT(idx);
   const unsigned last = POP_STACK(heap->stack);
   heap->pos[last] = DISCONTAIN;
@@ -209,14 +209,14 @@ void kissat_pop_heap(kissat *solver, heap *heap, unsigned idx)
   bubble_up(solver, heap, last);
   bubble_down(solver, heap, last);
 #ifdef CHECK_HEAP
-  kissat_check_heap(heap);
+  kissat_mab_check_heap(heap);
 #endif
 }
 
-void kissat_update_heap(kissat *solver, heap *heap,
+void kissat_mab_update_heap(kissat *solver, heap *heap,
                         unsigned idx, double new_score)
 {
-  const double old_score = kissat_get_heap_score(heap, idx);
+  const double old_score = kissat_mab_get_heap_score(heap, idx);
   if (old_score == new_score)
     return;
   IMPORT(idx);
@@ -227,19 +227,19 @@ void kissat_update_heap(kissat *solver, heap *heap,
     heap->tainted = true;
     LOG("tainted heap");
   }
-  if (!kissat_heap_contains(heap, idx))
+  if (!kissat_mab_heap_contains(heap, idx))
     return;
   if (new_score > old_score)
     bubble_up(solver, heap, idx);
   else
     bubble_down(solver, heap, idx);
 #ifdef CHECK_HEAP
-  kissat_check_heap(heap);
+  kissat_mab_check_heap(heap);
 #endif
 }
 
 double
-kissat_max_score_on_heap(heap *heap)
+kissat_mab_max_score_on_heap(heap *heap)
 {
   if (!heap->tainted)
     return 0;
@@ -252,14 +252,14 @@ kissat_max_score_on_heap(heap *heap)
   return res;
 }
 
-void kissat_rescale_heap(kissat *solver, heap *heap, double factor)
+void kissat_mab_rescale_heap(kissat *solver, heap *heap, double factor)
 {
   LOG("rescaling scores on heap with factor %g", factor);
   double *score = heap->score;
   for (unsigned i = 0; i < heap->vars; i++)
     score[i] *= factor;
 #ifndef NDEBUG
-  kissat_check_heap(heap);
+  kissat_mab_check_heap(heap);
 #endif
 #ifndef LOGGING
   (void)solver;
@@ -279,7 +279,7 @@ dump_heap(heap *heap)
     printf("heap.score[%u] = %g\n", i, heap->score[i]);
 }
 
-void kissat_dump_heap(heap *heap)
+void kissat_mab_dump_heap(heap *heap)
 {
   dump_heap(heap);
 }

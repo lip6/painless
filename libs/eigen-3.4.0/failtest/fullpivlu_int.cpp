@@ -8,7 +8,8 @@
 
 using namespace Eigen;
 
-int main()
+int
+main()
 {
-  FullPivLU<Matrix<SCALAR,Dynamic,Dynamic> > lu(Matrix<SCALAR,Dynamic,Dynamic>::Random(10,10));
+	FullPivLU<Matrix<SCALAR, Dynamic, Dynamic>> lu(Matrix<SCALAR, Dynamic, Dynamic>::Random(10, 10));
 }

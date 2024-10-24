@@ -44,7 +44,8 @@
  * \param cutoff Minimal dimension for recursion.
  */
 
-mzd_t *mzd_mul_mp(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+mzd_mul_mp(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication and in-place addition via the cubic matrix
@@ -59,7 +60,8 @@ mzd_t *mzd_mul_mp(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * \param cutoff Minimal dimension for recursion.
  */
 
-mzd_t *mzd_addmul_mp(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+mzd_addmul_mp(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication and in-place addition via cubic matrix
@@ -71,7 +73,8 @@ mzd_t *mzd_addmul_mp(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * \param cutoff Minimal dimension for recursion.
  */
 
-mzd_t *_mzd_addmul_mp4(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+_mzd_addmul_mp4(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication via cubic matrix multiplication algorithm on up
@@ -83,6 +86,7 @@ mzd_t *_mzd_addmul_mp4(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * \param cutoff Minimal dimension for recursion.
  */
 
-mzd_t *_mzd_mul_mp4(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+_mzd_mul_mp4(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
-#endif  //__M4RI_HAVE_OPENMP
+#endif //__M4RI_HAVE_OPENMP

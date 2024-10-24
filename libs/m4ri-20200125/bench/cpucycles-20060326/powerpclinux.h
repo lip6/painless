@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_powerpclinux_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_powerpclinux(void);
-extern long long cpucycles_powerpclinux_persecond(void);
+	extern long long cpucycles_powerpclinux(void);
+	extern long long cpucycles_powerpclinux_persecond(void);
 
 #ifdef __cplusplus
 }

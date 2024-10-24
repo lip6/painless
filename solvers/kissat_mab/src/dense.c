@@ -71,7 +71,7 @@ flush_large_watches (kissat * solver,
 		    {
 		      const bool red = watch.binary.redundant;
 		      const bool hyper = watch.binary.hyper;
-		      kissat_delete_binary (solver, red, hyper, lit, other);
+		      kissat_mab_delete_binary (solver, red, hyper, lit, other);
 		      collected++;
 		    }
 		}
@@ -96,7 +96,7 @@ flush_large_watches (kissat * solver,
 }
 
 void
-kissat_enter_dense_mode (kissat * solver,
+kissat_mab_enter_dense_mode (kissat * solver,
 			 litpairs * irredundant, litwatches * redundant)
 {
   assert (!solver->level);
@@ -106,7 +106,7 @@ kissat_enter_dense_mode (kissat * solver,
   if (irredundant || redundant)
     flush_large_watches (solver, irredundant, redundant);
   else
-    kissat_flush_large_watches (solver);
+    kissat_mab_flush_large_watches (solver);
   LOG ("switched to full occurrence lists");
   solver->watching = false;
 }
@@ -144,7 +144,7 @@ resume_watching_binaries_after_elimination (kissat * solver,
 	{
 	  const bool redundant = watch.binary.redundant;
 	  const bool hyper = watch.binary.hyper;
-	  kissat_delete_binary (solver, redundant, hyper, first, second);
+	  kissat_mab_delete_binary (solver, redundant, hyper, first, second);
 #ifdef LOGGING
 	  flushed_eliminated++;
 #endif
@@ -198,11 +198,11 @@ resume_watching_irredundant_binaries (kissat * solver, litpairs * binaries)
       assert (!ELIMINATED (IDX (second)));
 
       watches *first_watches = all_watches + first;
-      watch first_watch = kissat_binary_watch (second, false, false);
+      watch first_watch = kissat_mab_binary_watch (second, false, false);
       PUSH_WATCHES (*first_watches, first_watch);
 
       watches *second_watches = all_watches + second;
-      watch second_watch = kissat_binary_watch (first, false, false);
+      watch second_watch = kissat_mab_binary_watch (first, false, false);
       PUSH_WATCHES (*second_watches, second_watch);
 
 #ifdef LOGGING
@@ -248,22 +248,22 @@ resume_watching_large_clauses_after_elimination (kissat * solver)
 	}
       if (collect)
 	{
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  continue;
 	}
 
       assert (c->size > 2);
 
       unsigned *lits = c->lits;
-      kissat_sort_literals (solver, values, assigned, c->size, lits);
+      kissat_mab_sort_literals (solver, values, assigned, c->size, lits);
       c->searched = 2;
 
       const reference ref = (word *) c - arena;
       const unsigned l0 = lits[0];
       const unsigned l1 = lits[1];
 
-      kissat_push_blocking_watch (solver, watches + l0, l1, ref);
-      kissat_push_blocking_watch (solver, watches + l1, l0, ref);
+      kissat_mab_push_blocking_watch (solver, watches + l0, l1, ref);
+      kissat_mab_push_blocking_watch (solver, watches + l1, l0, ref);
 
 #ifdef LOGGING
       if (c->redundant)
@@ -277,7 +277,7 @@ resume_watching_large_clauses_after_elimination (kissat * solver)
 }
 
 void
-kissat_resume_sparse_mode (kissat * solver, bool flush_eliminated,
+kissat_mab_resume_sparse_mode (kissat * solver, bool flush_eliminated,
 			   litpairs * irredundant, litwatches * redundant)
 {
   assert (!solver->level);
@@ -285,7 +285,7 @@ kissat_resume_sparse_mode (kissat * solver, bool flush_eliminated,
   if (solver->inconsistent)
     return;
   LOG ("resuming sparse mode watching clauses");
-  kissat_flush_large_connected (solver);
+  kissat_mab_flush_large_connected (solver);
   LOG ("switched to watching clauses");
   solver->watching = true;
   if (irredundant)
@@ -306,15 +306,15 @@ kissat_resume_sparse_mode (kissat * solver, bool flush_eliminated,
   if (flush_eliminated)
     resume_watching_large_clauses_after_elimination (solver);
   else
-    kissat_watch_large_clauses (solver);
+    kissat_mab_watch_large_clauses (solver);
   LOG ("forcing to propagate units on all clauses");
   solver->propagated = 0;
 
   clause *conflict;
   if (solver->probing)
-    conflict = kissat_probing_propagate (solver, 0);
+    conflict = kissat_mab_probing_propagate (solver, 0);
   else
-    conflict = kissat_search_propagate (solver);
+    conflict = kissat_mab_search_propagate (solver);
   if (conflict)
     {
       LOG ("conflict during propagation after resuming sparse mode");
@@ -323,5 +323,5 @@ kissat_resume_sparse_mode (kissat * solver, bool flush_eliminated,
       ADD_EMPTY_TO_PROOF ();
     }
   else if (solver->unflushed)
-    kissat_flush_trail (solver);
+    kissat_mab_flush_trail (solver);
 }

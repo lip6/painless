@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 
-void kissat_init_queue(queue *queue)
+void kissat_mab_init_queue(queue *queue)
 {
   queue->first = queue->last = DISCONNECT;
   assert(!queue->stamp);
@@ -15,7 +15,7 @@ void kissat_init_queue(queue *queue)
 static void
 reassign_queue_stamps(kissat *solver, links *links, queue *queue)
 {
-  kissat_very_verbose(solver, "need to reassign enqueue stamps on queue");
+  kissat_mab_very_verbose(solver, "need to reassign enqueue stamps on queue");
 #ifdef QUIET
   (void)solver;
 #endif
@@ -85,7 +85,7 @@ dequeue(unsigned i, links *links, queue *queue)
 }
 
 #if defined(CHECK_QUEUE) && !defined(NDEBUG)
-void kissat_check_queue(kissat *solver)
+void kissat_mab_check_queue(kissat *solver)
 {
   links *links = solver->links;
   queue *queue = &solver->queue;
@@ -104,13 +104,13 @@ void kissat_check_queue(kissat *solver)
     assert(links[queue->search_idx].stamp == queue->search_stamp);
 }
 #else
-#define kissat_check_queue(...) \
+#define kissat_mab_check_queue(...) \
   do                            \
   {                             \
   } while (0)
 #endif
 
-void kissat_enqueue(kissat *solver, unsigned idx)
+void kissat_mab_enqueue(kissat *solver, unsigned idx)
 {
   assert(idx < solver->vars);
   links *links = solver->links, *l = links + idx;
@@ -118,11 +118,11 @@ void kissat_enqueue(kissat *solver, unsigned idx)
   enqueue(solver, idx, links, &solver->queue);
   LOG("enqueued variable %u stamped %u", idx, l->stamp);
   if (!VALUE(LIT(idx)))
-    kissat_update_queue(solver, links, idx);
-  kissat_check_queue(solver);
+    kissat_mab_update_queue(solver, links, idx);
+  kissat_mab_check_queue(solver);
 }
 
-void kissat_dequeue(kissat *solver, unsigned idx)
+void kissat_mab_dequeue(kissat *solver, unsigned idx)
 {
   assert(idx < solver->vars);
   LOG("dequeued variable %u", idx);
@@ -139,13 +139,13 @@ void kissat_dequeue(kissat *solver, unsigned idx)
       solver->queue.search.stamp = 0;
     }
     else
-      kissat_update_queue(solver, links, search);
+      kissat_mab_update_queue(solver, links, search);
   }
   dequeue(idx, links, &solver->queue);
-  kissat_check_queue(solver);
+  kissat_mab_check_queue(solver);
 }
 
-void kissat_move_to_front(kissat *solver, unsigned idx)
+void kissat_mab_move_to_front(kissat *solver, unsigned idx)
 {
   queue *queue = &solver->queue;
   links *links = solver->links;
@@ -160,18 +160,18 @@ void kissat_move_to_front(kissat *solver, unsigned idx)
   {
     unsigned prev = links[idx].prev;
     if (!DISCONNECTED(prev))
-      kissat_update_queue(solver, links, prev);
+      kissat_mab_update_queue(solver, links, prev);
     else
     {
       unsigned next = links[idx].next;
       assert(!DISCONNECTED(next));
-      kissat_update_queue(solver, links, next);
+      kissat_mab_update_queue(solver, links, next);
     }
   }
   dequeue(idx, links, queue);
   enqueue(solver, idx, links, queue);
   LOG("moved-to-front variable %u stamped %u", idx, LINK(idx).stamp);
   if (!tmp)
-    kissat_update_queue(solver, links, idx);
-  kissat_check_queue(solver);
+    kissat_mab_update_queue(solver, links, idx);
+  kissat_mab_check_queue(solver);
 }

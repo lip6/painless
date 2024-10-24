@@ -49,7 +49,8 @@
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-mzd_t *mzd_mul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+mzd_mul(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication and in-place addition via the
@@ -65,7 +66,8 @@ mzd_t *mzd_mul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * \param cutoff Minimal dimension for Strassen recursion.
  */
 
-mzd_t *mzd_addmul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+mzd_addmul(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication via the Strassen-Winograd matrix
@@ -85,7 +87,8 @@ mzd_t *mzd_addmul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * http://www.sagemath.org
  */
 
-mzd_t *_mzd_mul_even(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+_mzd_mul_even(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication and in-place addition via the
@@ -106,7 +109,8 @@ mzd_t *_mzd_mul_even(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  * http://www.sagemath.org
  */
 
-mzd_t *_mzd_addmul_even(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+_mzd_addmul_even(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * \brief Matrix multiplication and in-place addition via the
@@ -123,7 +127,8 @@ mzd_t *_mzd_addmul_even(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
  *
  */
 
-mzd_t *_mzd_addmul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
+mzd_t*
+_mzd_addmul(mzd_t* C, mzd_t const* A, mzd_t const* B, int cutoff);
 
 /**
  * The default cutoff for Strassen-Winograd multiplication. It should
@@ -134,4 +139,4 @@ mzd_t *_mzd_addmul(mzd_t *C, mzd_t const *A, mzd_t const *B, int cutoff);
 #define __M4RI_STRASSEN_MUL_CUTOFF MIN(((int)sqrt((double)(4 * __M4RI_CPU_L3_CACHE))), 4096)
 #endif
 
-#endif  // M4RI_STRASSEN_H
+#endif // M4RI_STRASSEN_H

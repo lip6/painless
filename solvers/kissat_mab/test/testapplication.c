@@ -35,14 +35,14 @@ tissat_call_application (int expected, const char *cmd)
 	start = ++p;
       }
 #undef MAX_ARGC
-  kissat *solver = kissat_init ();
+  kissat *solver = kissat_mab_init ();
   tissat_init_solver (solver);
   tissat_redirect_stderr_to_stdout ();
-  int res = kissat_application (solver, argc, argv);
+  int res = kissat_mab_application (solver, argc, argv);
   tissat_restore_stderr ();
   if (res != expected)
     FATAL ("'kissat %s' returns '%d' and not '%d'", cmd, res, expected);
-  kissat_release (solver);
+  kissat_mab_release (solver);
   for (int i = 1; i < argc; i++)
     free (argv[i]);
   tissat_verbose ("Application 'kissat %s' returned '%d' as expected.",

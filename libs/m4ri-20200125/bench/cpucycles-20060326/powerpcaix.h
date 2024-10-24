@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_powerpcaix_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_powerpcaix(void);
-extern long long cpucycles_powerpcaix_persecond(void);
+	extern long long cpucycles_powerpcaix(void);
+	extern long long cpucycles_powerpcaix_persecond(void);
 
 #ifdef __cplusplus
 }

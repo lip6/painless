@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_sparc32psrinfo_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_sparc32psrinfo(void);
-extern long long cpucycles_sparc32psrinfo_persecond(void);
+	extern long long cpucycles_sparc32psrinfo(void);
+	extern long long cpucycles_sparc32psrinfo_persecond(void);
 
 #ifdef __cplusplus
 }

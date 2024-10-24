@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_clockmonotonic_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_clockmonotonic(void);
-extern long long cpucycles_clockmonotonic_persecond(void);
+	extern long long cpucycles_clockmonotonic(void);
+	extern long long cpucycles_clockmonotonic_persecond(void);
 
 #ifdef __cplusplus
 }

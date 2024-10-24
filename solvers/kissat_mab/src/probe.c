@@ -11,7 +11,7 @@
 #include <inttypes.h>
 
 bool
-kissat_probing (kissat * solver)
+kissat_mab_probing (kissat * solver)
 {
   if (!solver->enabled.probe)
     return false;
@@ -24,31 +24,31 @@ static void
 probe (kissat * solver)
 {
   RETURN_IF_DELAYED (probe);
-  kissat_backtrack_propagate_and_flush_trail (solver);
+  kissat_mab_backtrack_propagate_and_flush_trail (solver);
   assert (!solver->inconsistent);
   STOP_SEARCH_AND_START_SIMPLIFIER (probe);
-  kissat_phase (solver, "probe", GET (probings),
+  kissat_mab_phase (solver, "probe", GET (probings),
 		"probing limit hit after %" PRIu64 " conflicts",
 		solver->limits.probe.conflicts);
   assert (!solver->probing);
   solver->probing = true;
-  const changes before = kissat_changes (solver);
-  kissat_substitute (solver, true);
-  kissat_ternary (solver);
-  kissat_transitive_reduction (solver);
-  kissat_failed_literal_probing (solver);
-  kissat_vivify (solver);
-  kissat_substitute (solver, false);
+  const changes before = kissat_mab_changes (solver);
+  kissat_mab_substitute (solver, true);
+  kissat_mab_ternary (solver);
+  kissat_mab_transitive_reduction (solver);
+  kissat_mab_failed_literal_probing (solver);
+  kissat_mab_vivify (solver);
+  kissat_mab_substitute (solver, false);
   assert (solver->probing);
   solver->probing = false;
-  const changes after = kissat_changes (solver);
-  const bool changed = kissat_changed (before, after);
+  const changes after = kissat_mab_changes (solver);
+  const bool changed = kissat_mab_changed (before, after);
   UPDATE_DELAY (changed, probe);
   STOP_SIMPLIFIER_AND_RESUME_SEARCH (probe);
 }
 
 int
-kissat_probe (kissat * solver)
+kissat_mab_probe (kissat * solver)
 {
   assert (!solver->inconsistent);
   INC (probings);

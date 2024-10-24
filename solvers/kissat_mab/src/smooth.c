@@ -5,7 +5,7 @@
 #include <inttypes.h>
 
 void
-kissat_init_smooth (kissat * solver, smooth * smooth, int window,
+kissat_mab_init_smooth (kissat * solver, smooth * smooth, int window,
 		    const char *name)
 {
   assert (window > 0);
@@ -25,7 +25,7 @@ kissat_init_smooth (kissat * solver, smooth * smooth, int window,
 }
 
 void
-kissat_update_smooth (kissat * solver, smooth * smooth, double y)
+kissat_mab_update_smooth (kissat * solver, smooth * smooth, double y)
 {
   smooth->value += smooth->beta * (y - smooth->value);
   LOG ("updated 'EMA (%s)' with %g (%s %g) yields %g",

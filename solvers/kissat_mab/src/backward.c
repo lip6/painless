@@ -87,9 +87,9 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	    {
 	      LOGBINARY (min_lit, match, "duplicated");
 	      INC (duplicated);
-	      kissat_disconnect_binary (solver, other, min_lit);
-	      kissat_delete_binary (solver, false, false, min_lit, other);
-	      kissat_update_after_removing_variable (solver, IDX (other));
+	      kissat_mab_disconnect_binary (solver, other, min_lit);
+	      kissat_mab_delete_binary (solver, false, false, min_lit, other);
+	      kissat_mab_update_after_removing_variable (solver, IDX (other));
 	      q--;
 	    }
 	  else
@@ -133,8 +133,8 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	      if (value > 0)
 		{
 		  LOGCLS (c, "satisfied by %s", LOGLIT (lit));
-		  kissat_mark_clause_as_garbage (solver, c);
-		  kissat_update_after_removing_clause (solver, c,
+		  kissat_mab_mark_clause_as_garbage (solver, c);
+		  kissat_mab_update_after_removing_clause (solver, c,
 						       INVALID_LIT);
 		  break;
 		}
@@ -177,8 +177,8 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	      LOGCLS (c, "backward subsumed");
 	      INC (subsumed);
 	      INC (backward_subsumed);
-	      kissat_mark_clause_as_garbage (solver, c);
-	      kissat_update_after_removing_clause (solver, c, INVALID_LIT);
+	      kissat_mab_mark_clause_as_garbage (solver, c);
+	      kissat_mab_update_after_removing_clause (solver, c, INVALID_LIT);
 	      q--;
 	      continue;
 	    }
@@ -203,8 +203,8 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	    }
 	  if (satisfied)
 	    {
-	      kissat_mark_clause_as_garbage (solver, c);
-	      kissat_update_after_removing_clause (solver, c, INVALID_LIT);
+	      kissat_mab_mark_clause_as_garbage (solver, c);
+	      kissat_mab_update_after_removing_clause (solver, c, INVALID_LIT);
 	      q--;
 	      continue;
 	    }
@@ -240,7 +240,7 @@ backward_subsume_lits (kissat * solver, reference ignore,
 		    continue;
 		  assert (!value);
 		  lits[new_size++] = lit;
-		  kissat_mark_added_literal (solver, remove);
+		  kissat_mab_mark_added_literal (solver, remove);
 		}
 	      assert (new_size == old_size - 1);
 	      assert (new_size > 2);
@@ -252,7 +252,7 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	      c->size = new_size;
 	      c->searched = 2;
 	      LOGCLS (c, "backward strengthened");
-	      kissat_disconnect_reference (solver, remove, ref);
+	      kissat_mab_disconnect_reference (solver, remove, ref);
 	    }
 	  else
 	    {
@@ -264,13 +264,13 @@ backward_subsume_lits (kissat * solver, reference ignore,
 	      LOGCLS (c, "garbage");
 	      assert (!c->garbage);
 	      assert (!c->hyper);
-	      const size_t bytes = kissat_actual_bytes_of_clause (c);
+	      const size_t bytes = kissat_mab_actual_bytes_of_clause (c);
 	      ADD (arena_garbage, bytes);
 	      c->garbage = true;
 	      q--;
 	    }
-	  kissat_mark_removed_literal (solver, remove);
-	  kissat_update_after_removing_variable (solver, IDX (remove));
+	  kissat_mab_mark_removed_literal (solver, remove);
+	  kissat_mab_update_after_removing_variable (solver, IDX (remove));
 	}
     }
 
@@ -282,7 +282,7 @@ backward_subsume_lits (kissat * solver, reference ignore,
   if (unit)
     {
       LOG ("backward strengthened unit clause %s", LOGLIT (min_lit));
-      kissat_assign_unit (solver, min_lit);
+      kissat_mab_assign_unit (solver, min_lit);
       CHECK_AND_ADD_UNIT (min_lit);
       ADD_UNIT_TO_PROOF (min_lit);
     }
@@ -290,10 +290,10 @@ backward_subsume_lits (kissat * solver, reference ignore,
   for (all_stack (unsigned, other, solver->delayed))
     {
       LOGBINARY (other, min_lit, "backward strengthened");
-      kissat_watch_other (solver, false, false, other, min_lit);
-      kissat_watch_other (solver, false, false, min_lit, other);
-      kissat_mark_added_literal (solver, other);
-      kissat_mark_added_literal (solver, min_lit);
+      kissat_mab_watch_other (solver, false, false, other, min_lit);
+      kissat_mab_watch_other (solver, false, false, min_lit, other);
+      kissat_mab_mark_added_literal (solver, other);
+      kissat_mab_mark_added_literal (solver, min_lit);
     }
   CLEAR_STACK (solver->delayed);
 
@@ -305,7 +305,7 @@ backward_subsume_lits (kissat * solver, reference ignore,
 }
 
 bool
-kissat_backward_subsume_temporary (kissat * solver, reference ignore)
+kissat_mab_backward_subsume_temporary (kissat * solver, reference ignore)
 {
   assert (!solver->watching);
   assert (GET_OPTION (backward));

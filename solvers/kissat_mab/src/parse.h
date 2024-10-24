@@ -5,14 +5,14 @@
 
 enum strictness
 {
-  RELAXED_PARSING = 0,
-  NORMAL_PARSING = 1,
-  PEDANTIC_PARSING = 2,
+	RELAXED_PARSING = 0,
+	NORMAL_PARSING = 1,
+	PEDANTIC_PARSING = 2,
 };
 
 typedef enum strictness strictness;
 
-const char *kissat_parse_dimacs (struct kissat *, strictness, file *,
-				 uint64_t * linenoptr, int *max_var_ptr);
+const char*
+kissat_mab_parse_dimacs(struct kissat*, strictness, file*, uint64_t* linenoptr, int* max_var_ptr);
 
 #endif

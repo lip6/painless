@@ -6,19 +6,19 @@
 #include <stdio.h>
 
 const char *
-kissat_id (void)
+kissat_mab_id (void)
 {
   return ID;
 }
 
 const char *
-kissat_version (void)
+kissat_mab_version (void)
 {
   return VERSION;
 }
 
 const char *
-kissat_compiler (void)
+kissat_mab_compiler (void)
 {
   return COMPILER;
 }
@@ -37,7 +37,7 @@ do { \
 } while (0)
 
 void
-kissat_banner (const char *prefix, const char *name)
+kissat_mab_banner (const char *prefix, const char *name)
 {
   TERMINAL (stdout, 1);
   if (!prefix)

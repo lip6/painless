@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 bool
-kissat_file_readable (const char *path)
+kissat_mab_file_readable (const char *path)
 {
   if (!path)
     return false;
@@ -22,7 +22,7 @@ kissat_file_readable (const char *path)
 }
 
 bool
-kissat_file_writable (const char *path)
+kissat_mab_file_writable (const char *path)
 {
   int res;
   if (!path)
@@ -91,7 +91,7 @@ kissat_file_writable (const char *path)
 }
 
 size_t
-kissat_file_size (const char *path)
+kissat_mab_file_size (const char *path)
 {
   struct stat buf;
   if (stat (path, &buf))
@@ -100,7 +100,7 @@ kissat_file_size (const char *path)
 }
 
 bool
-kissat_find_executable (const char *name)
+kissat_mab_find_executable (const char *name)
 {
   const size_t name_len = strlen (name);
   const char *environment = getenv ("PATH");
@@ -127,7 +127,7 @@ kissat_find_executable (const char *name)
 	}
       sprintf (path, "%s/%s", dir, name);
       assert (strlen (path) == path_len);
-      res = kissat_file_readable (path);
+      res = kissat_mab_file_readable (path);
       free (path);
     }
   free (dirs);
@@ -167,7 +167,7 @@ open_pipe (const char *fmt, const char *path, const char *mode)
     return 0;
   strncpy (name, fmt, name_len);
   name[name_len] = 0;
-  bool found = kissat_find_executable (name);
+  bool found = kissat_mab_find_executable (name);
   free (name);
   if (!found)
     return 0;
@@ -183,7 +183,7 @@ open_pipe (const char *fmt, const char *path, const char *mode)
 static FILE *
 read_pipe (const char *fmt, const int *sig, const char *path)
 {
-  if (!kissat_file_readable (path))
+  if (!kissat_mab_file_readable (path))
     return 0;
   if (sig && !match_signature (path, sig))
     return 0;
@@ -199,7 +199,7 @@ write_pipe (const char *fmt, const char *path)
 #endif
 
 void
-kissat_read_already_open_file (file * file, FILE * f, const char *path)
+kissat_mab_read_already_open_file (file * file, FILE * f, const char *path)
 {
   file->file = f;
   file->close = false;
@@ -210,7 +210,7 @@ kissat_read_already_open_file (file * file, FILE * f, const char *path)
 }
 
 void
-kissat_write_already_open_file (file * file, FILE * f, const char *path)
+kissat_mab_write_already_open_file (file * file, FILE * f, const char *path)
 {
   file->file = f;
   file->close = false;
@@ -221,12 +221,12 @@ kissat_write_already_open_file (file * file, FILE * f, const char *path)
 }
 
 bool
-kissat_open_to_read_file (file * file, const char *path)
+kissat_mab_open_to_read_file (file * file, const char *path)
 {
 #ifdef _POSIX_C_SOURCE
 #define READ_PIPE(SUFFIX, CMD, SIG) \
 do { \
-  if (kissat_has_suffix (path, SUFFIX)) \
+  if (kissat_mab_has_suffix (path, SUFFIX)) \
     { \
       file->file = read_pipe (CMD, SIG, path); \
       if (!file->file) \
@@ -258,14 +258,14 @@ do { \
 }
 
 bool
-kissat_open_to_write_file (file * file, const char *path)
+kissat_mab_open_to_write_file (file * file, const char *path)
 {
 #ifdef _POSIX_C_SOURCE
 #define WRITE_PIPE(SUFFIX, CMD) \
 do { \
-  if (kissat_has_suffix (path, SUFFIX)) \
+  if (kissat_mab_has_suffix (path, SUFFIX)) \
     { \
-      if (SUFFIX[1] == '7' && kissat_file_readable (path) && unlink (path)) \
+      if (SUFFIX[1] == '7' && kissat_mab_file_readable (path) && unlink (path)) \
 	return false; \
       file->file = write_pipe (CMD, path); \
       if (!file->file) \
@@ -296,7 +296,7 @@ do { \
 }
 
 void
-kissat_close_file (file * file)
+kissat_mab_close_file (file * file)
 {
   assert (file);
   assert (file->file);

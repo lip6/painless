@@ -24,7 +24,7 @@ static void end_logging(void)
     fflush(stdout);
 }
 
-void kissat_log_msg(kissat *solver, const char *fmt, ...)
+void kissat_mab_log_msg(kissat *solver, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -44,7 +44,7 @@ static void begin_logging_painless(kissat *solver, const char *fmt, va_list *ap)
     vprintf(fmt, *ap);
 }
 
-void kissat_log_msg_painless(kissat *solver, const char *fmt, ...)
+void kissat_mab_log_msg_painless(kissat *solver, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -63,13 +63,13 @@ static void append_sprintf(char *str, const char *fmt, ...)
     va_end(ap);
 }
 
-const char *kissat_log_lit(kissat *solver, unsigned lit)
+const char *kissat_mab_log_lit(kissat *solver, unsigned lit)
 {
     assert(solver);
-    char *res = kissat_next_format_string(&solver->format);
+    char *res = kissat_mab_next_format_string(&solver->format);
     sprintf(res, "%u", lit);
     if (!solver->compacting && GET_OPTION(log) > 1) {
-        append_sprintf(res, "(%d)", kissat_export_literal(solver, lit));
+        append_sprintf(res, "(%d)", kissat_mab_export_literal(solver, lit));
         if (solver->values) {
             const value value = VALUE(lit);
             if (value) {
@@ -91,7 +91,7 @@ static void log_lits(kissat *solver, size_t size, const unsigned *lits)
     }
 }
 
-void kissat_log_lits(kissat *solver, size_t size, const unsigned *lits, const char *fmt, ...)
+void kissat_mab_log_lits(kissat *solver, size_t size, const unsigned *lits, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -102,7 +102,7 @@ void kissat_log_lits(kissat *solver, size_t size, const unsigned *lits, const ch
     end_logging();
 }
 
-void kissat_log_resolvent(kissat *solver, const char *fmt, ...)
+void kissat_mab_log_resolvent(kissat *solver, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -115,7 +115,7 @@ void kissat_log_resolvent(kissat *solver, const char *fmt, ...)
     end_logging();
 }
 
-void kissat_log_ints(kissat *solver, size_t size, const int *lits, const char *fmt, ...)
+void kissat_mab_log_ints(kissat *solver, size_t size, const int *lits, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -127,7 +127,7 @@ void kissat_log_ints(kissat *solver, size_t size, const int *lits, const char *f
     end_logging();
 }
 
-void kissat_log_extensions(kissat *solver, size_t size, const extension *exts, const char *fmt, ...)
+void kissat_mab_log_extensions(kissat *solver, size_t size, const extension *exts, const char *fmt, ...)
 {
     assert(size > 0);
     va_list ap;
@@ -145,7 +145,7 @@ void kissat_log_extensions(kissat *solver, size_t size, const extension *exts, c
     end_logging();
 }
 
-void kissat_log_unsigneds(kissat *solver, size_t size, const unsigned *lits, const char *fmt, ...)
+void kissat_mab_log_unsigneds(kissat *solver, size_t size, const unsigned *lits, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -179,14 +179,14 @@ static void log_clause(kissat *solver, clause *c)
         if (c->garbage)
             fputs(" garbage", stdout);
         fputs(" clause", stdout);
-        if (kissat_clause_in_arena(solver, c)) {
-            reference ref = kissat_reference_clause(solver, c);
+        if (kissat_mab_clause_in_arena(solver, c)) {
+            reference ref = kissat_mab_reference_clause(solver, c);
             printf("[%u]", ref);
         }
     }
 }
 
-void kissat_log_clause(kissat *solver, clause *c, const char *fmt, ...)
+void kissat_mab_log_clause(kissat *solver, clause *c, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -202,7 +202,7 @@ static void log_binary(kissat *solver, unsigned a, unsigned b)
     printf(" binary clause %s %s", LOGLIT(a), LOGLIT(b));
 }
 
-void kissat_log_binary(kissat *solver, unsigned a, unsigned b, const char *fmt, ...)
+void kissat_mab_log_binary(kissat *solver, unsigned a, unsigned b, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -212,7 +212,7 @@ void kissat_log_binary(kissat *solver, unsigned a, unsigned b, const char *fmt, 
     end_logging();
 }
 
-void kissat_log_unary(kissat *solver, unsigned a, const char *fmt, ...)
+void kissat_mab_log_unary(kissat *solver, unsigned a, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -224,12 +224,12 @@ void kissat_log_unary(kissat *solver, unsigned a, const char *fmt, ...)
 
 static void log_ref(kissat *solver, reference ref)
 {
-    clause *c = kissat_dereference_clause(solver, ref);
+    clause *c = kissat_mab_dereference_clause(solver, ref);
     log_clause(solver, c);
     log_lits(solver, c->size, c->lits);
 }
 
-void kissat_log_ref(kissat *solver, reference ref, const char *fmt, ...)
+void kissat_mab_log_ref(kissat *solver, reference ref, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -239,7 +239,7 @@ void kissat_log_ref(kissat *solver, reference ref, const char *fmt, ...)
     end_logging();
 }
 
-void kissat_log_watch(kissat *solver, unsigned lit, watch watch, const char *fmt, ...)
+void kissat_mab_log_watch(kissat *solver, unsigned lit, watch watch, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -252,27 +252,27 @@ void kissat_log_watch(kissat *solver, unsigned lit, watch watch, const char *fmt
     end_logging();
 }
 
-void kissat_log_xor(kissat *solver, unsigned lit, unsigned size, unsigned *lits, const char *fmt, ...)
+void kissat_mab_log_xor(kissat *solver, unsigned lit, unsigned size, unsigned *lits, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     begin_logging(solver, fmt, &ap);
     va_end(ap);
     printf(" size %u XOR gate ", size);
-    fputs(kissat_log_lit(solver, lit), stdout);
+    fputs(kissat_mab_log_lit(solver, lit), stdout);
     printf(" =");
     for (unsigned i = 0; i < size; i++) {
         if (i)
             fputs(" ^ ", stdout);
         else
             fputc(' ', stdout);
-        fputs(kissat_log_lit(solver, lits[i]), stdout);
+        fputs(kissat_mab_log_lit(solver, lits[i]), stdout);
     }
     end_logging();
 }
 
 #else
 
-int kissat_log_dummy_to_avoid_pedantic_warning;
+int kissat_mab_log_dummy_to_avoid_pedantic_warning;
 
 #endif

@@ -9,7 +9,7 @@
 do { \
   const size_t block_size = sizeof (TYPE); \
   solver->NAME = \
-    kissat_nrealloc (solver, solver->NAME, old_size, new_size, \
+    kissat_mab_nrealloc (solver, solver->NAME, old_size, new_size, \
                      ELEMENTS_PER_BLOCK * block_size); \
 } while (0)
 
@@ -17,14 +17,14 @@ do { \
 #define CREALLOC_GENERIC(TYPE, NAME, ELEMENTS_PER_BLOCK) \
 do { \
   const size_t block_size = sizeof (TYPE); \
-  TYPE *NAME = kissat_calloc (solver, \
+  TYPE *NAME = kissat_mab_calloc (solver, \
                               ELEMENTS_PER_BLOCK * new_size, block_size); \
   if (old_size) \
     { \
       const size_t bytes = ELEMENTS_PER_BLOCK * old_size * block_size; \
       memcpy (NAME, solver->NAME, bytes); \
     } \
-  kissat_dealloc (solver, solver->NAME, \
+  kissat_mab_dealloc (solver, solver->NAME, \
                   ELEMENTS_PER_BLOCK * old_size, block_size); \
   solver->NAME = NAME; \
 } while (0)
@@ -42,7 +42,7 @@ do { \
   CREALLOC_GENERIC (TYPE, NAME, 2)
 
 void
-kissat_increase_size (kissat * solver, unsigned new_size)
+kissat_mab_increase_size (kissat * solver, unsigned new_size)
 {
   assert (solver->vars <= new_size);
   const unsigned old_size = solver->size;
@@ -51,7 +51,7 @@ kissat_increase_size (kissat * solver, unsigned new_size)
 
 #ifndef NMETRICS
   LOG ("%s before increasing size from %u to %u",
-       FORMAT_BYTES (kissat_allocated (solver)), old_size, new_size);
+       FORMAT_BYTES (kissat_mab_allocated (solver)), old_size, new_size);
 #endif
   CREALLOC_VARIABLE_INDEXED (assigned, assigned);
   CREALLOC_VARIABLE_INDEXED (flags, flags);
@@ -78,27 +78,27 @@ kissat_increase_size (kissat * solver, unsigned new_size)
   CREALLOC_LITERAL_INDEXED (watches, watches);
 
   if(solver->heuristic==0 || solver->mab)
-     kissat_resize_heap (solver, &solver->scores, new_size);
+     kissat_mab_resize_heap (solver, &solver->scores, new_size);
   if(solver->heuristic==1 || solver->mab)
-     kissat_resize_heap (solver, &solver->scores_chb, new_size);
+     kissat_mab_resize_heap (solver, &solver->scores_chb, new_size);
 
   solver->size = new_size;
 
 #ifndef NMETRICS
   LOG ("%s after increasing size from %zu to %zu",
-       FORMAT_BYTES (kissat_allocated (solver)), old_size, new_size);
+       FORMAT_BYTES (kissat_mab_allocated (solver)), old_size, new_size);
 #endif
 }
 
 void
-kissat_decrease_size (kissat * solver)
+kissat_mab_decrease_size (kissat * solver)
 {
   const unsigned old_size = solver->size;
   const unsigned new_size = solver->vars;
 
 #ifndef NMETRICS
   LOG ("%s before decreasing size from %u to %u",
-       FORMAT_BYTES (kissat_allocated (solver)), old_size, new_size);
+       FORMAT_BYTES (kissat_mab_allocated (solver)), old_size, new_size);
 #endif
 
   NREALLOC_VARIABLE_INDEXED (assigned, assigned);
@@ -123,20 +123,20 @@ kissat_decrease_size (kissat * solver)
   NREALLOC_LITERAL_INDEXED (watches, watches);
 
   if(solver->heuristic==0 || solver->mab)
-     kissat_resize_heap (solver, &solver->scores, new_size);
+     kissat_mab_resize_heap (solver, &solver->scores, new_size);
   if(solver->heuristic==1 || solver->mab)
-     kissat_resize_heap (solver, &solver->scores_chb, new_size);
+     kissat_mab_resize_heap (solver, &solver->scores_chb, new_size);
 
   solver->size = new_size;
 
 #ifndef NMETRICS
   LOG ("%s after decreasing size from %zu to %zu",
-       FORMAT_BYTES (kissat_allocated (solver)), old_size, new_size);
+       FORMAT_BYTES (kissat_mab_allocated (solver)), old_size, new_size);
 #endif
 }
 
 void
-kissat_enlarge_variables (kissat * solver, unsigned new_vars)
+kissat_mab_enlarge_variables (kissat * solver, unsigned new_vars)
 {
   if (solver->vars >= new_vars)
     return;
@@ -152,7 +152,7 @@ kissat_enlarge_variables (kissat * solver, unsigned new_vars)
 	new_size = new_vars;
       else
 	{
-	  if (kissat_is_power_of_two (old_size))
+	  if (kissat_mab_is_power_of_two (old_size))
 	    {
 	      assert (old_size <= UINT_MAX / 2);
 	      new_size = 2 * old_size;
@@ -168,7 +168,7 @@ kissat_enlarge_variables (kissat * solver, unsigned new_vars)
 	      new_size *= 2;
 	    }
 	}
-      kissat_increase_size (solver, new_size);
+      kissat_mab_increase_size (solver, new_size);
     }
   solver->vars = new_vars;
 }

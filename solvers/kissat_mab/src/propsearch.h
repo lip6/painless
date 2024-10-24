@@ -4,6 +4,7 @@
 struct kissat;
 struct clause;
 
-struct clause *kissat_search_propagate (struct kissat *);
+struct clause*
+kissat_mab_search_propagate(struct kissat*);
 
 #endif

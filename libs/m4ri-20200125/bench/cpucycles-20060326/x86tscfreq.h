@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_x86tscfreq_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_x86tscfreq(void);
-extern long long cpucycles_x86tscfreq_persecond(void);
+	extern long long cpucycles_x86tscfreq(void);
+	extern long long cpucycles_x86tscfreq_persecond(void);
 
 #ifdef __cplusplus
 }

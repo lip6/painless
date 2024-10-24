@@ -33,9 +33,12 @@
 
 #include <m4ri/misc.h>
 
-void *m4ri_mmc_malloc(size_t size);
-void m4ri_mmc_free(void *condemned, size_t size);
-void m4ri_mmc_cleanup(void);
+void*
+m4ri_mmc_malloc(size_t size);
+void
+m4ri_mmc_free(void* condemned, size_t size);
+void
+m4ri_mmc_cleanup(void);
 
 /**
  * \brief Number of blocks that are cached.
@@ -50,16 +53,17 @@ void m4ri_mmc_cleanup(void);
 /**
  * \brief Tuple of pointer to allocated memory block and it's size.
  */
-typedef struct _mm_block {
-  /**
-   * Size in bytes of the data.
-   */
-  size_t size;
+typedef struct _mm_block
+{
+	/**
+	 * Size in bytes of the data.
+	 */
+	size_t size;
 
-  /**
-   * Pointer to buffer of data.
-   */
-  void *data;
+	/**
+	 * Pointer to buffer of data.
+	 */
+	void* data;
 
 } mmb_t;
 
@@ -71,11 +75,13 @@ typedef struct _mm_block {
  *
  * \return Pointer to allocated memory block.
  */
-static inline void *m4ri_mmc_calloc(size_t count, size_t size) {
-  size_t total_size = count * size;
-  void *ret         = m4ri_mmc_malloc(total_size);
-  memset((char *)ret, 0, total_size);
-  return ret;
+static inline void*
+m4ri_mmc_calloc(size_t count, size_t size)
+{
+	size_t total_size = count * size;
+	void* ret = m4ri_mmc_malloc(total_size);
+	memset((char*)ret, 0, total_size);
+	return ret;
 }
 
-#endif  // M4RI_MMC_H
+#endif // M4RI_MMC_H

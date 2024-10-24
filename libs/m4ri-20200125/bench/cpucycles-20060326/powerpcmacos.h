@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_powerpcmacos_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_powerpcmacos(void);
-extern long long cpucycles_powerpcmacos_persecond(void);
+	extern long long cpucycles_powerpcmacos(void);
+	extern long long cpucycles_powerpcmacos_persecond(void);
 
 #ifdef __cplusplus
 }

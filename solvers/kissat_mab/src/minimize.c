@@ -8,7 +8,7 @@ minimize_reference (kissat * solver, assigned * assigned,
 		    reference ref, unsigned lit, int depth)
 {
   const unsigned not_lit = NOT (lit);
-  clause *c = kissat_dereference_clause (solver, ref);
+  clause *c = kissat_mab_dereference_clause (solver, ref);
   for (all_literals_in_clause (other, c))
     if (other != not_lit &&
 	!minimize_literal (solver, assigned, other, depth))
@@ -136,7 +136,7 @@ reset_minimize (kissat * solver)
 }
 
 void
-kissat_minimize_clause (kissat * solver)
+kissat_mab_minimize_clause (kissat * solver)
 {
   START (minimize);
 

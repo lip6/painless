@@ -10,7 +10,7 @@
 static int
 next(file *file, uint64_t *lineno_ptr)
 {
-	int ch = kissat_getc(file);
+	int ch = kissat_mab_getc(file);
 	if (ch == '\n')
 		*lineno_ptr += 1;
 	return ch;
@@ -145,16 +145,16 @@ parse_dimacs(kissat *solver, strictness strict,
 				if (ch != '\n')
 					goto COMPLETE;
 				arg *= sign;
-				const opt *opt = kissat_options_has(name);
+				const opt *opt = kissat_mab_options_has(name);
 				if (opt)
 				{
-					(void)kissat_options_set_opt(&solver->options, opt, arg);
-					kissat_verbose(solver,
+					(void)kissat_mab_options_set_opt(&solver->options, opt, arg);
+					kissat_mab_verbose(solver,
 								   "parsed embedded option '--%s=%d'",
 								   name, arg);
 				}
 				else
-					kissat_warning(solver,
+					kissat_mab_warning(solver,
 								   "invalid embedded option '--%s=%d'",
 								   name, arg);
 				continue;
@@ -269,10 +269,10 @@ parse_dimacs(kissat *solver, strictness strict,
 		return "unexpected end-of-file after parsing number of clauses";
 	if (ch != '\n')
 		return "expected new-line after parsing number of clauses";
-	//   kissat_message (solver,
+	//   kissat_mab_message (solver,
 	// 		  "parsed 'p cnf %d %" PRIu64 "' header", variables, clauses);
 	*max_var_ptr = variables;
-	kissat_reserve(solver, variables);
+	kissat_mab_reserve(solver, variables);
 	uint64_t parsed = 0;
 	int lit = 0;
 	for (;;)
@@ -379,7 +379,7 @@ parse_dimacs(kissat *solver, strictness strict,
 			parsed++;
 			lit = 0;
 		}
-		kissat_add(solver, lit);
+		kissat_mab_add(solver, lit);
 	}
 	if (lit)
 		return "trailing zero missing";
@@ -393,7 +393,7 @@ parse_dimacs(kissat *solver, strictness strict,
 }
 
 const char *
-kissat_parse_dimacs(kissat *solver,
+kissat_mab_parse_dimacs(kissat *solver,
 					strictness strict,
 					file *file, uint64_t *lineno_ptr, int *max_var_ptr)
 {

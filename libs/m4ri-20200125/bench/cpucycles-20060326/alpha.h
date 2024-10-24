@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_alpha_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_alpha(void);
-extern long long cpucycles_alpha_persecond(void);
+	extern long long cpucycles_alpha(void);
+	extern long long cpucycles_alpha_persecond(void);
 
 #ifdef __cplusplus
 }

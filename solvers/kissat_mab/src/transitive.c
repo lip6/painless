@@ -87,7 +87,7 @@ transitive_reduce (kissat * solver,
   watches *src_watches = all_watches + src;
   watch *end_src = END_WATCHES (*src_watches);
   watch *begin_src = BEGIN_WATCHES (*src_watches);
-  unsigned ticks = kissat_cache_lines (src_watches->size, sizeof (watch));
+  unsigned ticks = kissat_mab_cache_lines (src_watches->size, sizeof (watch));
   ADD (transitive_ticks, ticks + 1);
   const unsigned not_src = NOT (src);
   unsigned reduced = 0;
@@ -122,7 +122,7 @@ transitive_reduce (kissat * solver,
 	  watches *lit_watches = all_watches + not_lit;
 	  const watch *end_lit = END_WATCHES (*lit_watches);
 	  const watch *begin_lit = BEGIN_WATCHES (*lit_watches);
-	  ticks = kissat_cache_lines (lit_watches->size, sizeof (watch));
+	  ticks = kissat_mab_cache_lines (lit_watches->size, sizeof (watch));
 	  ADD (transitive_ticks, ticks + 1);
 	  for (const watch * q = begin_lit; q != end_lit; q++)
 	    {
@@ -171,7 +171,7 @@ transitive_reduce (kissat * solver,
 	  assert (dst_watch.binary.redundant == redundant);
 	  dst_watch.binary.lit = src;
 	  REMOVE_WATCHES (*dst_watches, dst_watch);
-	  kissat_delete_binary (solver,
+	  kissat_mab_delete_binary (solver,
 				src_watch.binary.redundant,
 				src_watch.binary.hyper, src, dst);
 	  p->binary.lit = ILLEGAL_LIT;
@@ -215,20 +215,20 @@ transitive_reduce (kissat * solver,
       *units += 1;
       res = true;
 
-      kissat_assign_unit (solver, src);
+      kissat_mab_assign_unit (solver, src);
       CHECK_AND_ADD_UNIT (src);
       ADD_UNIT_TO_PROOF (src);
 
-      clause *conflict = kissat_probing_propagate (solver, 0);
+      clause *conflict = kissat_mab_probing_propagate (solver, 0);
       if (conflict)
 	{
-	  (void) kissat_analyze (solver, conflict);
+	  (void) kissat_mab_analyze (solver, conflict);
 	  assert (solver->inconsistent);
 	}
       else
 	{
 	  assert (solver->unflushed);
-	  kissat_flush_trail (solver);
+	  kissat_mab_flush_trail (solver);
 	}
     }
 
@@ -236,7 +236,7 @@ transitive_reduce (kissat * solver,
 }
 
 void
-kissat_transitive_reduction (kissat * solver)
+kissat_mab_transitive_reduction (kissat * solver)
 {
   if (solver->inconsistent)
     return;
@@ -279,9 +279,9 @@ kissat_transitive_reduction (kissat * solver)
 	break;
     }
   while (solver->transitive != end);
-  kissat_phase (solver, "transitive", GET (probings),
+  kissat_mab_phase (solver, "transitive", GET (probings),
 		"probed %u (%.0f%%): reduced %" PRIu64 ", units %u",
-		probed, kissat_percent (probed, 2 * active), reduced, units);
+		probed, kissat_mab_percent (probed, 2 * active), reduced, units);
   STOP (transitive);
   REPORT (!success, 't');
 #ifdef QUIET

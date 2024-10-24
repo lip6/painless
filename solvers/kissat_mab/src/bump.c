@@ -41,15 +41,15 @@ static void
 rescale_scores (kissat * solver, heap * scores)
 {
   INC (rescaled);
-  const double max_score = kissat_max_score_on_heap (scores);
-  kissat_phase (solver, "rescale", GET (rescaled),
+  const double max_score = kissat_mab_max_score_on_heap (scores);
+  kissat_mab_phase (solver, "rescale", GET (rescaled),
 		"maximum score %g increment %g", max_score, solver->scinc);
   const double rescale = MAX (max_score, solver->scinc);
   assert (rescale > 0);
   const double factor = 1.0 / rescale;
-  kissat_rescale_heap (solver, scores, factor);
+  kissat_mab_rescale_heap (solver, scores, factor);
   solver->scinc *= factor;
-  kissat_phase (solver, "rescale",
+  kissat_mab_phase (solver, "rescale",
 		GET (rescaled), "rescaled by factor %g", factor);
 }
 
@@ -70,17 +70,17 @@ bump_score_increment (kissat * solver, heap * scores)
 static inline void
 bump_variable_score (kissat * solver, heap * scores, unsigned idx)
 {
-  const double old_score = kissat_get_heap_score (scores, idx);
+  const double old_score = kissat_mab_get_heap_score (scores, idx);
   const double new_score = old_score + solver->scinc;
   LOG ("new score[%u] = %g = %g + %g",
        idx, new_score, old_score, solver->scinc);
-  kissat_update_heap (solver, scores, idx, new_score);
+  kissat_mab_update_heap (solver, scores, idx, new_score);
   if (new_score > MAX_SCORE)
     rescale_scores (solver, scores);
 }
 
 
-void kissat_bump_one(kissat * solver, int eidx) {
+void kissat_mab_bump_one(kissat * solver, int eidx) {
   if (eidx == -1) return;
   assert(eidx >= 0);
   assert(eidx < VARS);
@@ -92,18 +92,18 @@ void kissat_bump_one(kissat * solver, int eidx) {
   if (import->eliminated) return;
   int idx = (import->lit) >> 1;
   //vsids 
-  if (solver->stable && solver->heuristic == 0 && flags[idx].active && kissat_heap_contains (&solver->scores, idx))
-    kissat_update_heap(solver, &solver->scores, idx, 1e100);
+  if (solver->stable && solver->heuristic == 0 && flags[idx].active && kissat_mab_heap_contains (&solver->scores, idx))
+    kissat_mab_update_heap(solver, &solver->scores, idx, 1e100);
 
   //vmtf
   links *links = solver->links;
   if (!solver->stable && flags[idx].active && !VALUE(LIT(idx)) && links[idx].prev != DISCONNECT && links[idx].next != DISCONNECT) {
-    kissat_move_to_front(solver, idx);
+    kissat_mab_move_to_front(solver, idx);
   }
 
   //chb
-  if (solver->stable && solver->heuristic == 1 && flags[idx].active && kissat_heap_contains (&solver->scores_chb, idx))
-    kissat_update_heap (solver, &solver->scores_chb, idx, 1.0);
+  if (solver->stable && solver->heuristic == 1 && flags[idx].active && kissat_mab_heap_contains (&solver->scores_chb, idx))
+    kissat_mab_update_heap (solver, &solver->scores_chb, idx, 1.0);
 }
 
 static void
@@ -139,13 +139,13 @@ move_analyzed_variables_to_front_of_queue (kissat * solver)
 
   for (all_stack (idxrank, idxrank, solver->bump))
     if (flags[idx = idxrank.idx].active)
-      kissat_move_to_front (solver, idx);
+      kissat_mab_move_to_front (solver, idx);
 
   CLEAR_STACK (solver->bump);
 }
 
 void
-kissat_bump_variables (kissat * solver)
+kissat_mab_bump_variables (kissat * solver)
 {
   START (bump);
   assert (!solver->probing);
@@ -158,22 +158,22 @@ kissat_bump_variables (kissat * solver)
 
 // CHB
 
-void kissat_bump_chb(kissat * solver, unsigned v, double multiplier) {
+void kissat_mab_bump_chb(kissat * solver, unsigned v, double multiplier) {
     int64_t age = solver->statistics.conflicts - solver->conflicted_chb[v] + 1;
     double reward_chb = multiplier / age;
-    double old_score = kissat_get_heap_score (&solver->scores_chb, v);
+    double old_score = kissat_mab_get_heap_score (&solver->scores_chb, v);
     double new_score = solver->step_chb * reward_chb + (1 - solver->step_chb) * old_score;
     LOG ("new score[%u] = %g vs %g",
        v, new_score, old_score);
-    kissat_update_heap (solver, &solver->scores_chb, v, new_score);
+    kissat_mab_update_heap (solver, &solver->scores_chb, v, new_score);
 }
 
-void kissat_decay_chb(kissat * solver){
+void kissat_mab_decay_chb(kissat * solver){
     if (solver->step_chb > solver->step_min_chb) solver->step_chb -= solver->step_dec_chb;
 }
 
 void
-kissat_update_conflicted_chb (kissat * solver)
+kissat_mab_update_conflicted_chb (kissat * solver)
 {
   flags *flags = solver->flags;
 

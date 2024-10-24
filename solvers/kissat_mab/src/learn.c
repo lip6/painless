@@ -50,8 +50,8 @@ learn_unit(kissat *solver)
   const unsigned not_uip = lits[0];
   LOG("learned unit clause %s triggers iteration", LOGLIT(not_uip));
   const unsigned new_level = determine_new_level(solver, 0);
-  kissat_backtrack(solver, new_level);
-  kissat_assign_unit(solver, not_uip);
+  kissat_mab_backtrack(solver, new_level);
+  kissat_mab_assign_unit(solver, not_uip);
   solver->iterating = true;
   CHECK_AND_ADD_UNIT(not_uip);
   ADD_UNIT_TO_PROOF(not_uip);
@@ -65,16 +65,16 @@ learn_binary(kissat *solver)
   const unsigned other = lits[1];
   const unsigned jump_level = LEVEL(other);
   const unsigned new_level = determine_new_level(solver, jump_level);
-  kissat_backtrack(solver, new_level);
+  kissat_mab_backtrack(solver, new_level);
   const unsigned glue = SIZE_STACK(solver->levels);
   assert(glue == 1);
 #ifndef NDEBUG
   const reference ref =
 #endif
-      kissat_new_redundant_clause(solver, glue);
+      kissat_mab_new_redundant_clause(solver, glue);
   assert(ref == INVALID_REF);
-  kissat_assign_binary(solver, true, not_uip, other);
-  kissat_eager_subsume(solver);
+  kissat_mab_assign_binary(solver, true, not_uip, other);
+  kissat_mab_eager_subsume(solver);
 }
 
 static void
@@ -105,19 +105,19 @@ learn_reference(kissat *solver)
   *q = lits[1];
   lits[1] = jump_lit;
   const unsigned glue = SIZE_STACK(solver->levels);
-  const reference ref = kissat_new_redundant_clause(solver, glue);
+  const reference ref = kissat_mab_new_redundant_clause(solver, glue);
   assert(ref != INVALID_REF);
-  clause *c = kissat_dereference_clause(solver, ref);
+  clause *c = kissat_mab_dereference_clause(solver, ref);
   c->used = 1 + (glue <= (unsigned)GET_OPTION(tier2));
   const unsigned new_level = determine_new_level(solver, jump_level);
-  kissat_backtrack(solver, new_level);
-  kissat_assign_reference(solver, not_uip, ref, c);
-  kissat_eager_subsume(solver);
-  kissat_push_clueue(&solver->clueue, ref);
+  kissat_mab_backtrack(solver, new_level);
+  kissat_mab_assign_reference(solver, not_uip, ref, c);
+  kissat_mab_eager_subsume(solver);
+  kissat_mab_push_clueue(&solver->clueue, ref);
 }
 
 // Begin Painless
-static inline void kissat_export_to_painless(kissat *solver, unsigned glue, unsigned size)
+static inline void kissat_mab_export_to_painless(kissat *solver, unsigned glue, unsigned size)
 {
   solver->nb_exported++;
 
@@ -153,12 +153,12 @@ static inline void kissat_export_to_painless(kissat *solver, unsigned glue, unsi
 }
 // End Painless
 
-void kissat_learn_clause(kissat *solver)
+void kissat_mab_learn_clause(kissat *solver)
 {
   if (!solver->probing)
     INC(learned);
   if (solver->stable)
-    kissat_tick_reluctant(&solver->reluctant);
+    kissat_mab_tick_reluctant(&solver->reluctant);
   const unsigned glue = SIZE_STACK(solver->levels);
   const unsigned size = SIZE_STACK(solver->clause.lits);
   LOG("learned[%" PRIu64 "] clause glue %u size %u",
@@ -179,7 +179,7 @@ void kissat_learn_clause(kissat *solver)
     learn_reference(solver);
 
   // Begin Painless
-  kissat_export_to_painless(solver, glue, size);
+  kissat_mab_export_to_painless(solver, glue, size);
   // End Painless
 }
 
@@ -191,7 +191,7 @@ void kissat_learn_clause(kissat *solver)
  *  - If literal is eliminated
  *  - If literal was already assigned, and if conflict return UNSAT
  */
-bool kissat_import_unit_from_painless(kissat *solver)
+bool kissat_mab_import_unit_from_painless(kissat *solver)
 {
   if (NULL == solver->cbkImportUnit)
   {
@@ -233,7 +233,7 @@ bool kissat_import_unit_from_painless(kissat *solver)
     case 0:
       LOGP("The literal %d is now assigned in solver %d at root level.", external_lit, solver->id_painless);
       solver->nb_imported_units++;
-      kissat_assign_unit(solver, internal_lit);
+      kissat_mab_assign_unit(solver, internal_lit);
       break;
     case -1:
       LOGP("The literal %d was falsified in solver %d. Returning false at root level.", external_lit, solver->id_painless);
@@ -243,7 +243,7 @@ bool kissat_import_unit_from_painless(kissat *solver)
       // do nothing same root assignement
       break;
     default:
-      kissat_fatal("ERROR, unexpected value %d for literal %d in solver %d!!", VALUE(internal_lit), external_lit, solver->id_painless);
+      kissat_mab_fatal("ERROR, unexpected value %d for literal %d in solver %d!!", VALUE(internal_lit), external_lit, solver->id_painless);
       return false;
     }
   }
@@ -256,7 +256,7 @@ bool kissat_import_unit_from_painless(kissat *solver)
  *  - if the clause is already satisfied by root affectation (no need for it)
  * The callback copies only unassigned literals inside clause.lits
  */
-bool kissat_import_from_painless(kissat *solver)
+bool kissat_mab_import_from_painless(kissat *solver)
 {
   if (NULL == solver->cbkImportClause)
   {
@@ -290,30 +290,30 @@ bool kissat_import_from_painless(kissat *solver)
       internal_lit = PEEK_STACK(solver->clause.lits, 0);
       // LOGP("The solver %d received a clause with only one unassigned internal literal %d.", solver->id_painless, internal_lit);
       solver->nb_imported_units++;
-      kissat_assign_unit(solver, internal_lit);
+      kissat_mab_assign_unit(solver, internal_lit);
       break;
     /* size is used as the glue value */
     case 2:
       /* Inspired by learn_binary */
       /* Unfortunaetly new_binary is a static function */
       // LOGP("The solver %d received a clause with only two unassigned internal literals.", solver->id_painless);
-      new_clause_ref = kissat_new_redundant_clause(solver, size);
+      new_clause_ref = kissat_mab_new_redundant_clause(solver, size);
       assert(new_clause_ref == INVALID_REF); /*Since binaries are stored directly in watch lists, i.e no struct clause allocation */
       solver->nb_imported_bin++;
-      kissat_eager_subsume(solver);
+      kissat_mab_eager_subsume(solver);
       break;
     /* Else: size > 2*/
     default:
       /*Inspired by learn_reference*/
       // LOGP("The solver %d received a clause with %d unassigned internal literal.", solver->id_painless, size);
-      new_clause_ref = kissat_new_redundant_clause(solver, size);
+      new_clause_ref = kissat_mab_new_redundant_clause(solver, size);
       assert(new_clause_ref != INVALID_REF);
       solver->nb_imported_cls++;
 
-      clause *new_clause = kissat_dereference_clause(solver, new_clause_ref);
+      clause *new_clause = kissat_mab_dereference_clause(solver, new_clause_ref);
       new_clause->used = 1 + (size <= (unsigned)GET_OPTION(tier2)); // not understood, yet
-      kissat_eager_subsume(solver);
-      kissat_push_clueue(&solver->clueue, new_clause_ref); // not understood, yet
+      kissat_mab_eager_subsume(solver);
+      kissat_mab_push_clueue(&solver->clueue, new_clause_ref); // not understood, yet
     }
   }
 

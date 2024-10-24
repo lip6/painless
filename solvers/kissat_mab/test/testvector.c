@@ -22,7 +22,7 @@ test_vector_basics (void)
     {
       if (!(i % (2 * N)))
 	{
-	  kissat_defrag_vectors (solver, vectors, N, vector);
+	  kissat_mab_defrag_vectors (solver, vectors, N, vector);
 	  defrags++;
 	}
       else
@@ -31,7 +31,7 @@ test_vector_basics (void)
 	  if (rand () % 3)
 	    {
 	      printf ("%u: push %u\n", i, j);
-	      kissat_push_vectors (solver, vectors, &vector[j], j);
+	      kissat_mab_push_vectors (solver, vectors, &vector[j], j);
 	      assert (count[j] < UINT_MAX);
 	      count[j]++;
 	      pushed++;
@@ -41,8 +41,8 @@ test_vector_basics (void)
 	      printf ("%u: pop %u\n", i, j);
 	      assert (count[j] > 0);
 	      unsigned tmp =
-		*kissat_last_vector_pointer (vectors, &vector[j]);
-	      kissat_pop_vector (vectors, &vector[j]);
+		*kissat_mab_last_vector_pointer (vectors, &vector[j]);
+	      kissat_mab_pop_vector (vectors, &vector[j]);
 	      assert (tmp == j);
 	      count[j]--;
 	      popped++;
@@ -113,11 +113,11 @@ abort_call_back (void)
 static void
 test_vector_fatal (void)
 {
-  kissat_call_function_instead_of_abort (abort_call_back);
+  kissat_mab_call_function_instead_of_abort (abort_call_back);
   int val = setjmp (jump_buffer);
   if (val)
     {
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_call_function_instead_of_abort (0);
       if (val != 42)
 	FATAL ("expected '42' as result from 'setjmp'");
     }
@@ -132,9 +132,9 @@ test_vector_fatal (void)
 	assert (CAPACITY_STACK (vectors.stack) == MAX_VECTORS);
 	assert (SIZE_STACK (vectors.stack) == MAX_VECTORS);
 	vector vector = {.offset = 0,.size = 0 };
-	kissat_enlarge_vector (solver, &vectors, &vector);
+	kissat_mab_enlarge_vector (solver, &vectors, &vector);
       }
-      kissat_call_function_instead_of_abort (0);
+      kissat_mab_call_function_instead_of_abort (0);
       FATAL ("long jump not taken");
     }
 }

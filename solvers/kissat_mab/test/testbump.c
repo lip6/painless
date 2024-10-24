@@ -2,25 +2,25 @@
 
 #include "../src/bump.h"
 
-void kissat_update_scores (kissat *);
+void kissat_mab_update_scores (kissat *);
 
 static void
 test_bump_rescale (void)
 {
-  kissat *solver = kissat_init ();
-  kissat_add (solver, 1);
-  kissat_add (solver, 2);
-  kissat_add (solver, 0);
-  kissat_add (solver, -1);
-  kissat_add (solver, -2);
-  kissat_add (solver, 0);
+  kissat *solver = kissat_mab_init ();
+  kissat_mab_add (solver, 1);
+  kissat_mab_add (solver, 2);
+  kissat_mab_add (solver, 0);
+  kissat_mab_add (solver, -1);
+  kissat_mab_add (solver, -2);
+  kissat_mab_add (solver, 0);
   if (!solver->stable)
     {
       tissat_verbose ("forced switching to stable mode");
       solver->stable = true;
     }
   tissat_verbose ("forced updating of scores");
-  kissat_update_scores (solver);
+  kissat_mab_update_scores (solver);
   assert (solver->scinc > 0);
   tissat_verbose ("initial score increment %g", solver->scinc);
   ACTIVE (0) = ACTIVE (1) = true;
@@ -39,19 +39,19 @@ test_bump_rescale (void)
 	      if (count++ & 1)
 		PUSH_STACK (solver->analyzed, 1);
 	    }
-	  kissat_bump_variables (solver);
+	  kissat_mab_bump_variables (solver);
 	  CLEAR_STACK (solver->analyzed);
 	  if (prev >= solver->scinc ||
 	      solver->scinc >= MAX_SCORE * 0.7 ||
-	      kissat_get_heap_score (scores, 0) >= MAX_SCORE * 0.7 ||
-	      kissat_get_heap_score (scores, 1) >= MAX_SCORE * 0.7)
+	      kissat_mab_get_heap_score (scores, 0) >= MAX_SCORE * 0.7 ||
+	      kissat_mab_get_heap_score (scores, 1) >= MAX_SCORE * 0.7)
 	    tissat_verbose ("%u.%u: score[0]=%g score[1]=%g scinc=%g",
 			    i, count,
-			    kissat_get_heap_score (scores, 0),
-			    kissat_get_heap_score (scores, 1), solver->scinc);
+			    kissat_mab_get_heap_score (scores, 0),
+			    kissat_mab_get_heap_score (scores, 1), solver->scinc);
 	}
     }
-  kissat_release (solver);
+  kissat_mab_release (solver);
 }
 
 void

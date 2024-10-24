@@ -208,10 +208,10 @@ print_complete_usage(void)
 #ifndef NOPTIONS
   printf("The following predefined option settings are supported:\n");
   printf("\n");
-  kissat_configuration_usage();
+  kissat_mab_configuration_usage();
   printf("\n");
   printf("Or '<option>' is one of the following long options:\n\n");
-  kissat_options_usage();
+  kissat_mab_options_usage();
 #else
   printf("The solver was configured without options ('--no-options').\n");
   printf("Thus all internal options are fixed and can not be changed.\n");
@@ -244,36 +244,36 @@ parsed_one_option_and_return_zero_exit_code(char *arg)
   }
   if (!strcmp(arg, "--banner"))
   {
-    kissat_banner(0, "KISSAT SAT Solver");
+    kissat_mab_banner(0, "KISSAT SAT Solver");
     return true;
   }
   if (!strcmp(arg, "--compiler"))
   {
-    printf("%s\n", kissat_compiler());
+    printf("%s\n", kissat_mab_compiler());
     return true;
   }
 #ifndef NOPTIONS
   if (!strcmp(arg, "--embedded"))
   {
-    kissat_print_embedded_option_list();
+    kissat_mab_print_embedded_option_list();
     return true;
   }
 #endif
   if (!strcmp(arg, "--id"))
   {
-    printf("%s\n", kissat_id());
+    printf("%s\n", kissat_mab_id());
     return true;
   }
 #ifndef NOPTIONS
   if (!strcmp(arg, "--range"))
   {
-    kissat_print_option_range_list();
+    kissat_mab_print_option_range_list();
     return true;
   }
 #endif
   if (!strcmp(arg, "--version"))
   {
-    printf("%s\n", kissat_version());
+    printf("%s\n", kissat_mab_version());
     return true;
   }
   return false;
@@ -306,7 +306,7 @@ single_first_option(const char *arg)
 #define ERROR(...)             \
   do                           \
   {                            \
-    kissat_error(__VA_ARGS__); \
+    kissat_mab_error(__VA_ARGS__); \
     return false;              \
   } while (0)
 
@@ -315,33 +315,33 @@ single_first_option(const char *arg)
 static bool
 most_likely_existing_cnf_file(const char *path)
 {
-  if (!kissat_file_readable(path))
+  if (!kissat_mab_file_readable(path))
     return false;
 
-  if (kissat_has_suffix(path, ".dimacs"))
+  if (kissat_mab_has_suffix(path, ".dimacs"))
     return true;
-  if (kissat_has_suffix(path, ".dimacs.7z"))
+  if (kissat_mab_has_suffix(path, ".dimacs.7z"))
     return true;
-  if (kissat_has_suffix(path, ".dimacs.bz2"))
+  if (kissat_mab_has_suffix(path, ".dimacs.bz2"))
     return true;
-  if (kissat_has_suffix(path, ".dimacs.gz"))
+  if (kissat_mab_has_suffix(path, ".dimacs.gz"))
     return true;
-  if (kissat_has_suffix(path, ".dimacs.lzma"))
+  if (kissat_mab_has_suffix(path, ".dimacs.lzma"))
     return true;
-  if (kissat_has_suffix(path, ".dimacs.xz"))
+  if (kissat_mab_has_suffix(path, ".dimacs.xz"))
     return true;
 
-  if (kissat_has_suffix(path, ".cnf"))
+  if (kissat_mab_has_suffix(path, ".cnf"))
     return true;
-  if (kissat_has_suffix(path, ".cnf.7z"))
+  if (kissat_mab_has_suffix(path, ".cnf.7z"))
     return true;
-  if (kissat_has_suffix(path, ".cnf.bz2"))
+  if (kissat_mab_has_suffix(path, ".cnf.bz2"))
     return true;
-  if (kissat_has_suffix(path, ".cnf.gz"))
+  if (kissat_mab_has_suffix(path, ".cnf.gz"))
     return true;
-  if (kissat_has_suffix(path, ".cnf.lzma"))
+  if (kissat_mab_has_suffix(path, ".cnf.lzma"))
     return true;
-  if (kissat_has_suffix(path, ".cnf.xz"))
+  if (kissat_mab_has_suffix(path, ".cnf.xz"))
     return true;
 
   return false;
@@ -440,36 +440,36 @@ parse_options(application *application, int argc, char **argv)
       int value = GET_OPTION(log);
       if (value < INT_MAX)
         value++;
-      kissat_set_option(solver, "log", value);
+      kissat_mab_set_option(solver, "log", value);
     }
 #endif
     else if (!strcmp(arg, "-n"))
       application->witness = false;
 #if !defined(QUIET) && !defined(NOPTIONS)
     else if (!strcmp(arg, "-q"))
-      kissat_set_option(solver, "quiet", 1);
+      kissat_mab_set_option(solver, "quiet", 1);
     else if (!strcmp(arg, "-s"))
-      kissat_set_option(solver, "statistics", 1);
+      kissat_mab_set_option(solver, "statistics", 1);
     else if (!strcmp(arg, "-v"))
     {
       int value = GET_OPTION(verbose);
       if (value < INT_MAX)
         value++;
-      kissat_set_option(solver, "verbose", value);
+      kissat_mab_set_option(solver, "verbose", value);
     }
 #endif
     else if (!strcmp(arg, "--color") ||
              !strcmp(arg, "--colors") ||
              !strcmp(arg, "--colour") || !strcmp(arg, "--colours"))
-      kissat_force_colors();
+      kissat_mab_force_colors();
     else if (!strcmp(arg, "--no-color") ||
              !strcmp(arg, "--no-colors") ||
              !strcmp(arg, "--no-colour") || !strcmp(arg, "--no-colours"))
-      kissat_force_no_colors();
-    else if ((valstr = kissat_parse_option_name(arg, "time")))
+      kissat_mab_force_no_colors();
+    else if ((valstr = kissat_mab_parse_option_name(arg, "time")))
     {
       int val;
-      if (kissat_parse_option_value(valstr, &val) && val > 0)
+      if (kissat_mab_parse_option_value(valstr, &val) && val > 0)
       {
         if (application->time > 0)
           ERROR("multiple '--time=%d' and '%s'",
@@ -480,29 +480,29 @@ parse_options(application *application, int argc, char **argv)
       else
         ERROR("invalid argument in '%s' (try '-h')", arg);
     }
-    else if ((valstr = kissat_parse_option_name(arg, "conflicts")))
+    else if ((valstr = kissat_mab_parse_option_name(arg, "conflicts")))
     {
       int val;
-      if (kissat_parse_option_value(valstr, &val) && val >= 0)
+      if (kissat_mab_parse_option_value(valstr, &val) && val >= 0)
       {
         if (application->conflicts >= 0)
           ERROR("multiple '--conflicts=%d' and '%s'",
                 application->conflicts, arg);
-        kissat_set_conflict_limit(solver, val);
+        kissat_mab_set_conflict_limit(solver, val);
         application->conflicts = val;
       }
       else
         ERROR("invalid argument in '%s' (try '-h')", arg);
     }
-    else if ((valstr = kissat_parse_option_name(arg, "decisions")))
+    else if ((valstr = kissat_mab_parse_option_name(arg, "decisions")))
     {
       int val;
-      if (kissat_parse_option_value(valstr, &val) && val >= 0)
+      if (kissat_mab_parse_option_value(valstr, &val) && val >= 0)
       {
         if (application->decisions >= 0)
           ERROR("multiple '--decisions=%d' and '%s'",
                 application->decisions, arg);
-        kissat_set_decision_limit(solver, val);
+        kissat_mab_set_decision_limit(solver, val);
         application->decisions = val;
       }
       else
@@ -516,21 +516,21 @@ parse_options(application *application, int argc, char **argv)
 #endif
 #ifndef NOPTIONS
     else if (arg[0] == '-' && arg[1] == '-' &&
-             kissat_has_configuration(arg + 2))
+             kissat_mab_has_configuration(arg + 2))
     {
       if (configuration)
         ERROR("multiple configurations '%s' and '%s'",
               configuration, arg);
-      kissat_set_configuration(solver, arg + 2);
+      kissat_mab_set_configuration(solver, arg + 2);
       configuration = arg;
     }
     else if (arg[0] == '-' && arg[1] == '-')
     {
-      char name[kissat_options_max_name_buffer_size];
+      char name[kissat_mab_options_max_name_buffer_size];
       int value;
-      if (!kissat_options_parse_arg(arg, name, &value))
+      if (!kissat_mab_options_parse_arg(arg, name, &value))
         ERROR("invalid long option '%s' (try '-h')", arg);
-      kissat_set_option(solver, name, value);
+      kissat_mab_set_option(solver, name, value);
     }
 #else
 #ifdef SAT
@@ -577,7 +577,7 @@ parse_options(application *application, int argc, char **argv)
 #ifndef NPROOFS
       if (!application->force && most_likely_existing_cnf_file(arg))
         ERROR("not writing proof to '%s' file (use '-f')", arg);
-      if (!kissat_file_writable(arg))
+      if (!kissat_mab_file_writable(arg))
         ERROR("can not write proof to '%s'", arg);
       application->proof_path = arg;
 #else
@@ -588,63 +588,63 @@ parse_options(application *application, int argc, char **argv)
     }
     else
     {
-      if (!kissat_file_readable(arg))
+      if (!kissat_mab_file_readable(arg))
         ERROR("can not read '%s'", arg);
       application->input_path = arg;
     }
   }
 #if !defined(QUIET) && !defined(NOPTIONS)
-  if (kissat_get_option(solver, "quiet"))
+  if (kissat_mab_get_option(solver, "quiet"))
   {
-    if (kissat_get_option(solver, "statistics"))
+    if (kissat_mab_get_option(solver, "statistics"))
       ERROR("can not use '--quiet' ('-q') with '--statistics' ('-s')");
-    if (kissat_get_option(solver, "verbose"))
+    if (kissat_mab_get_option(solver, "verbose"))
       ERROR("can not use '--quiet' ('-q') with '--verbose' ('-v')");
   }
 #endif
-  kissat_mab_init(solver);
+  kissat_mab_mabvars_init(solver);
   return true;
 }
 static bool
 parse_input(application *application)
 {
 #ifndef QUIET
-  double entered = kissat_process_time();
+  double entered = kissat_mab_process_time();
 #endif
   kissat *solver = application->solver;
   uint64_t lineno;
   file file;
   const char *path = application->input_path;
   if (!path)
-    kissat_read_already_open_file(&file, stdin, "<stdin>");
-  else if (!kissat_open_to_read_file(&file, path))
+    kissat_mab_read_already_open_file(&file, stdin, "<stdin>");
+  else if (!kissat_mab_open_to_read_file(&file, path))
     ERROR("failed to open '%s' for reading", path);
-  kissat_section(solver, "parsing");
-  kissat_message(solver, "opened and reading %sDIMACS file:",
+  kissat_mab_section(solver, "parsing");
+  kissat_mab_message(solver, "opened and reading %sDIMACS file:",
                  file.compressed ? "compressed " : "");
-  kissat_message(solver, "");
-  kissat_message(solver, "  %s", file.path);
-  kissat_message(solver, "");
-  const char *error = kissat_parse_dimacs(solver, application->strict, &file,
+  kissat_mab_message(solver, "");
+  kissat_mab_message(solver, "  %s", file.path);
+  kissat_mab_message(solver, "");
+  const char *error = kissat_mab_parse_dimacs(solver, application->strict, &file,
                                           &lineno, &application->max_var);
-  kissat_close_file(&file);
+  kissat_mab_close_file(&file);
   if (error)
     ERROR("%s:%" PRIu64 ": parse error: %s", file.path, lineno, error);
 #ifndef QUIET
-  kissat_message(solver, "closing input after reading %s",
+  kissat_mab_message(solver, "closing input after reading %s",
                  FORMAT_BYTES(file.bytes));
   if (file.compressed)
   {
     assert(path);
-    size_t bytes = kissat_file_size(path);
-    kissat_message(solver,
+    size_t bytes = kissat_mab_file_size(path);
+    kissat_mab_message(solver,
                    "inflated input file of size %s by %.2f",
                    FORMAT_BYTES(bytes),
-                   kissat_average(file.bytes, bytes));
+                   kissat_mab_average(file.bytes, bytes));
   }
-  kissat_message(solver,
+  kissat_mab_message(solver,
                  "finished parsing after %.2f seconds",
-                 kissat_process_time() - entered);
+                 kissat_mab_process_time() - entered);
 #endif
   return true;
 }
@@ -662,21 +662,21 @@ write_proof(application *application)
   if (!strcmp(path, "-"))
   {
     binary = false;
-    kissat_write_already_open_file(file, stdout, "<stdout>");
+    kissat_mab_write_already_open_file(file, stdout, "<stdout>");
   }
-  else if (!kissat_open_to_write_file(file, path))
+  else if (!kissat_mab_open_to_write_file(file, path))
     ERROR("failed to open and write proof to '%s'", path);
   else if (application->binary < 0)
     binary = false;
-  kissat_init_proof(application->solver, file, binary);
+  kissat_mab_init_proof(application->solver, file, binary);
 #ifndef QUIET
   kissat *solver = application->solver;
-  kissat_section(solver, "proving");
-  kissat_message(solver, "%swriting proof to %sDRAT file:",
+  kissat_mab_section(solver, "proving");
+  kissat_mab_message(solver, "%swriting proof to %sDRAT file:",
                  file->close ? "opened and " : "",
                  file->compressed ? "compressed " : "");
-  kissat_message(solver, "");
-  kissat_message(solver, "  %s", file->path);
+  kissat_mab_message(solver, "");
+  kissat_mab_message(solver, "  %s", file->path);
 #endif
   return true;
 }
@@ -687,8 +687,8 @@ close_proof(application *application)
   const char *path = application->proof_path;
   if (!path)
     return;
-  kissat_release_proof(application->solver);
-  kissat_close_file(&application->proof_file);
+  kissat_mab_release_proof(application->solver);
+  kissat_mab_close_file(&application->proof_file);
 }
 
 #endif
@@ -704,7 +704,7 @@ print_option(kissat *solver, int value, const opt *o)
   const char *val_str = FORMAT_VALUE(b, value);
   const char *def_str = FORMAT_VALUE(b, o->value);
   sprintf(buffer, "%s=%s", o->name, val_str);
-  kissat_message(solver, "--%-30s (%s default '%s')",
+  kissat_mab_message(solver, "--%-30s (%s default '%s')",
                  buffer, (value == o->value ? "same as" : "different from"),
                  def_str);
 }
@@ -714,17 +714,17 @@ print_option(kissat *solver, int value, const opt *o)
 void
 print_options(kissat *solver)
 {
-  const int verbosity = kissat_verbosity(solver);
+  const int verbosity = kissat_mab_verbosity(solver);
   if (verbosity < 0)
     return;
   size_t printed = 0;
   for (all_options(o))
   {
-    const int value = *kissat_options_ref(&solver->options, o);
+    const int value = *kissat_mab_options_ref(&solver->options, o);
     if (o->value != value || verbosity > 0)
     {
       if (!printed++)
-        kissat_section(solver, "options");
+        kissat_mab_section(solver, "options");
 
       print_option(solver, value, o);
     }
@@ -736,44 +736,44 @@ static void
 print_limits(application *application)
 {
   kissat *solver = application->solver;
-  const int verbosity = kissat_verbosity(solver);
+  const int verbosity = kissat_mab_verbosity(solver);
   if (verbosity < 1 &&
       application->conflicts < 0 && application->decisions < 0)
     return;
 
-  kissat_section(solver, "limits");
+  kissat_mab_section(solver, "limits");
   if (!application->time &&
       application->conflicts < 0 && application->conflicts < 0)
-    kissat_message(solver, "no time, conflict nor decision limit set");
+    kissat_mab_message(solver, "no time, conflict nor decision limit set");
   else
   {
     if (application->time)
-      kissat_message(solver,
+      kissat_mab_message(solver,
                      "time limit set to %d seconds", application->time);
     else if (verbosity > 0)
-      kissat_message(solver, "no time limit");
+      kissat_mab_message(solver, "no time limit");
 
     if (application->conflicts >= 0)
-      kissat_message(solver,
+      kissat_mab_message(solver,
                      "conflict limit set to %d conflicts",
                      application->conflicts);
     else if (verbosity > 0)
-      kissat_message(solver, "no conflict limit");
+      kissat_mab_message(solver, "no conflict limit");
 
     if (application->decisions >= 0)
-      kissat_message(solver,
+      kissat_mab_message(solver,
                      "decision limit set to %d decisions",
                      application->decisions);
     else if (verbosity > 0)
-      kissat_message(solver, "no decision limit");
+      kissat_mab_message(solver, "no decision limit");
   }
 }
 
 #endif
 
-/*void kissat_check_a (kissat * solver)
+/*void kissat_mab_check_a (kissat * solver)
 {
-  kissat_message (solver, "checking assignment\n");
+  kissat_mab_message (solver, "checking assignment\n");
   const int *begin = BEGIN_STACK (solver->original);
   const int *end = END_STACK (solver->original), *q;
 
@@ -784,26 +784,26 @@ print_limits(application *application)
       bool satisfied = false;
       int lit;
       for (q = p; (lit = *q); q++)
-	if (!satisfied && kissat_value (solver, lit) == lit)
+	if (!satisfied && kissat_mab_value (solver, lit) == lit)
 	  satisfied = true;
 
       count++;
 
       if (satisfied)
 	continue;
-      kissat_fatal_message_start ();
+      kissat_mab_fatal_message_start ();
       fputs ("unsatisfied clause:\n", stderr);
       for (q = p; (lit = *q); q++)
 	fprintf (stderr, "%d ", lit);
       fputs ("0\n", stderr);
       fflush (stderr);
-      kissat_abort ();
+      kissat_mab_abort ();
     }
-    kissat_message (solver, "assignment satisfies all original clauses\n");
+    kissat_mab_message (solver, "assignment satisfies all original clauses\n");
 
 }*/
 
-int kissat_application(kissat *solver, int argc, char **argv)
+int kissat_mab_application(kissat *solver, int argc, char **argv)
 {
   if (argc == 2)
     if (parsed_one_option_and_return_zero_exit_code(argv[1]))
@@ -813,9 +813,9 @@ int kissat_application(kissat *solver, int argc, char **argv)
   if (!parse_options(&application, argc, argv))
     return 1;
 #ifndef QUIET
-  kissat_section(solver, "banner");
+  kissat_mab_section(solver, "banner");
   if (!GET_OPTION(quiet))
-    kissat_banner("c ", "KISSAT SAT Solver");
+    kissat_mab_banner("c ", "KISSAT SAT Solver");
 #endif
 #ifndef NPROOFS
   if (!write_proof(&application))
@@ -833,13 +833,13 @@ int kissat_application(kissat *solver, int argc, char **argv)
   print_options(solver);
 #endif
   print_limits(&application);
-  kissat_section(solver, "solving");
+  kissat_mab_section(solver, "solving");
 #endif
   solver->max_var = application.max_var;
-  int res = kissat_solve(solver);
+  int res = kissat_mab_solve(solver);
   if (res)
   {
-    kissat_section(solver, "result");
+    kissat_mab_section(solver, "result");
     if (res == 20)
     {
       printf("s UNSATISFIABLE\n");
@@ -849,25 +849,25 @@ int kissat_application(kissat *solver, int argc, char **argv)
     {
 #ifndef NDEBUG
       if (GET_OPTION(check))
-        kissat_check_satisfying_assignment(solver);
+        kissat_mab_check_satisfying_assignment(solver);
 #endif
-      /*kissat_check_a (solver);*/
+      /*kissat_mab_check_a (solver);*/
       printf("s SATISFIABLE\n");
       fflush(stdout);
       if (application.witness)
-        kissat_print_witness(solver,
+        kissat_mab_print_witness(solver,
                              application.max_var, application.partial);
     }
   }
 #ifndef QUIET
-  kissat_print_statistics(solver);
+  kissat_mab_print_statistics(solver);
 #endif
 #ifndef NPROOFS
   close_proof(&application);
 #endif
 #ifndef QUIET
-  kissat_section(solver, "shutting down");
-  kissat_message(solver, "exit %d", res);
+  kissat_mab_section(solver, "shutting down");
+  kissat_mab_message(solver, "exit %d", res);
 #endif
   return res;
 }

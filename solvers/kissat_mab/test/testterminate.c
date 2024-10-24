@@ -20,7 +20,7 @@ test_terminate (int bit,
   if (rephaseint >= 0)
     return;
 #endif
-  kissat *solver = kissat_init ();
+  kissat *solver = kissat_mab_init ();
   tissat_init_solver (solver);
 #ifndef NOPTIONS
   if (rephaseint > 0)
@@ -33,27 +33,27 @@ test_terminate (int bit,
     solver->options.eliminateinit = eliminateinit;
 #endif
   file file;
-  const bool opened = kissat_open_to_read_file (&file, cnf);
+  const bool opened = kissat_mab_open_to_read_file (&file, cnf);
   if (!opened)
     FATAL ("could not read '%s'", cnf);
   tissat_verbose ("parsing '%s'", cnf);
   uint64_t lineno;
   int max_var;
   const char *error =
-    kissat_parse_dimacs (solver, RELAXED_PARSING, &file, &lineno, &max_var);
+    kissat_mab_parse_dimacs (solver, RELAXED_PARSING, &file, &lineno, &max_var);
   if (error)
     FATAL ("unexpected parse error: %s", error);
   (void) error;
-  kissat_close_file (&file);
+  kissat_mab_close_file (&file);
   tissat_verbose ("solving '%s' forcing 'TERMINATED (%d)'", cnf, bit);
   assert (0 <= bit), assert (bit < 32);
   solver->terminate = (1u << bit);
-  int res = kissat_solve (solver);
+  int res = kissat_mab_solve (solver);
   if (res)
     FATAL ("solver returned '%d' but expected '0'", res);
   else
     tissat_verbose ("solver returned '0' as expected");
-  kissat_release (solver);
+  kissat_mab_release (solver);
 }
 
 // *INDENT-OFF*

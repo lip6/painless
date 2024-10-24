@@ -8,8 +8,13 @@
 
 using namespace Eigen;
 
-void foo(CV_QUALIFIER float *ptr, DenseIndex rows, DenseIndex cols){
-    Map<MatrixXf> m(ptr, rows, cols);
+void
+foo(CV_QUALIFIER float* ptr, DenseIndex rows, DenseIndex cols)
+{
+	Map<MatrixXf> m(ptr, rows, cols);
 }
 
-int main() {}
+int
+main()
+{
+}

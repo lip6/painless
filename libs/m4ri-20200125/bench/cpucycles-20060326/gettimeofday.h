@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_gettimeofday_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_gettimeofday(void);
-extern long long cpucycles_gettimeofday_persecond(void);
+	extern long long cpucycles_gettimeofday(void);
+	extern long long cpucycles_gettimeofday_persecond(void);
 
 #ifdef __cplusplus
 }

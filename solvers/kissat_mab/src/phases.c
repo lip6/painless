@@ -2,7 +2,7 @@
 #include "logging.h"
 
 void
-kissat_save_target_phases (kissat * solver)
+kissat_mab_save_target_phases (kissat * solver)
 {
   LOG ("saving %u target values", LITS);
   const value *v = solver->values;
@@ -12,7 +12,7 @@ kissat_save_target_phases (kissat * solver)
 }
 
 void
-kissat_clear_target_phases (kissat * solver)
+kissat_mab_clear_target_phases (kissat * solver)
 {
   LOG ("clearing %u target values", LITS);
   const value *v = solver->values;
@@ -22,7 +22,7 @@ kissat_clear_target_phases (kissat * solver)
 }
 
 void
-kissat_save_best_phases (kissat * solver)
+kissat_mab_save_best_phases (kissat * solver)
 {
   LOG ("saving %u target values", LITS);
   const value *v = solver->values;

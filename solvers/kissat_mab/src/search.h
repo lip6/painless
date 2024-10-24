@@ -3,6 +3,7 @@
 
 struct kissat;
 
-int kissat_search (struct kissat *);
+int
+kissat_mab_search(struct kissat*);
 
 #endif

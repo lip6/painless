@@ -8,7 +8,8 @@
 
 using namespace Eigen;
 
-int main()
+int
+main()
 {
-  BDCSVD<Matrix<SCALAR,Dynamic,Dynamic> > qr(Matrix<SCALAR,Dynamic,Dynamic>::Random(10,10));
+	BDCSVD<Matrix<SCALAR, Dynamic, Dynamic>> qr(Matrix<SCALAR, Dynamic, Dynamic>::Random(10, 10));
 }

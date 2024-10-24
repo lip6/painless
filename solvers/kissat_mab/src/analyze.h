@@ -6,6 +6,7 @@
 struct clause;
 struct kissat;
 
-int kissat_analyze (struct kissat *, struct clause *);
+int
+kissat_mab_analyze(struct kissat*, struct clause*);
 
 #endif

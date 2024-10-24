@@ -17,7 +17,7 @@ last_enqueued_unassigned_variable(kissat *solver)
       res = links[res].prev;
       assert(!DISCONNECTED(res));
     } while (values[LIT(res)]);
-    kissat_update_queue(solver, links, res);
+    kissat_mab_update_queue(solver, links, res);
   }
 #ifdef LOGGING
   const unsigned stamp = links[res].stamp;
@@ -33,12 +33,12 @@ last_enqueued_unassigned_variable(kissat *solver)
 static unsigned
 largest_score_unassigned_variable(kissat *solver, heap *heap)
 {
-  unsigned res = kissat_max_heap(heap);
+  unsigned res = kissat_mab_max_heap(heap);
   const value *values = solver->values;
   while (values[LIT(res)])
   {
-    kissat_pop_heap(solver, heap, res);
-    res = kissat_max_heap(heap);
+    kissat_mab_pop_heap(solver, heap, res);
+    res = kissat_mab_max_heap(heap);
   }
 
   // MAB
@@ -53,7 +53,7 @@ largest_score_unassigned_variable(kissat *solver, heap *heap)
   }
 
 #if defined(LOGGING) || defined(CHECK_HEAP)
-  const double score = kissat_get_heap_score(heap, res);
+  const double score = kissat_mab_get_heap_score(heap, res);
 #endif
   LOG("largest score unassigned variable %u score %g", res, score);
 #ifdef CHECK_HEAP
@@ -61,7 +61,7 @@ largest_score_unassigned_variable(kissat *solver, heap *heap)
   {
     if (VALUE(LIT(idx)))
       continue;
-    const double idx_score = kissat_get_heap_score(heap, idx);
+    const double idx_score = kissat_mab_get_heap_score(heap, idx);
     assert(score >= idx_score);
   }
 #endif
@@ -69,7 +69,7 @@ largest_score_unassigned_variable(kissat *solver, heap *heap)
 }
 
 unsigned
-kissat_next_decision_variable(kissat *solver)
+kissat_mab_next_decision_variable(kissat *solver)
 {
   unsigned res;
   if (solver->stable)
@@ -132,33 +132,33 @@ decide_phase(kissat *solver, unsigned idx)
   return res;
 }
 
-void kissat_decide(kissat *solver)
+void kissat_mab_decide(kissat *solver)
 {
   START(decide);
   assert(solver->unassigned);
   INC(decisions);
   assert(solver->level < MAX_LEVEL);
   solver->level++;
-  const unsigned idx = kissat_next_decision_variable(solver);
+  const unsigned idx = kissat_mab_next_decision_variable(solver);
   const value value = decide_phase(solver, idx);
   unsigned lit = LIT(idx);
   if (value < 0)
     lit = NOT(lit);
-  kissat_push_frame(solver, lit);
+  kissat_mab_push_frame(solver, lit);
   assert(solver->level < SIZE_STACK(solver->frames));
   LOG("decide literal %s", LOGLIT(lit));
-  kissat_assign_decision(solver, lit);
+  kissat_mab_assign_decision(solver, lit);
   STOP(decide);
 }
 
-void kissat_internal_assume(kissat *solver, unsigned lit)
+void kissat_mab_internal_assume(kissat *solver, unsigned lit)
 {
   assert(solver->unassigned);
   assert(!VALUE(lit));
   assert(solver->level < MAX_LEVEL);
   solver->level++;
-  kissat_push_frame(solver, lit);
+  kissat_mab_push_frame(solver, lit);
   assert(solver->level < SIZE_STACK(solver->frames));
   LOG("assuming literal %s", LOGLIT(lit));
-  kissat_assign_decision(solver, lit);
+  kissat_mab_assign_decision(solver, lit);
 }

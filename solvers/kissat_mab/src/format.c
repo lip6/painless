@@ -7,7 +7,7 @@
 #include <string.h>
 
 char *
-kissat_next_format_string (format * format)
+kissat_mab_next_format_string (format * format)
 {
   assert (format->pos < NUM_FORMAT_STRINGS);
   char *res = format->str[format->pos++];
@@ -19,7 +19,7 @@ kissat_next_format_string (format * format)
 static void
 format_count (char *res, uint64_t w)
 {
-  if (w >= 128 && kissat_is_power_of_two (w))
+  if (w >= 128 && kissat_mab_is_power_of_two (w))
     {
       unsigned l;
       for (l = 0; ((uint64_t) 1 << l) != w; l++)
@@ -38,15 +38,15 @@ format_count (char *res, uint64_t w)
 }
 
 const char *
-kissat_format_count (format * format, uint64_t w)
+kissat_mab_format_count (format * format, uint64_t w)
 {
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   format_count (res, w);
   return res;
 }
 
 const char *
-kissat_format_value (format * format, bool boolean, int value)
+kissat_mab_format_value (format * format, bool boolean, int value)
 {
   if (boolean && value)
     return "true";
@@ -56,7 +56,7 @@ kissat_format_value (format * format, bool boolean, int value)
     return "INT_MAX";
   if (value == INT_MIN)
     return "INT_MIN";
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   if (value < 0)
     {
       *res = '-';
@@ -68,9 +68,9 @@ kissat_format_value (format * format, bool boolean, int value)
 }
 
 const char *
-kissat_format_bytes (format * format, uint64_t bytes)
+kissat_mab_format_bytes (format * format, uint64_t bytes)
 {
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   if (bytes < (1u << 10))
     sprintf (res, "%" PRIu64 " bytes", bytes);
   else if (bytes < (1u << 20))
@@ -86,11 +86,11 @@ kissat_format_bytes (format * format, uint64_t bytes)
 }
 
 const char *
-kissat_format_time (format * format, uint64_t seconds)
+kissat_mab_format_time (format * format, uint64_t seconds)
 {
   if (!seconds)
     return "0s";
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   uint64_t minutes = seconds / 60;
   seconds %= 60;
   uint64_t hours = minutes / 60;
@@ -127,9 +127,9 @@ kissat_format_time (format * format, uint64_t seconds)
 }
 
 const char *
-kissat_format_signs (format * format, unsigned size, word signs)
+kissat_mab_format_signs (format * format, unsigned size, word signs)
 {
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   assert (size + 1 < FORMAT_STRING_SIZE);
   char *p = res;
   word bit = 1;
@@ -140,7 +140,7 @@ kissat_format_signs (format * format, unsigned size, word signs)
 }
 
 const char *
-kissat_format_ordinal (format * format, uint64_t ordinal)
+kissat_mab_format_ordinal (format * format, uint64_t ordinal)
 {
   const char *suffix;
   unsigned mod100 = ordinal % 100;
@@ -164,7 +164,7 @@ kissat_format_ordinal (format * format, uint64_t ordinal)
 	  break;
 	}
     }
-  char *res = kissat_next_format_string (format);
+  char *res = kissat_mab_next_format_string (format);
   sprintf (res, "%" PRIu64 "%s", ordinal, suffix);
   return res;
 }

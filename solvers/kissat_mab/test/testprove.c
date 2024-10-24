@@ -44,7 +44,7 @@ schedule_prove_job_with_option (int expected,
 				const char *cnf, const char *name)
 {
   char cmd[256];
-  if (!kissat_file_readable (cnf))
+  if (!kissat_mab_file_readable (cnf))
     {
       tissat_warning ("Skipping unreadable '%s'", cnf);
       return;

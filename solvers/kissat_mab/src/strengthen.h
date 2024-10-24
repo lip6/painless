@@ -6,12 +6,13 @@
 struct clause;
 struct kissat;
 
-struct clause *kissat_on_the_fly_strengthen (struct kissat *, struct clause *,
-					     unsigned lit);
+struct clause*
+kissat_mab_on_the_fly_strengthen(struct kissat*, struct clause*, unsigned lit);
 
 void
-kissat_on_the_fly_subsume (struct kissat *, struct clause *, struct clause *);
+kissat_mab_on_the_fly_subsume(struct kissat*, struct clause*, struct clause*);
 
-bool kissat_strengthen_clause (struct kissat *, struct clause *, unsigned);
+bool
+kissat_mab_strengthen_clause(struct kissat*, struct clause*, unsigned);
 
 #endif

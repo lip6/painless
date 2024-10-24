@@ -89,7 +89,7 @@ dereference_literals (kissat * solver, walker * walker,
   else
     {
       const reference clause_ref = tagged.ref;
-      clause *c = kissat_dereference_clause (solver, clause_ref);
+      clause *c = kissat_mab_dereference_clause (solver, clause_ref);
       *size_ptr = c->size;
       lits = c->lits;
     }
@@ -158,7 +158,7 @@ init_score_table (walker * walker)
   for (next = 1; next; next *= base)
     exponents++;
 
-  walker->table = kissat_malloc (solver, exponents * sizeof (double));
+  walker->table = kissat_mab_malloc (solver, exponents * sizeof (double));
 
   unsigned i = 0;
   double epsilon;
@@ -169,9 +169,9 @@ init_score_table (walker * walker)
   walker->exponents = exponents;
   walker->epsilon = epsilon;
 
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"CB %.2f with inverse %.2f as base", cb, base);
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"table size %u and epsilon %g", exponents, epsilon);
 }
 
@@ -209,7 +209,7 @@ import_decision_phases (walker * walker)
       values[not_lit] = -value;
       LOG ("copied variable %u decision phase %d", idx, (int) value);
     }
-  kissat_phase (solver, "walk", GET (walks), "copied decision phases");
+  kissat_mab_phase (solver, "walk", GET (walks), "copied decision phases");
 }
 
 static unsigned
@@ -240,8 +240,8 @@ connect_binary_counters (walker * walker)
       refs[counter_ref] = make_tagged (true, binary_ref);
       watches *first_watches = all_watches + first;
       watches *second_watches = all_watches + second;
-      kissat_push_large_watch (solver, first_watches, counter_ref);
-      kissat_push_large_watch (solver, second_watches, counter_ref);
+      kissat_mab_push_large_watch (solver, first_watches, counter_ref);
+      kissat_mab_push_large_watch (solver, second_watches, counter_ref);
       const unsigned count = (first_value > 0) + (second_value > 0);
       counter *counter = counters + counter_ref;
       counter->count = count;
@@ -252,9 +252,9 @@ connect_binary_counters (walker * walker)
 	}
       counter_ref++;
     }
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"initially %u unsatisfied binary clauses %.0f%% out of %u",
-		unsat, kissat_percent (unsat, counter_ref), counter_ref);
+		unsat, kissat_mab_percent (unsat, counter_ref), counter_ref);
 #ifdef QUIET
   (void) unsat;
 #endif
@@ -275,7 +275,7 @@ connect_large_counters (walker * walker, unsigned counter_ref)
   unsigned unsat = 0;
   unsigned large = 0;
 
-  clause *last_irredundant = kissat_last_irredundant_clause (solver);
+  clause *last_irredundant = kissat_mab_last_irredundant_clause (solver);
 
   for (all_clauses (c))
     {
@@ -291,13 +291,13 @@ connect_large_counters (walker * walker, unsigned counter_ref)
 	  if (value <= 0)
 	    continue;
 	  LOGCLS (c, "%s satisfied", LOGLIT (lit));
-	  kissat_mark_clause_as_garbage (solver, c);
+	  kissat_mab_mark_clause_as_garbage (solver, c);
 	  break;
 	}
       if (c->garbage)
 	continue;
       large++;
-      assert (kissat_clause_in_arena (solver, c));
+      assert (kissat_mab_clause_in_arena (solver, c));
       reference clause_ref = (word *) c - arena;
       assert (clause_ref <= MAX_WALK_REF);
       assert (counter_ref < walker->clauses);
@@ -309,7 +309,7 @@ connect_large_counters (walker * walker, unsigned counter_ref)
 	  if (!value)
 	    continue;
 	  watches *watches = &WATCHES (lit);
-	  kissat_push_large_watch (solver, watches, counter_ref);
+	  kissat_mab_push_large_watch (solver, watches, counter_ref);
 	  if (value < 0)
 	    continue;
 	  count++;
@@ -323,9 +323,9 @@ connect_large_counters (walker * walker, unsigned counter_ref)
 	}
       counter_ref++;
     }
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"initially %u unsatisfied large clauses %.0f%% out of %u",
-		unsat, kissat_percent (unsat, large), large);
+		unsat, kissat_mab_percent (unsat, large), large);
 #ifdef QUIET
   (void) large;
   (void) unsat;
@@ -338,7 +338,7 @@ static void
 report_initial_minimum (kissat * solver, walker * walker)
 {
   walker->report.minimum = walker->minimum;
-  kissat_very_verbose (solver, "initial minimum of %u unsatisfied clauses",
+  kissat_mab_very_verbose (solver, "initial minimum of %u unsatisfied clauses",
 		       walker->minimum);
 }
 
@@ -346,7 +346,7 @@ static void
 report_minimum (const char *type, kissat * solver, walker * walker)
 {
   assert (walker->minimum <= walker->report.minimum);
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
 		       "%s minimum of %u unsatisfied clauses after %"
 		       PRIu64 " flipped literals", type,
 		       walker->minimum, walker->flipped);
@@ -371,22 +371,22 @@ init_walker (kissat * solver, walker * walker, litpairs * binaries)
   walker->random = solver->random;
 
   walker->saved = solver->values;
-  solver->values = kissat_calloc (solver, LITS, 1);
+  solver->values = kissat_mab_calloc (solver, LITS, 1);
 
   import_decision_phases (walker);
 
-  walker->counters = kissat_malloc (solver, clauses * sizeof (counter));
-  walker->refs = kissat_malloc (solver, clauses * sizeof (tagged));
+  walker->counters = kissat_mab_malloc (solver, clauses * sizeof (counter));
+  walker->refs = kissat_mab_malloc (solver, clauses * sizeof (tagged));
 
   const unsigned counter_ref = connect_binary_counters (walker);
   connect_large_counters (walker, counter_ref);
 
   walker->current = walker->initial = currently_unsatified (walker);
 
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"initially %u unsatisfied irredundant clauses %.0f%% "
 		"out of %" PRIu64, walker->initial,
-		kissat_percent (walker->initial, IRREDUNDANT_CLAUSES),
+		kissat_mab_percent (walker->initial, IRREDUNDANT_CLAUSES),
 		IRREDUNDANT_CLAUSES);
 
   walker->minimum = walker->current;
@@ -413,14 +413,14 @@ static void
 release_walker (walker * walker)
 {
   kissat *solver = walker->solver;
-  kissat_dealloc (solver, walker->table, walker->exponents, sizeof (double));
+  kissat_mab_dealloc (solver, walker->table, walker->exponents, sizeof (double));
   unsigned clauses = walker->clauses;
-  kissat_dealloc (solver, walker->refs, clauses, sizeof (tagged));
-  kissat_dealloc (solver, walker->counters, clauses, sizeof (counter));
+  kissat_mab_dealloc (solver, walker->refs, clauses, sizeof (tagged));
+  kissat_mab_dealloc (solver, walker->counters, clauses, sizeof (counter));
   RELEASE_STACK (walker->unsat);
   RELEASE_STACK (walker->scores);
   RELEASE_STACK (walker->trail);
-  kissat_free (solver, solver->values, LITS);
+  kissat_mab_free (solver, solver->values, LITS);
   RELEASE_STACK (walker->unsat);
   solver->values = walker->saved;
 }
@@ -464,7 +464,7 @@ pick_literal (kissat * solver, walker * walker)
 {
   assert (walker->current == SIZE_STACK (walker->unsat));
   const unsigned pos =
-    kissat_next_random32 (&walker->random) % walker->current;
+    kissat_mab_next_random32 (&walker->random) % walker->current;
   const unsigned counter_ref = PEEK_STACK (walker->unsat, pos);
   unsigned size;
   const unsigned *lits =
@@ -494,7 +494,7 @@ pick_literal (kissat * solver, walker * walker)
   assert (picked_lit != INVALID_LIT);
   assert (0 < sum);
 
-  const double random = kissat_pick_double (&walker->random);
+  const double random = kissat_mab_pick_double (&walker->random);
   assert (0 <= random), assert (random < 1);
 
   const double threshold = sum * random;
@@ -658,7 +658,7 @@ save_walker_trail (kissat * solver, walker * walker, bool keep)
       return;
     }
   LOG ("flushed %u literals %.0f%% from trail",
-       walker->best, kissat_percent (walker->best, size_trail));
+       walker->best, kissat_mab_percent (walker->best, size_trail));
   const unsigned *end = END_STACK (walker->trail);
   unsigned *q = begin;
   for (const unsigned *p = best; p != end; p++)
@@ -667,7 +667,7 @@ save_walker_trail (kissat * solver, walker * walker, bool keep)
   assert ((size_t) (q - begin) == kept);
   SET_END_OF_STACK (walker->trail, q);
   LOG ("keeping %u literals %.0f%% on trail",
-       kept, kissat_percent (kept, size_trail));
+       kept, kissat_mab_percent (kept, size_trail));
   LOG ("reset best trail position to 0");
   walker->best = 0;
 }
@@ -735,7 +735,7 @@ update_best (kissat * solver, walker * walker)
   assert (walker->current < walker->minimum);
   walker->minimum = walker->current;
 #ifndef QUIET
-  int verbosity = kissat_verbosity (solver);
+  int verbosity = kissat_mab_verbosity (solver);
   bool report = (verbosity > 2);
   if (verbosity == 2)
     {
@@ -788,7 +788,7 @@ static void
 local_search_round (walker * walker, unsigned round)
 {
   kissat *solver = walker->solver;
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
 		       "round %u starts with %u unsatisfied clauses",
 		       round, walker->current);
   init_walker_limit (solver, walker);
@@ -807,15 +807,15 @@ local_search_round (walker * walker, unsigned round)
   assert (statistics->walk_steps >= walker->start);
   const uint64_t steps = statistics->walk_steps - walker->start;
   // *INDENT-OFF*
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
     "round %u ends with %u unsatisfied clauses",
     round, walker->current);
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
     "flipping %" PRIu64 " literals took %" PRIu64 " steps (%.2f per flipped)",
-    walker->flipped, steps, kissat_average (steps, walker->flipped));
+    walker->flipped, steps, kissat_mab_average (steps, walker->flipped));
   // *INDENT-ON*
   const unsigned after = walker->minimum;
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"round %u ends with %s minimum %u after %" PRIu64 " flips",
 		round, after < before ? "new" : "unchanged", after,
 		walker->flipped);
@@ -832,7 +832,7 @@ save_final_minimum (walker * walker)
   assert (walker->minimum <= walker->initial);
   if (walker->minimum == walker->initial)
     {
-      kissat_phase (solver, "walk", GET (walks),
+      kissat_mab_phase (solver, "walk", GET (walks),
 		    "no improvement thus keeping saved phases");
       return 0;
     }
@@ -843,7 +843,7 @@ save_final_minimum (walker * walker)
     save_walker_trail (solver, walker, false);
 
   INC (walk_improved);
-  kissat_phase (solver, "walk", GET (walks),
+  kissat_mab_phase (solver, "walk", GET (walks),
 		"improved assignment to %u unsatisfied clauses",
 		walker->minimum);
   return 'W';
@@ -857,7 +857,7 @@ walking_phase (kissat * solver)
   litwatches redundant;
   INIT_STACK (irredundant);
   INIT_STACK (redundant);
-  kissat_enter_dense_mode (solver, &irredundant, &redundant);
+  kissat_mab_enter_dense_mode (solver, &irredundant, &redundant);
   walker walker;
   init_walker (solver, &walker, &irredundant);
   const unsigned max_rounds = GET_OPTION (walkrounds);
@@ -869,18 +869,18 @@ walking_phase (kissat * solver)
     }
   char res = save_final_minimum (&walker);
   release_walker (&walker);
-  kissat_resume_sparse_mode (solver, false, &irredundant, &redundant);
+  kissat_mab_resume_sparse_mode (solver, false, &irredundant, &redundant);
   RELEASE_STACK (irredundant);
   RELEASE_STACK (redundant);
   return res;
 }
 
 char
-kissat_walk (kissat * solver)
+kissat_mab_walk (kissat * solver)
 {
   assert (!solver->level);
   assert (!solver->inconsistent);
-  assert (kissat_propagated (solver));
+  assert (kissat_mab_propagated (solver));
 
   reference last_irredundant = solver->last_irredundant;
   if (last_irredundant == INVALID_REF)
@@ -888,18 +888,18 @@ kissat_walk (kissat * solver)
 
   if (last_irredundant > MAX_WALK_REF)
     {
-      kissat_phase (solver, "walk", GET (walks),
+      kissat_mab_phase (solver, "walk", GET (walks),
 		    "last irredundant clause reference %u too large",
 		    last_irredundant);
-      return kissat_rephase_best (solver);
+      return kissat_mab_rephase_best (solver);
     }
 
   if (IRREDUNDANT_CLAUSES > MAX_WALK_REF)
     {
-      kissat_phase (solver, "walk", GET (walks),
+      kissat_mab_phase (solver, "walk", GET (walks),
 		    "way too many irredundant clauses %" PRIu64,
 		    IRREDUNDANT_CLAUSES);
-      return kissat_rephase_best (solver);
+      return kissat_mab_rephase_best (solver);
     }
 
   STOP_SEARCH_AND_START_SIMPLIFIER (walking);
@@ -909,7 +909,7 @@ kissat_walk (kissat * solver)
 }
 
 int
-kissat_walk_initially (kissat * solver)
+kissat_mab_walk_initially (kissat * solver)
 {
   if (solver->inconsistent)
     return 20;
@@ -920,7 +920,7 @@ kissat_walk_initially (kissat * solver)
 #ifndef QUIET
   char type =
 #endif
-    kissat_walk (solver);
+    kissat_mab_walk (solver);
   REPORT (0, type ? type : 'W');
   return 0;
 }

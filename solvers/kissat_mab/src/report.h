@@ -3,16 +3,18 @@
 
 #ifdef QUIET
 
-#define REPORT(...) do { } while (0)
+#define REPORT(...)                                                                                                    \
+	do {                                                                                                               \
+	} while (0)
 
 #else
 
 struct kissat;
 
-void kissat_report (struct kissat *, bool verbose, char type);
+void
+kissat_mab_report(struct kissat*, bool verbose, char type);
 
-#define REPORT(LEVEL,TYPE) \
-  kissat_report (solver, (LEVEL), (TYPE))
+#define REPORT(LEVEL, TYPE) kissat_mab_report(solver, (LEVEL), (TYPE))
 
 #endif
 

@@ -29,13 +29,13 @@ print_int (kissat * solver, chars * buffer, int i)
 }
 
 void
-kissat_print_witness (kissat * solver, int max_var, bool partial)
+kissat_mab_print_witness (kissat * solver, int max_var, bool partial)
 {
   chars buffer;
   INIT_STACK (buffer);
   for (int eidx = 1; eidx <= max_var; eidx++)
     {
-      int tmp = kissat_value (solver, eidx);
+      int tmp = kissat_mab_value (solver, eidx);
       if (!tmp && !partial)
 	tmp = eidx;
       if (tmp)

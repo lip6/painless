@@ -28,15 +28,15 @@ etc_shadow_exists (void)
 static void
 test_file_basic (void)
 {
-  assert (!kissat_file_readable (0));
-  assert (!kissat_file_writable (0));
+  assert (!kissat_mab_file_readable (0));
+  assert (!kissat_mab_file_writable (0));
   file file;
-  kissat_read_already_open_file (&file, stdin, "<stdin>");
-  kissat_close_file (&file);
-  kissat_write_already_open_file (&file, stdout, "<stdout>");
-  kissat_close_file (&file);
-  assert (!kissat_open_to_write_file (&file, "/root/directory/not-writable"));
-  assert (!kissat_file_size ("/root/directory/not-writable"));
+  kissat_mab_read_already_open_file (&file, stdin, "<stdin>");
+  kissat_mab_close_file (&file);
+  kissat_mab_write_already_open_file (&file, stdout, "<stdout>");
+  kissat_mab_close_file (&file);
+  assert (!kissat_mab_open_to_write_file (&file, "/root/directory/not-writable"));
+  assert (!kissat_mab_file_size ("/root/directory/not-writable"));
 }
 
 static void
@@ -44,7 +44,7 @@ test_file_readable (void)
 {
 #define READABLE(EXPECTED,PATH) \
 do { \
-  bool RES = kissat_file_readable (PATH); \
+  bool RES = kissat_mab_file_readable (PATH); \
   if (RES && EXPECTED) \
     printf ("file '%s' determined to be readable as expected\n", PATH); \
   else if (!RES && ~EXPECTED) \
@@ -54,7 +54,7 @@ do { \
   else if (!RES && EXPECTED) \
     FATAL ("file '%s' determined to not be readable unexpectedly", PATH); \
 } while (0)
-  assert (!kissat_file_readable (0));
+  assert (!kissat_mab_file_readable (0));
   READABLE (false, "non-existing-file");
   READABLE (true, "tissat");
   READABLE (true, ".");
@@ -70,7 +70,7 @@ test_file_writable (void)
 {
 #define WRITABLE(EXPECTED,PATH) \
 do { \
-  bool RES = kissat_file_writable (PATH); \
+  bool RES = kissat_mab_file_writable (PATH); \
   if (RES && EXPECTED) \
     printf ("file '%s' determined to be writable as expected\n", PATH); \
   else if (!RES && ~EXPECTED) \
@@ -80,7 +80,7 @@ do { \
   else if (!RES && EXPECTED) \
     FATAL ("file '%s' determined not to be writable unexpectedly", PATH); \
 } while (0)
-  assert (!kissat_file_writable (0));
+  assert (!kissat_mab_file_writable (0));
   WRITABLE (true, "../test/file/writable");
   if (can_open_dev_null ())
     WRITABLE (true, "/dev/null");
@@ -101,17 +101,17 @@ do { \
 static void
 test_file_read_compressed (void)
 {
-  const size_t expected_bytes = kissat_file_size ("../test/file/0");
+  const size_t expected_bytes = kissat_mab_file_size ("../test/file/0");
 #define READ_COMPRESSED(EXPECTED,EXECUTABLE,PATH) \
 do { \
   file file; \
-  if (!kissat_find_executable (EXECUTABLE)) \
+  if (!kissat_mab_find_executable (EXECUTABLE)) \
     { \
       printf ("skipping '%s': could not find executable '%s'\n", \
               EXECUTABLE, PATH); \
       break; \
     } \
-  bool res = kissat_open_to_read_file (&file, PATH); \
+  bool res = kissat_mab_open_to_read_file (&file, PATH); \
   if (res && EXPECTED) \
     printf ("opened compressed '%s' for reading as expected\n", PATH); \
   else if (!res && !EXPECTED) \
@@ -125,11 +125,11 @@ do { \
   if (!res) \
     break; \
   int ch; \
-  while ((ch = kissat_getc (&file)) != EOF) \
+  while ((ch = kissat_mab_getc (&file)) != EOF) \
     ; \
   printf ("closing '%s' after reading '%" PRIu64 "' bytes\n", \
           PATH, file.bytes); \
-  kissat_close_file (&file); \
+  kissat_mab_close_file (&file); \
   if (file.bytes != expected_bytes) \
     FATAL ("read '%" PRIu64 "' bytes but expected '%zu'", \
            file.bytes, expected_bytes); \
@@ -156,11 +156,11 @@ do { \
 static void
 test_file_read_uncompressed (void)
 {
-  const size_t expected_bytes = kissat_file_size ("../test/file/0");
+  const size_t expected_bytes = kissat_mab_file_size ("../test/file/0");
 #define READ_UNCOMPRESSED(EXPECTED,PATH) \
 do { \
   file file; \
-  bool res = kissat_open_to_read_file (&file, PATH); \
+  bool res = kissat_mab_open_to_read_file (&file, PATH); \
   if (res && EXPECTED) \
     printf ("opened uncompressed '%s' for reading as expected\n", PATH); \
   else if (!res && !EXPECTED) \
@@ -174,11 +174,11 @@ do { \
   if (!res) \
     break; \
   int ch; \
-  while ((ch = kissat_getc (&file)) != EOF) \
+  while ((ch = kissat_mab_getc (&file)) != EOF) \
     ; \
   printf ("closing '%s' after reading '%" PRIu64 "' bytes\n", \
           PATH, file.bytes); \
-  kissat_close_file (&file); \
+  kissat_mab_close_file (&file); \
   if (file.bytes != expected_bytes) \
     FATAL ("read '%" PRIu64 "' bytes but expected '%zu'", \
            file.bytes, expected_bytes); \
@@ -199,7 +199,7 @@ test_file_write_and_read_compressed (void)
 {
 #define WRITE_AND_READ_COMPRESSED(EXECUTABLE,SUFFIX) \
 do { \
-  if (!kissat_find_executable (EXECUTABLE)) \
+  if (!kissat_mab_find_executable (EXECUTABLE)) \
     printf ("not writing and reading compressed '%s' file " \
             "(could not find '%s' executable)", SUFFIX, EXECUTABLE); \
   else \
@@ -208,22 +208,22 @@ do { \
       file file; \
       const char * path = "42" SUFFIX; \
       printf ("writing single '42' line to compressed '%s'\n", path); \
-      if (!kissat_open_to_write_file (&file, path)) \
+      if (!kissat_mab_open_to_write_file (&file, path)) \
 	FATAL ("failed to write compressed '%s'", path); \
       else \
 	{ \
-	  kissat_putc (&file, '4'); \
-	  kissat_putc (&file, '2'); \
-	  kissat_putc (&file, '\n'); \
-	  kissat_close_file (&file); \
+	  kissat_mab_putc (&file, '4'); \
+	  kissat_mab_putc (&file, '2'); \
+	  kissat_mab_putc (&file, '\n'); \
+	  kissat_mab_close_file (&file); \
 	  printf ("reading single '42' line from compressed '%s'\n", path); \
-	  if (!kissat_open_to_read_file (&file, path)) \
+	  if (!kissat_mab_open_to_read_file (&file, path)) \
 	    FATAL ("failed to read compressed '%s'", path); \
 	  int chars = 0; \
-	  if ((++chars && kissat_getc (&file) != '4') || \
-	      (++chars && kissat_getc (&file) != '2') || \
-	      (++chars && kissat_getc (&file) != '\n') || \
-	      (++chars && kissat_getc (&file) != EOF)) \
+	  if ((++chars && kissat_mab_getc (&file) != '4') || \
+	      (++chars && kissat_mab_getc (&file) != '2') || \
+	      (++chars && kissat_mab_getc (&file) != '\n') || \
+	      (++chars && kissat_mab_getc (&file) != EOF)) \
 	    FATAL ("failed to read single '42' line from '%s' " \
 	           "(character %d wrong)", path, chars); \
 	} \

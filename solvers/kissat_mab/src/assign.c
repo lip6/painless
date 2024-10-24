@@ -5,7 +5,7 @@
 #include <limits.h>
 
 static inline void
-kissat_assign(kissat *solver,
+kissat_mab_assign(kissat *solver,
 #ifdef INLINE_ASSIGN
               value *values, assigned *assigned,
 #endif
@@ -56,7 +56,7 @@ kissat_assign(kissat *solver,
 
   if (!level)
   {
-    kissat_mark_fixed_literal(solver, lit);
+    kissat_mab_mark_fixed_literal(solver, lit);
     assert(solver->unflushed < UINT_MAX);
     solver->unflushed++;
   }
@@ -70,7 +70,7 @@ kissat_assign(kissat *solver,
 }
 
 static inline unsigned
-kissat_assignment_level(kissat *solver,
+kissat_mab_assignment_level(kissat *solver,
                         value *values, assigned *assigned,
                         unsigned lit, clause *reason)
 {
@@ -94,15 +94,15 @@ kissat_assignment_level(kissat *solver,
 
 #ifndef INLINE_ASSIGN
 
-void kissat_assign_unit(kissat *solver, unsigned lit)
+void kissat_mab_assign_unit(kissat *solver, unsigned lit)
 {
-  kissat_assign(solver, lit, false, false, 0, UNIT);
+  kissat_mab_assign(solver, lit, false, false, 0, UNIT);
   LOGUNARY(lit, "assign %s reason", LOGLIT(lit));
 }
 
-void kissat_assign_decision(kissat *solver, unsigned lit)
+void kissat_mab_assign_decision(kissat *solver, unsigned lit)
 {
-  kissat_assign(solver, lit, false, false, solver->level, DECISION);
+  kissat_mab_assign(solver, lit, false, false, solver->level, DECISION);
   LOG("assign %s decision", LOGLIT(lit));
 }
 
@@ -112,7 +112,7 @@ void kissat_assign_decision(kissat *solver, unsigned lit)
 static inline
 #endif
     void
-    kissat_assign_binary(kissat *solver,
+    kissat_mab_assign_binary(kissat *solver,
 #ifdef INLINE_ASSIGN
                          value *values, assigned *assigned,
 #endif
@@ -125,7 +125,7 @@ static inline
   const unsigned other_idx = IDX(other);
   struct assigned *a = assigned + other_idx;
   const unsigned level = a->level;
-  kissat_assign(solver,
+  kissat_mab_assign(solver,
 #ifdef INLINE_ASSIGN
                 values, assigned,
 #endif
@@ -138,22 +138,22 @@ static inline
 static inline
 #endif
     void
-    kissat_assign_reference(kissat *solver,
+    kissat_mab_assign_reference(kissat *solver,
 #ifdef INLINE_ASSIGN
                             value *values, assigned *assigned,
 #endif
                             unsigned lit, reference ref, clause *reason)
 {
-  assert(reason == kissat_dereference_clause(solver, ref));
+  assert(reason == kissat_mab_dereference_clause(solver, ref));
 #ifndef INLINE_ASSIGN
   assigned *assigned = solver->assigned;
   value *values = solver->values;
 #endif
   const unsigned level =
-      kissat_assignment_level(solver, values, assigned, lit, reason);
+      kissat_mab_assignment_level(solver, values, assigned, lit, reason);
   assert(ref != DECISION);
   assert(ref != UNIT);
-  kissat_assign(solver,
+  kissat_mab_assign(solver,
 #ifdef INLINE_ASSIGN
                 values, assigned,
 #endif

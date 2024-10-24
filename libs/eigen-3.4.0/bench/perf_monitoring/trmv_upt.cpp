@@ -1,12 +1,14 @@
 #include "gemv_common.h"
 
 EIGEN_DONT_INLINE
-void trmv(const Mat &A, Vec &B, const Vec &C)
+void
+trmv(const Mat& A, Vec& B, const Vec& C)
 {
-  B.noalias() += A.transpose().triangularView<Upper>() * C;
+	B.noalias() += A.transpose().triangularView<Upper>() * C;
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char** argv)
 {
-  return main_gemv(argc, argv, trmv);
+	return main_gemv(argc, argv, trmv);
 }

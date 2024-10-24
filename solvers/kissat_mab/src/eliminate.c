@@ -28,7 +28,7 @@ really_eliminate (kissat * solver)
 }
 
 bool
-kissat_eliminating (kissat * solver)
+kissat_mab_eliminating (kissat * solver)
 {
   if (!solver->enabled.eliminate)
     return false;
@@ -53,7 +53,7 @@ static inline void
 update_after_adding_variable (kissat * solver, heap * schedule, unsigned idx)
 {
   assert (schedule->size);
-  kissat_update_variable_score (solver, schedule, idx);
+  kissat_mab_update_variable_score (solver, schedule, idx);
 }
 
 static inline void
@@ -74,13 +74,13 @@ update_after_removing_variable (kissat * solver, unsigned idx)
   heap *schedule = &solver->schedule;
   if (!schedule->size)
     return;
-  kissat_update_variable_score (solver, schedule, idx);
-  if (!kissat_heap_contains (schedule, idx))
-    kissat_push_heap (solver, schedule, idx);
+  kissat_mab_update_variable_score (solver, schedule, idx);
+  if (!kissat_mab_heap_contains (schedule, idx))
+    kissat_mab_push_heap (solver, schedule, idx);
 }
 
 void
-kissat_update_after_removing_variable (kissat * solver, unsigned idx)
+kissat_mab_update_after_removing_variable (kissat * solver, unsigned idx)
 {
   update_after_removing_variable (solver, idx);
 }
@@ -95,24 +95,24 @@ update_after_removing_clause (kissat * solver, clause * c, unsigned except)
 }
 
 void
-kissat_update_after_removing_clause (kissat * solver,
+kissat_mab_update_after_removing_clause (kissat * solver,
 				     clause * c, unsigned except)
 {
   update_after_removing_clause (solver, c, except);
 }
 
 void
-kissat_eliminate_binary (kissat * solver, unsigned lit, unsigned other)
+kissat_mab_eliminate_binary (kissat * solver, unsigned lit, unsigned other)
 {
-  kissat_disconnect_binary (solver, other, lit);
-  kissat_delete_binary (solver, false, false, lit, other);
+  kissat_mab_disconnect_binary (solver, other, lit);
+  kissat_mab_delete_binary (solver, false, false, lit, other);
   update_after_removing_variable (solver, IDX (other));
 }
 
 void
-kissat_eliminate_clause (kissat * solver, clause * c, unsigned lit)
+kissat_mab_eliminate_clause (kissat * solver, clause * c, unsigned lit)
 {
-  kissat_mark_clause_as_garbage (solver, c);
+  kissat_mab_mark_clause_as_garbage (solver, c);
   update_after_removing_clause (solver, c, lit);
 }
 
@@ -121,7 +121,7 @@ schedule_variables (kissat * solver)
 {
   LOG ("initializing variable schedule");
   assert (!solver->schedule.size);
-  kissat_resize_heap (solver, &solver->schedule, solver->vars);
+  kissat_mab_resize_heap (solver, &solver->schedule, solver->vars);
 
   flags *all_flags = solver->flags;
 
@@ -135,18 +135,18 @@ schedule_variables (kissat * solver)
       LOG ("scheduling variable %u", idx);
       update_after_removing_variable (solver, idx);
     }
-  size_t scheduled = kissat_size_heap (&solver->schedule);
+  size_t scheduled = kissat_mab_size_heap (&solver->schedule);
 #ifndef QUIET
   size_t active = solver->active;
-  kissat_phase (solver, "eliminate", GET (eliminations),
+  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 		"scheduled %zu variables %.0f%%",
-		scheduled, kissat_percent (scheduled, active));
+		scheduled, kissat_mab_percent (scheduled, active));
 #endif
   return scheduled;
 }
 
 void
-kissat_flush_units_while_connected (kissat * solver)
+kissat_mab_flush_units_while_connected (kissat * solver)
 {
   unsigned propagated = solver->propagated;
   size_t units = SIZE_STACK (solver->trail) - propagated;
@@ -155,7 +155,7 @@ kissat_flush_units_while_connected (kissat * solver)
 #ifdef LOGGING
   LOG ("propagating and flushing %zu units", units);
 #endif
-  if (!kissat_dense_propagate (solver,
+  if (!kissat_mab_dense_propagate (solver,
 			       NO_DENSE_PROPAGATION_LIMIT, INVALID_IDX))
     {
       assert (!solver->inconsistent);
@@ -191,9 +191,9 @@ kissat_flush_units_while_connected (kissat * solver)
 	  else
 	    {
 	      const reference ref = watch.large.ref;
-	      clause *c = kissat_dereference_clause (solver, ref);
+	      clause *c = kissat_mab_dereference_clause (solver, ref);
 	      if (!c->garbage)
-		kissat_eliminate_clause (solver, c, unit);
+		kissat_mab_eliminate_clause (solver, c, unit);
 	      assert (c->garbage);
 	      q--;
 	    }
@@ -221,7 +221,7 @@ connect_resolvents (kissat * solver)
 	{
 	  if (satisfied)
 	    satisfied = false;
-	  else if (kissat_forward_subsume_temporary (solver))
+	  else if (kissat_mab_forward_subsume_temporary (solver))
 	    LOGTMP ("temporary forward subsumed");
 	  else
 	    {
@@ -239,20 +239,20 @@ connect_resolvents (kissat * solver)
 		{
 		  const unsigned unit = PEEK_STACK (solver->clause.lits, 0);
 		  LOG ("resolved unit clause %s", LOGLIT (unit));
-		  kissat_assign_unit (solver, unit);
+		  kissat_mab_assign_unit (solver, unit);
 		  CHECK_AND_ADD_UNIT (unit);
 		  ADD_UNIT_TO_PROOF (unit);
 		}
 	      else
 		{
 		  assert (size > 1);
-		  reference ref = kissat_new_irredundant_clause (solver);
+		  reference ref = kissat_mab_new_irredundant_clause (solver);
 		  update_after_adding_stack (solver, &solver->clause.lits);
 		  added++;
 
 		  if (backward)
 		    backward =
-		      kissat_backward_subsume_temporary (solver, ref);
+		      kissat_mab_backward_subsume_temporary (solver, ref);
 		}
 	    }
 	  CLEAR_STACK (solver->clause.lits);
@@ -292,14 +292,14 @@ weaken_clauses (kissat * solver, unsigned lit)
 	  const unsigned other = watch.binary.lit;
 	  const value value = values[other];
 	  if (value <= 0)
-	    kissat_weaken_binary (solver, lit, other);
+	    kissat_mab_weaken_binary (solver, lit, other);
 	  assert (!watch.binary.redundant);
-	  kissat_eliminate_binary (solver, lit, other);
+	  kissat_mab_eliminate_binary (solver, lit, other);
 	}
       else
 	{
 	  const reference ref = watch.large.ref;
-	  clause *c = kissat_dereference_clause (solver, ref);
+	  clause *c = kissat_mab_dereference_clause (solver, ref);
 	  if (c->garbage)
 	    continue;
 	  bool satisfied = false;
@@ -312,9 +312,9 @@ weaken_clauses (kissat * solver, unsigned lit)
 	      break;
 	    }
 	  if (!satisfied)
-	    kissat_weaken_clause (solver, lit, c);
+	    kissat_mab_weaken_clause (solver, lit, c);
 	  LOGCLS (c, "removing %s", LOGLIT (lit));
-	  kissat_eliminate_clause (solver, c, lit);
+	  kissat_mab_eliminate_clause (solver, c, lit);
 	}
     }
   RELEASE_WATCHES (*pos_watches);
@@ -330,13 +330,13 @@ weaken_clauses (kissat * solver, unsigned lit)
 	  assert (!watch.binary.redundant);
 	  const value value = values[other];
 	  if (!optimize && value <= 0)
-	    kissat_weaken_binary (solver, not_lit, other);
-	  kissat_eliminate_binary (solver, not_lit, other);
+	    kissat_mab_weaken_binary (solver, not_lit, other);
+	  kissat_mab_eliminate_binary (solver, not_lit, other);
 	}
       else
 	{
 	  const reference ref = watch.large.ref;
-	  clause *d = kissat_dereference_clause (solver, ref);
+	  clause *d = kissat_mab_dereference_clause (solver, ref);
 	  if (d->garbage)
 	    continue;
 	  bool satisfied = false;
@@ -349,16 +349,16 @@ weaken_clauses (kissat * solver, unsigned lit)
 	      break;
 	    }
 	  if (!optimize && !satisfied)
-	    kissat_weaken_clause (solver, not_lit, d);
+	    kissat_mab_weaken_clause (solver, not_lit, d);
 	  LOGCLS (d, "removing %s", LOGLIT (not_lit));
-	  kissat_eliminate_clause (solver, d, not_lit);
+	  kissat_mab_eliminate_clause (solver, d, not_lit);
 	}
     }
   if (optimize && neg_watches->size)
-    kissat_weaken_unit (solver, not_lit);
+    kissat_mab_weaken_unit (solver, not_lit);
   RELEASE_WATCHES (*neg_watches);
 
-  kissat_flush_units_while_connected (solver);
+  kissat_mab_flush_units_while_connected (solver);
 }
 
 static void
@@ -385,7 +385,7 @@ set_next_elimination_bound (kissat * solver, bool complete)
     {
       if (current_bound == max_bound)
 	{
-	  kissat_phase (solver, "eliminate", GET (eliminations),
+	  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 			"completed maximum elimination bound %u",
 			current_bound);
 	  limits *limits = &solver->limits;
@@ -401,7 +401,7 @@ set_next_elimination_bound (kissat * solver, bool complete)
 	{
 	  const unsigned next_bound =
 	    !current_bound ? 1 : MIN (2 * current_bound, max_bound);
-	  kissat_phase (solver, "eliminate", GET (eliminations),
+	  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 			"completed elimination bound %u next %u",
 			current_bound, next_bound);
 	  solver->bounds.eliminate.additional_clauses = next_bound;
@@ -410,7 +410,7 @@ set_next_elimination_bound (kissat * solver, bool complete)
 	}
     }
   else
-    kissat_phase (solver, "eliminate", GET (eliminations),
+    kissat_mab_phase (solver, "eliminate", GET (eliminations),
 		  "incomplete elimination bound %u", current_bound);
 }
 
@@ -439,13 +439,13 @@ eliminate_variable (kissat * solver, unsigned idx)
   if (!can_eliminate_variable (solver, idx))
     return false;
   unsigned lit;
-  if (!kissat_generate_resolvents (solver, idx, &lit))
+  if (!kissat_mab_generate_resolvents (solver, idx, &lit))
     return false;
   connect_resolvents (solver);
   if (!solver->inconsistent)
     weaken_clauses (solver, lit);
   INC (eliminated);
-  kissat_mark_eliminated_variable (solver, idx);
+  kissat_mab_mark_eliminated_variable (solver, idx);
   if (solver->gate_eliminated)
     {
       INC (gates);
@@ -460,7 +460,7 @@ eliminate_variable (kissat * solver, unsigned idx)
 static void
 eliminate_variables (kissat * solver)
 {
-  kissat_very_verbose (solver,
+  kissat_mab_very_verbose (solver,
 		       "trying to eliminate variables with bound %u",
 		       solver->bounds.eliminate.additional_clauses);
 
@@ -469,7 +469,7 @@ eliminate_variables (kissat * solver)
 
   SET_EFFICIENCY_BOUND (resolution_limit, eliminate,
 			resolutions, search_ticks,
-			2 * CLAUSES + kissat_nlogn (active));
+			2 * CLAUSES + kissat_mab_nlogn (active));
 
   bool complete = false;
   int round = 0;
@@ -481,21 +481,21 @@ eliminate_variables (kissat * solver)
       if (forward)
 	{
 	  unsigned propagated = solver->propagated;
-	  kissat_forward_subsume_during_elimination (solver);
+	  kissat_mab_forward_subsume_during_elimination (solver);
 	  if (solver->inconsistent)
 	    break;
-	  kissat_flush_large_connected (solver);
-	  kissat_connect_irredundant_large_clauses (solver);
+	  kissat_mab_flush_large_connected (solver);
+	  kissat_mab_connect_irredundant_large_clauses (solver);
 	  solver->propagated = propagated;
-	  kissat_flush_units_while_connected (solver);
+	  kissat_mab_flush_units_while_connected (solver);
 	  if (solver->inconsistent)
 	    break;
 	}
       else
-	kissat_connect_irredundant_large_clauses (solver);
+	kissat_mab_connect_irredundant_large_clauses (solver);
       if (!schedule_variables (solver))
 	{
-	  kissat_release_heap (solver, &solver->schedule);
+	  kissat_mab_release_heap (solver, &solver->schedule);
 	  complete = true;
 	  break;
 	}
@@ -504,14 +504,14 @@ eliminate_variables (kissat * solver)
       LOG ("entering variable elimination round %d", round);
       const unsigned before = eliminated;
 #endif
-      while (!kissat_empty_heap (&solver->schedule))
+      while (!kissat_mab_empty_heap (&solver->schedule))
 	{
 	  if (solver->statistics.resolutions > resolution_limit)
 	    break;
 	  if (TERMINATED (5))
 	    break;
-	  unsigned idx = kissat_max_heap (&solver->schedule);
-	  kissat_pop_heap (solver, &solver->schedule, idx);
+	  unsigned idx = kissat_mab_max_heap (&solver->schedule);
+	  kissat_mab_pop_heap (solver, &solver->schedule, idx);
 	  if (eliminate_variable (solver, idx))
 	    eliminated++;
 	  if (solver->inconsistent)
@@ -519,13 +519,13 @@ eliminate_variables (kissat * solver)
 	}
       if (!solver->inconsistent)
 	{
-	  kissat_flush_large_connected (solver);
-	  kissat_dense_collect (solver);
+	  kissat_mab_flush_large_connected (solver);
+	  kissat_mab_dense_collect (solver);
 	}
       REPORT (before == eliminated, 'e');
       if (solver->inconsistent)
 	break;
-      kissat_release_heap (solver, &solver->schedule);
+      kissat_mab_release_heap (solver, &solver->schedule);
       if (round == GET_OPTION (eliminaterounds))
 	break;
       if (solver->statistics.resolutions > resolution_limit)
@@ -533,9 +533,9 @@ eliminate_variables (kissat * solver)
       if (TERMINATED (6))
 	break;
     }
-  kissat_phase (solver, "eliminate", GET (eliminations),
+  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 		"eliminated %u variables %.0f%% out of %u in %zu rounds",
-		eliminated, kissat_percent (eliminated, active), active,
+		eliminated, kissat_mab_percent (eliminated, active), active,
 		round);
   if (!solver->inconsistent)
     set_next_elimination_bound (solver, complete);
@@ -550,7 +550,7 @@ setup_elim_bounds (kissat * solver)
   solver->bounds.eliminate.occurrences =
     SCALE_LIMIT (eliminations, eliminateocclim);
 
-  kissat_phase (solver, "eliminate", GET (eliminations),
+  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 		"occurrence limit %u and clause limit %u",
 		solver->bounds.eliminate.occurrences,
 		solver->bounds.eliminate.clause_size);
@@ -561,7 +561,7 @@ setup_elim_bounds (kissat * solver)
   solver->bounds.subsume.occurrences =
     SCALE_LIMIT (eliminations, subsumeocclim);
 
-  kissat_phase (solver, "subsume", GET (eliminations),
+  kissat_mab_phase (solver, "subsume", GET (eliminations),
 		"occurrence limit %u clause limit %u",
 		solver->bounds.subsume.occurrences,
 		solver->bounds.subsume.clause_size);
@@ -579,29 +579,29 @@ static void
 eliminate (kissat * solver)
 {
   RETURN_IF_DELAYED (eliminate);
-  kissat_backtrack_propagate_and_flush_trail (solver);
+  kissat_mab_backtrack_propagate_and_flush_trail (solver);
   assert (!solver->inconsistent);
   STOP_SEARCH_AND_START_SIMPLIFIER (eliminate);
-  kissat_phase (solver, "eliminate", GET (eliminations),
+  kissat_mab_phase (solver, "eliminate", GET (eliminations),
 		"elimination limit of %" PRIu64 " conflicts hit",
 		solver->limits.eliminate.conflicts);
-  const changes before = kissat_changes (solver);
+  const changes before = kissat_mab_changes (solver);
   setup_elim_bounds (solver);
   litwatches saved;
   INIT_STACK (saved);
-  kissat_enter_dense_mode (solver, 0, &saved);
+  kissat_mab_enter_dense_mode (solver, 0, &saved);
   eliminate_variables (solver);
-  kissat_resume_sparse_mode (solver, true, 0, &saved);
+  kissat_mab_resume_sparse_mode (solver, true, 0, &saved);
   RELEASE_STACK (saved);
-  kissat_check_statistics (solver);
-  const changes after = kissat_changes (solver);
-  const bool changed = kissat_changed (before, after);
+  kissat_mab_check_statistics (solver);
+  const changes after = kissat_mab_changes (solver);
+  const bool changed = kissat_mab_changed (before, after);
   UPDATE_DELAY (changed, eliminate);
   STOP_SIMPLIFIER_AND_RESUME_SEARCH (eliminate);
 }
 
 int
-kissat_eliminate (kissat * solver)
+kissat_mab_eliminate (kissat * solver)
 {
   assert (!solver->inconsistent);
   INC (eliminations);

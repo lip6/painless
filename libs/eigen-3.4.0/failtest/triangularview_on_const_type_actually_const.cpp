@@ -8,9 +8,14 @@
 
 using namespace Eigen;
 
-void foo(){
-    MatrixXf m;
-    TriangularView<CV_QUALIFIER MatrixXf,Upper>(m).coeffRef(0, 0) = 1.0f;
+void
+foo()
+{
+	MatrixXf m;
+	TriangularView<CV_QUALIFIER MatrixXf, Upper>(m).coeffRef(0, 0) = 1.0f;
 }
 
-int main() {}
+int
+main()
+{
+}

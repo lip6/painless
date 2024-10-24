@@ -3,6 +3,7 @@
 
 struct kissat;
 
-void kissat_vivify (struct kissat *);
+void
+kissat_mab_vivify(struct kissat*);
 
 #endif

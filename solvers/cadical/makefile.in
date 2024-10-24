@@ -1,0 +1,92 @@
+#==========================================================================#
+# This is a 'makefile.in' template with '@CXX@' and '@CXXFLAGS@' parameters.
+# This makefile requires GNU make.
+#==========================================================================#
+
+# The '../scripts/make-build-header.sh' script searches for the next two
+# lines to figure out the compiler and compilation flags.  This information
+# is then used to generate corresponding macros in 'build.hpp'.
+
+CXX=@CXX@
+CXXFLAGS=@CXXFLAGS@
+
+LIBS=@LIBS@
+
+############################################################################
+#    It is usually not necessary to change anything below this line!       #
+############################################################################
+
+APP=cadical.cpp mobical.cpp
+SRC=$(sort $(wildcard ../src/*.cpp))
+SUB=$(subst ../src/,,$(SRC))
+LIB=$(filter-out $(APP),$(SUB))
+OBJ=$(LIB:.cpp=.o)
+DIR=../$(shell pwd|sed -e 's,.*/,,')
+COMPILE=$(CXX) $(CXXFLAGS) -I$(DIR)
+
+#--------------------------------------------------------------------------#
+
+all: libcadical.a cadical mobical
+
+#--------------------------------------------------------------------------#
+
+.SUFFIXES: .cpp .o
+
+%.o: ../src/%.cpp ../src/*.hpp makefile
+	$(COMPILE) -c $<
+
+#--------------------------------------------------------------------------#
+
+# Application binaries (the stand alone solver 'cadical' and the model based
+# tester 'mobical') and the library are the main build targets.
+
+cadical: cadical.o libcadical.a makefile
+	$(COMPILE) -o $@ $< -L. -lcadical $(LIBS)
+
+mobical: mobical.o libcadical.a makefile $(LIBS)
+	$(COMPILE) -o $@ $< -L. -lcadical
+
+libcadical.a: $(OBJ) makefile
+	ar rc $@ $(OBJ)
+
+#--------------------------------------------------------------------------#
+
+# Note that 'build.hpp' is generated and resides in the build directory.
+
+build.hpp: always
+	../scripts/make-build-header.sh > build.hpp
+
+version.o: build.hpp
+
+update:
+	../scripts/update-version.sh
+
+#--------------------------------------------------------------------------#
+
+# These two 'C' interfaces include '.h' headers and thus require explicitly
+# defined additional dependencies.
+
+ccadical.o: ../src/ccadical.h
+ipasir.o: ../src/ipasir.h ../src/ccadical.h
+
+#--------------------------------------------------------------------------#
+
+analyze: all
+	$(COMPILE) --analyze ../src/*.cpp
+
+format:
+	clang-format -i ../*/*.[ch]pp
+	clang-format -i ../*/*.[ch]
+	clang-format -i ../test/*/*.[ch]pp
+	clang-format -i ../test/*/*.[ch]
+
+clean:
+	rm -f *.o *.a cadical mobical makefile build.hpp
+	rm -f *.gcda *.gcno *.gcov gmon.out
+
+test: all
+	CADICALBUILD="$(DIR)" $(MAKE) -j1 -C ../test
+
+#--------------------------------------------------------------------------#
+
+.PHONY: all always analyze clean test update format

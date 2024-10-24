@@ -4,7 +4,7 @@
 #include "terminate.h"
 #include <time.h>
 
-bool kissat_ccanring (kissat *solver) {
+bool kissat_mab_ccanring (kissat *solver) {
     if (GET_OPTION(ccanr) && solver->freeze_ls_restart_num < 1) return true;
     return false;
 }
@@ -22,7 +22,7 @@ void load_ls_data(kissat *solver, CCAnr *lssolver) {
     const word *arena = BEGIN_STACK(solver->arena);
     clause *start = (clause *)(arena);
     const clause *end = (clause *)END_STACK(solver->arena);
-    for (clause *c = start; c != end; c = kissat_next_clause(c)) {
+    for (clause *c = start; c != end; c = kissat_mab_next_clause(c)) {
         if (c->garbage) continue;
         if (c->redundant && c->glue > GET_OPTION(tier2)) continue;
         ls_cls++;
@@ -63,7 +63,7 @@ void load_ls_data(kissat *solver, CCAnr *lssolver) {
 	lssolver->min_clause_len = lssolver->num_vars;
     if (TERMINATED(11)) return;
     int cls_ct = 0, mx_var = 0;
-    for (clause *c = start; c != end; c = kissat_next_clause(c)) {
+    for (clause *c = start; c != end; c = kissat_mab_next_clause(c)) {
         if (TERMINATED(11)) return;
         if (c->garbage) continue;
         if (c->redundant && c->glue > GET_OPTION(tier2)) continue;
@@ -181,7 +181,7 @@ void build_soln(kissat *solver, CCAnr *lssolver) {
     }
 }
 
-int kissat_ccanr (kissat *solver) {
+int kissat_mab_ccanr (kissat *solver) {
     if (solver->ccanr_has_constructed) 
         reinit_CCAnr(solver->lssolver);
     else {
@@ -237,7 +237,7 @@ int kissat_ccanr (kissat *solver) {
         }
     }
 
-    kissat_reset_target_assigned(solver);
+    kissat_mab_reset_target_assigned(solver);
     solver->freeze_ls_restart_num = solver->restarts_gap;
     solver->ls_mems_num *= solver->ls_mems_inc;
     if (solver->ls_mems_num < solver->ls_mems_num_min)

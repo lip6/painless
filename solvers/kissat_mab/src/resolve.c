@@ -34,7 +34,7 @@ occurrences_literal (kissat * solver, unsigned lit, bool * update)
 	  assert (value >= 0);
 	  if (value > 0)
 	    {
-	      kissat_eliminate_binary (solver, lit, other);
+	      kissat_mab_eliminate_binary (solver, lit, other);
 	      q--;
 	    }
 	  else
@@ -233,7 +233,7 @@ generate_resolvents (kissat * solver, unsigned lit,
 }
 
 bool
-kissat_generate_resolvents (kissat * solver, unsigned idx, unsigned *lit_ptr)
+kissat_mab_generate_resolvents (kissat * solver, unsigned idx, unsigned *lit_ptr)
 {
   unsigned lit = LIT (idx);
   unsigned not_lit = NOT (lit);
@@ -268,8 +268,8 @@ kissat_generate_resolvents (kissat * solver, unsigned idx, unsigned *lit_ptr)
       LOG ("eliminating pure literal %u (variable %u)", lit, idx);
   }
 
-  const bool gates = kissat_find_gates (solver, lit);
-  kissat_get_antecedents (solver, lit);
+  const bool gates = kissat_mab_find_gates (solver, lit);
+  kissat_mab_get_antecedents (solver, lit);
 
   uint64_t resolved = 0;
   bool failed = false;
@@ -319,7 +319,7 @@ kissat_generate_resolvents (kissat * solver, unsigned idx, unsigned *lit_ptr)
       LOG ("elimination of variable %u failed", idx);
       CLEAR_STACK (solver->resolvents);
       if (update)
-	kissat_update_variable_score (solver, &solver->schedule, idx);
+	kissat_mab_update_variable_score (solver, &solver->schedule, idx);
       return false;
     }
 

@@ -78,15 +78,16 @@
  * \endverbatim
  */
 
-typedef struct {
-  /**
-   * array of of Gray code entries
-   */
-  int *ord;
-  /**
-   * increment
-   */
-  int *inc;
+typedef struct
+{
+	/**
+	 * array of of Gray code entries
+	 */
+	int* ord;
+	/**
+	 * increment
+	 */
+	int* inc;
 } code;
 
 /**
@@ -95,7 +96,7 @@ typedef struct {
  * \warning Not thread safe!
  */
 
-M4RI_DLL_EXPORT extern code **m4ri_codebook;
+M4RI_DLL_EXPORT extern code** m4ri_codebook;
 
 /**
  * Returns the i-th gray code entry for a gray code of length \f$2^l\f$.
@@ -106,7 +107,8 @@ M4RI_DLL_EXPORT extern code **m4ri_codebook;
  * \return i-th Gray code entry.
  */
 
-int m4ri_gray_code(int i, int l);
+int
+m4ri_gray_code(int i, int l);
 
 /**
  * Fills var ord and var inc with Gray code data for a Gray code of
@@ -120,7 +122,8 @@ int m4ri_gray_code(int i, int l);
  * implementation.
  */
 
-void m4ri_build_code(int *ord, int *inc, int l);
+void
+m4ri_build_code(int* ord, int* inc, int l);
 
 /**
  * \brief Generates global code book.
@@ -131,7 +134,8 @@ void m4ri_build_code(int *ord, int *inc, int l);
  * \warning Not thread safe!
  */
 
-void m4ri_build_all_codes(void);
+void
+m4ri_build_all_codes(void);
 
 /**
  * Frees memory from the global code book.
@@ -142,23 +146,26 @@ void m4ri_build_all_codes(void);
  * \warning Not thread safe!
  */
 
-void m4ri_destroy_all_codes(void);
+void
+m4ri_destroy_all_codes(void);
 
 /**
  * floor(log_2(v))
  */
 
-static inline int log2_floor(int v) {
-  static unsigned const int b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
-  static unsigned const int S[] = {1, 2, 4, 8, 16};
-  unsigned int r                = 0;
-  for (int i = 4; i >= 0; --i) {
-    if ((v & b[i])) {
-      v >>= S[i];
-      r |= S[i];
-    }
-  }
-  return r;
+static inline int
+log2_floor(int v)
+{
+	static unsigned const int b[] = { 0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000 };
+	static unsigned const int S[] = { 1, 2, 4, 8, 16 };
+	unsigned int r = 0;
+	for (int i = 4; i >= 0; --i) {
+		if ((v & b[i])) {
+			v >>= S[i];
+			r |= S[i];
+		}
+	}
+	return r;
 }
 
 /**
@@ -176,6 +183,7 @@ static inline int log2_floor(int v) {
  * \return k
  */
 
-int m4ri_opt_k(int a, int b, int c);
+int
+m4ri_opt_k(int a, int b, int c);
 
-#endif  // M4RI_GRAYFLEX_H
+#endif // M4RI_GRAYFLEX_H

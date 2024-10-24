@@ -2,7 +2,7 @@
 #include "inline.h"
 
 unsigned
-kissat_find_dominator (kissat * solver, unsigned lit, clause * c)
+kissat_mab_find_dominator (kissat * solver, unsigned lit, clause * c)
 {
   assert (solver->watching);
   assert (solver->level == 1);
@@ -63,7 +63,7 @@ kissat_find_dominator (kissat * solver, unsigned lit, clause * c)
 	  const reference ref = a->reason;
 	  LOGREF (ref, "following %s reason", LOGLIT (root));
 	  clause *reason = (clause *) (arena + ref);
-	  assert (kissat_clause_in_arena (solver, reason));
+	  assert (kissat_mab_clause_in_arena (solver, reason));
 	  for (all_literals_in_clause (other, reason))
 	    {
 	      if (other == NOT (root))
@@ -125,7 +125,7 @@ kissat_find_dominator (kissat * solver, unsigned lit, clause * c)
 	    {
 	      const reference ref = a->reason;
 	      LOGREF (ref, "following %s reason", LOGLIT (root));
-	      clause *reason = kissat_dereference_clause (solver, ref);
+	      clause *reason = kissat_mab_dereference_clause (solver, ref);
 	      for (all_literals_in_clause (other, reason))
 		{
 		  if (other == NOT (dom))

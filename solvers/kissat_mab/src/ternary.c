@@ -29,7 +29,7 @@ connect_ternary_clauses (kissat * solver, value * ternary)
       if (values[lits[2]])
 	continue;
       ternary[lits[0]] = ternary[lits[1]] = ternary[lits[2]] = 1;
-      kissat_connect_clause (solver, c);
+      kissat_mab_connect_clause (solver, c);
       connected++;
     }
 }
@@ -55,18 +55,18 @@ schedule_ternary (kissat * solver, value * ternary)
       if (!ternary[not_lit])
 	continue;
       if (!schedule->size)
-	kissat_resize_heap (solver, schedule, solver->vars);
-      kissat_update_variable_score (solver, schedule, idx);
-      kissat_push_heap (solver, schedule, idx);
+	kissat_mab_resize_heap (solver, schedule, solver->vars);
+      kissat_mab_update_variable_score (solver, schedule, idx);
+      kissat_mab_push_heap (solver, schedule, idx);
       scheduled++;
     }
 
   if (!scheduled)
     return 0;
 
-  kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+  kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 		"scheduled %u variables %.0f%%",
-		scheduled, kissat_percent (scheduled, solver->active));
+		scheduled, kissat_mab_percent (scheduled, solver->active));
 
   return scheduled;
 }
@@ -166,8 +166,8 @@ ternary_resolution (kissat * solver, tags * tags, references * garbage,
   else
     {
       redundant = c->redundant && d->redundant;
-      const reference c_ref = kissat_reference_clause (solver, c);
-      const reference d_ref = kissat_reference_clause (solver, d);
+      const reference c_ref = kissat_mab_reference_clause (solver, c);
+      const reference d_ref = kissat_mab_reference_clause (solver, d);
       PUSH_STACK (*garbage, c_ref);
       PUSH_STACK (*garbage, d_ref);
       assert (!c->garbage), assert (!d->garbage);
@@ -189,7 +189,7 @@ find_binary (kissat * solver, bool irredundant,
   if (WATCHES (first).size > WATCHES (second).size)
     SWAP (unsigned, first, second);
   watches *watches = &WATCHES (first);
-  const unsigned steps = kissat_cache_lines (watches->size, sizeof (watch));
+  const unsigned steps = kissat_mab_cache_lines (watches->size, sizeof (watch));
   ADD (hyper_ternary_steps, steps + 1);
   for (all_binary_large_watches (watch, *watches))
     {
@@ -213,7 +213,7 @@ find_ternary (kissat * solver, word * arena,
   if (WATCHES (first).size > WATCHES (second).size)
     SWAP (unsigned, first, second);
   watches *watches = &WATCHES (first);
-  const unsigned steps = kissat_cache_lines (watches->size, sizeof (watch));
+  const unsigned steps = kissat_mab_cache_lines (watches->size, sizeof (watch));
   ADD (hyper_ternary_steps, steps + 1);
   for (all_binary_large_watches (watch, *watches))
     {
@@ -229,7 +229,7 @@ find_ternary (kissat * solver, word * arena,
 	{
 	  const reference ref = watch.large.ref;
 	  clause *d = (clause *) (arena + ref);
-	  assert (kissat_clause_in_arena (solver, d));
+	  assert (kissat_mab_clause_in_arena (solver, d));
 	  assert (d->size == 3);
 	  INC (hyper_ternary_steps);
 
@@ -267,9 +267,9 @@ update_ternary_schedule_literal (kissat * solver, heap * schedule,
 				 bool reschedule, unsigned lit)
 {
   const unsigned idx = IDX (lit);
-  kissat_update_variable_score (solver, schedule, idx);
-  if (reschedule && !kissat_heap_contains (schedule, idx))
-    kissat_push_heap (solver, schedule, idx);
+  kissat_mab_update_variable_score (solver, schedule, idx);
+  if (reschedule && !kissat_mab_heap_contains (schedule, idx))
+    kissat_mab_push_heap (solver, schedule, idx);
 }
 
 static void
@@ -313,17 +313,17 @@ add_ternary_resolvents (kissat * solver, tags * tags, uint64_t * resolved_ptr)
       if (!redundant)
 	{
 	  assert (binary);
-	  (void) kissat_new_irredundant_clause (solver);
+	  (void) kissat_mab_new_irredundant_clause (solver);
 	}
       else if (binary)
 	{
-	  (void) kissat_new_binary_clause (solver, true, first, second);
+	  (void) kissat_mab_new_binary_clause (solver, true, first, second);
 	  assert (arena == BEGIN_STACK (solver->arena));
 	}
       else
 	{
-	  reference ref = kissat_new_redundant_clause (solver, 2);
-	  clause *c = kissat_dereference_clause (solver, ref);
+	  reference ref = kissat_mab_new_redundant_clause (solver, 2);
+	  clause *c = kissat_mab_dereference_clause (solver, ref);
 	  assert (c->redundant);
 	  assert (c->size == 3);
 	  INC (hyper_ternaries);
@@ -354,10 +354,10 @@ remove_ternary_subsumed_clauses (kissat * solver, references * garbage)
   size_t marked = 0;
   for (all_stack (reference, ref, *garbage))
     {
-      clause *c = kissat_dereference_clause (solver, ref);
+      clause *c = kissat_mab_dereference_clause (solver, ref);
       assert (c->garbage);
       c->garbage = false;
-      kissat_mark_clause_as_garbage (solver, c);
+      kissat_mab_mark_clause_as_garbage (solver, c);
       marked++;
     }
   LOG ("marked %zu clauses as garbage", marked);
@@ -390,7 +390,7 @@ resolve_ternary_clauses (kissat * solver, word * arena, uint64_t steps_limit,
 	continue;
       const reference pos_ref = pos_watch.large.ref;
       clause *c = (clause *) (arena + pos_ref);
-      assert (kissat_clause_in_arena (solver, c));
+      assert (kissat_mab_clause_in_arena (solver, c));
       assert (c->size == 3);
       INC (hyper_ternary_steps);
       if (c->garbage)
@@ -401,7 +401,7 @@ resolve_ternary_clauses (kissat * solver, word * arena, uint64_t steps_limit,
 	    continue;
 	  const reference neg_ref = neg_watch.large.ref;
 	  clause *d = (clause *) (arena + neg_ref);
-	  assert (kissat_clause_in_arena (solver, d));
+	  assert (kissat_mab_clause_in_arena (solver, d));
 	  assert (d->size == 3);
 	  assert (c != d);
 	  INC (hyper_ternary_steps);
@@ -452,31 +452,31 @@ ternary_round (kissat * solver,
   heap *schedule = &solver->schedule;
 
 #ifndef QUIET
-  size_t scheduled = kissat_size_heap (schedule);
+  size_t scheduled = kissat_mab_size_heap (schedule);
 #endif
   uint64_t resolved = 0;
 
-  while (!kissat_empty_heap (schedule))
+  while (!kissat_mab_empty_heap (schedule))
     {
       if (TERMINATED (14))
 	break;
 
       if (solver->statistics.hyper_ternary_steps > steps_limit)
 	{
-	  kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+	  kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 			"steps limit %" PRIu64 " reached", steps_limit);
 	  break;
 	}
 
       if (resolved > resolved_limit)
 	{
-	  kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+	  kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 			"resolved limit %" PRIu64 " reached", resolved_limit);
 	  break;
 	}
 
-      const unsigned idx = kissat_max_heap (schedule);
-      kissat_pop_heap (solver, schedule, idx);
+      const unsigned idx = kissat_mab_max_heap (schedule);
+      kissat_mab_pop_heap (solver, schedule, idx);
       assert (ACTIVE (idx));
 
       const unsigned lit = LIT (idx);
@@ -485,13 +485,13 @@ ternary_round (kissat * solver,
     }
 
 #ifndef QUIET
-  size_t remain = kissat_size_heap (schedule);
+  size_t remain = kissat_mab_size_heap (schedule);
   if (remain)
-    kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+    kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 		  "remaining %u variables %.0f%% (incomplete ternary round)",
-		  remain, kissat_percent (remain, scheduled));
+		  remain, kissat_mab_percent (remain, scheduled));
   else
-    kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+    kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 		  "all %u variables resolved (complete ternary round)",
 		  scheduled);
 #endif
@@ -503,7 +503,7 @@ ternary_round (kissat * solver,
 }
 
 void
-kissat_ternary (kissat * solver)
+kissat_mab_ternary (kissat * solver)
 {
   if (solver->inconsistent)
     return;
@@ -530,9 +530,9 @@ kissat_ternary (kissat * solver)
   uint64_t resolved3 = solver->statistics.hyper_ternary3_resolved;
 #endif
 
-  kissat_enter_dense_mode (solver, 0, 0);
+  kissat_mab_enter_dense_mode (solver, 0, 0);
 
-  value *ternary = kissat_calloc (solver, LITS, sizeof *ternary);
+  value *ternary = kissat_mab_calloc (solver, LITS, sizeof *ternary);
   connect_ternary_clauses (solver, ternary);
 
   const double resolved_limit_fraction = GET_OPTION (ternarymaxadd) * 0.01;
@@ -545,30 +545,30 @@ kissat_ternary (kissat * solver)
     {
       SET_EFFICIENCY_BOUND (steps_limit, ternary,
 			    hyper_ternary_steps, search_ticks,
-			    2 * CLAUSES + kissat_nlogn (scheduled));
+			    2 * CLAUSES + kissat_mab_nlogn (scheduled));
 
       resolved = ternary_round (solver, resolved_limit, steps_limit);
-      kissat_release_heap (solver, &solver->schedule);
+      kissat_mab_release_heap (solver, &solver->schedule);
     }
 
-  kissat_dealloc (solver, ternary, LITS, sizeof *ternary);
-  kissat_resume_sparse_mode (solver, false, 0, 0);
+  kissat_mab_dealloc (solver, ternary, LITS, sizeof *ternary);
+  kissat_mab_resume_sparse_mode (solver, false, 0, 0);
 
 #ifndef NMETRICS
   resolved2 = solver->statistics.hyper_ternary2_resolved - resolved2;
   resolved3 = solver->statistics.hyper_ternary3_resolved - resolved3;
-  kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+  kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 		"resolved %" PRIu64 " clauses (%" PRIu64
 		" ternary %.0f%% and %" PRIu64 " binary %.0f%%)",
 		resolved,
-		resolved3, kissat_percent (resolved3, resolved),
-		resolved2, kissat_percent (resolved2, resolved));
+		resolved3, kissat_mab_percent (resolved3, resolved),
+		resolved2, kissat_mab_percent (resolved2, resolved));
 #else
-  kissat_phase (solver, "ternary", GET (hyper_ternary_phases),
+  kissat_mab_phase (solver, "ternary", GET (hyper_ternary_phases),
 		"resolved %" PRIu64 " clauses", resolved);
 #endif
   UPDATE_DELAY (resolved, ternary);
   REPORT (!resolved, '3');
-  kissat_check_statistics (solver);
+  kissat_mab_check_statistics (solver);
   STOP (ternary);
 }

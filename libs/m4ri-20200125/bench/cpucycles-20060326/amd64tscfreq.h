@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_amd64tscfreq_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_amd64tscfreq(void);
-extern long long cpucycles_amd64tscfreq_persecond(void);
+	extern long long cpucycles_amd64tscfreq(void);
+	extern long long cpucycles_amd64tscfreq_persecond(void);
 
 #ifdef __cplusplus
 }

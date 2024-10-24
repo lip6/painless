@@ -3,7 +3,7 @@
 
 
 void
-kissat_enable_reluctant (reluctant * reluctant,
+kissat_mab_enable_reluctant (reluctant * reluctant,
 			 uint64_t period, uint64_t limit)
 {
   if (limit && period > limit)
@@ -17,13 +17,13 @@ kissat_enable_reluctant (reluctant * reluctant,
 }
 
 void
-kissat_disable_reluctant (reluctant * reluctant)
+kissat_mab_disable_reluctant (reluctant * reluctant)
 {
   reluctant->period = 0;
 }
 
 void
-kissat_tick_reluctant (reluctant * reluctant)
+kissat_mab_tick_reluctant (reluctant * reluctant)
 {
   if (!reluctant->period)
     return;
@@ -66,19 +66,19 @@ kissat_tick_reluctant (reluctant * reluctant)
 }
 
 void
-kissat_init_reluctant (kissat * solver)
+kissat_mab_init_reluctant (kissat * solver)
 {
   if (GET_OPTION (reluctant))
     {
       LOG ("enable reluctant doubling with period %d limit %d",
 	   GET_OPTION (reluctantint), GET_OPTION (reluctantlim));
-      kissat_enable_reluctant (&solver->reluctant,
+      kissat_mab_enable_reluctant (&solver->reluctant,
 			       GET_OPTION (reluctantint),
 			       GET_OPTION (reluctantlim));
     }
   else
     {
       LOG ("reluctant doubling disabled and thus no stable restarts");
-      kissat_disable_reluctant (&solver->reluctant);
+      kissat_mab_disable_reluctant (&solver->reluctant);
     }
 }

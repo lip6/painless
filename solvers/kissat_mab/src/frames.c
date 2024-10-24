@@ -2,7 +2,7 @@
 #include "internal.h"
 
 void
-kissat_push_frame (kissat * solver, unsigned decision)
+kissat_mab_push_frame (kissat * solver, unsigned decision)
 {
   const size_t trail = SIZE_STACK (solver->trail);
   assert (trail <= MAX_TRAIL);

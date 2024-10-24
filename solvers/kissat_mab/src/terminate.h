@@ -4,38 +4,36 @@
 #include "internal.h"
 
 #ifndef QUIET
-void kissat_report_termination (kissat *, int bit, const char *file,
-				long lineno, const char *fun);
+void
+kissat_mab_report_termination(kissat*, int bit, const char* file, long lineno, const char* fun);
 #endif
 
 static inline bool
-kissat_terminated (kissat * solver, int bit,
-		   const char *file, long lineno, const char *fun)
+kissat_mab_terminated(kissat* solver, int bit, const char* file, long lineno, const char* fun)
 {
-  assert (0 <= bit), assert (bit < 32);
+	assert(0 <= bit), assert(bit < 32);
 #ifdef COVERAGE
-  const unsigned mask = 1u << bit;
-  if (!(solver->terminate & mask))
-    return false;
-  solver->terminate = ~(unsigned) 0;
+	const unsigned mask = 1u << bit;
+	if (!(solver->terminate & mask))
+		return false;
+	solver->terminate = ~(unsigned)0;
 #else
-  if (!solver->terminate)
-    return false;
+	if (!solver->terminate)
+		return false;
 #endif
 #ifndef QUIET
-  kissat_report_termination (solver, bit, file, lineno, fun);
+	kissat_mab_report_termination(solver, bit, file, lineno, fun);
 #else
-  (void) file;
-  (void) lineno;
-  (void) fun;
+	(void)file;
+	(void)lineno;
+	(void)fun;
 #ifndef COVERAGE
-  (void) bit;
+	(void)bit;
 #endif
 #endif
-  return true;
+	return true;
 }
 
-#define TERMINATED(BIT) \
-  kissat_terminated (solver, BIT, __FILE__, __LINE__, __func__)
+#define TERMINATED(BIT) kissat_mab_terminated(solver, BIT, __FILE__, __LINE__, __func__)
 
 #endif

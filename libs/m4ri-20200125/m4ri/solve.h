@@ -45,7 +45,8 @@
  *        system is not consistent).
  * \return 0 if a solution was found, -1 otherwise
  */
-int mzd_solve_left(mzd_t *A, mzd_t *B, int const cutoff, int const inconsistency_check);
+int
+mzd_solve_left(mzd_t* A, mzd_t* B, int const cutoff, int const inconsistency_check);
 
 /**
  * \brief Solves (P L U Q) X = B
@@ -71,8 +72,14 @@ int mzd_solve_left(mzd_t *A, mzd_t *B, int const cutoff, int const inconsistency
  *        found, -1 otherwise
  * \return 0 if a solution was found, -1 otherwise
  */
-int mzd_pluq_solve_left(mzd_t const *A, rci_t rank, mzp_t const *P, mzp_t const *Q, mzd_t *B,
-                        int const cutoff, int const inconsistency_check);
+int
+mzd_pluq_solve_left(mzd_t const* A,
+					rci_t rank,
+					mzp_t const* P,
+					mzp_t const* Q,
+					mzd_t* B,
+					int const cutoff,
+					int const inconsistency_check);
 
 /**
  * \brief  Solves (P L U Q) X = B
@@ -98,8 +105,14 @@ int mzd_pluq_solve_left(mzd_t const *A, rci_t rank, mzp_t const *P, mzp_t const 
  *        found, -1 otherwise
  * \return 0 if a solution was found, -1 otherwise
  */
-int _mzd_pluq_solve_left(mzd_t const *A, rci_t rank, mzp_t const *P, mzp_t const *Q, mzd_t *B,
-                         int const cutoff, int const inconsistency_check);
+int
+_mzd_pluq_solve_left(mzd_t const* A,
+					 rci_t rank,
+					 mzp_t const* P,
+					 mzp_t const* Q,
+					 mzd_t* B,
+					 int const cutoff,
+					 int const inconsistency_check);
 
 /**
  * \brief Solves A X = B with A and B matrices.
@@ -118,7 +131,8 @@ int _mzd_pluq_solve_left(mzd_t const *A, rci_t rank, mzp_t const *P, mzp_t const
  *        found, -1 otherwise
  * \return 0 if a solution was found, -1 otherwise
  */
-int _mzd_solve_left(mzd_t *A, mzd_t *B, int const cutoff, int const inconsistency_check);
+int
+_mzd_solve_left(mzd_t* A, mzd_t* B, int const cutoff, int const inconsistency_check);
 
 /**
  * \brief Solve X for A X = 0.
@@ -135,6 +149,7 @@ int _mzd_solve_left(mzd_t *A, mzd_t *B, int const cutoff, int const inconsistenc
  * \return X, NULL if kernel is empty
  */
 
-mzd_t *mzd_kernel_left_pluq(mzd_t *A, int const cutoff);
+mzd_t*
+mzd_kernel_left_pluq(mzd_t* A, int const cutoff);
 
-#endif  // M4RI_SOLVE_H
+#endif // M4RI_SOLVE_H

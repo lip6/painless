@@ -11,25 +11,28 @@ typedef struct queue queue;
 
 struct links
 {
-  unsigned prev, next;
-  unsigned stamp;
+	unsigned prev, next;
+	unsigned stamp;
 };
 
 struct queue
 {
-  unsigned first, last, stamp;
-  struct
-  {
-    unsigned idx, stamp;
-  } search;
+	unsigned first, last, stamp;
+	struct
+	{
+		unsigned idx, stamp;
+	} search;
 };
 
-void kissat_init_queue (queue *);
-void kissat_enqueue (struct kissat *, unsigned idx);
-void kissat_dequeue (struct kissat *, unsigned idx);
-void kissat_move_to_front (struct kissat *, unsigned idx);
+void
+kissat_mab_init_queue(queue*);
+void
+kissat_mab_enqueue(struct kissat*, unsigned idx);
+void
+kissat_mab_dequeue(struct kissat*, unsigned idx);
+void
+kissat_mab_move_to_front(struct kissat*, unsigned idx);
 
-#define LINK(IDX) \
-  (solver->links[assert ((IDX) < VARS), (IDX)])
+#define LINK(IDX) (solver->links[assert((IDX) < VARS), (IDX)])
 
 #endif

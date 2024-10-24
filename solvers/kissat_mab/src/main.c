@@ -12,12 +12,12 @@ static kissat *solver;
 // *INDENT-OFF*
 
 static void
-kissat_signal_handler (int sig)
+kissat_mab_signal_handler (int sig)
 {
   assert (solver);
-  kissat_signal (solver, "caught", sig);
-  kissat_print_statistics (solver);
-  kissat_signal (solver, "raising", sig);
+  kissat_mab_signal (solver, "caught", sig);
+  kissat_mab_print_statistics (solver);
+  kissat_mab_signal (solver, "raising", sig);
 #ifdef QUIET
   (void) sig;
 #endif
@@ -28,12 +28,12 @@ kissat_signal_handler (int sig)
 static volatile bool ignore_alarm = false;
 
 static void
-kissat_alarm_handler (void)
+kissat_mab_alarm_handler (void)
 {
   if (ignore_alarm)
     return;
   assert (solver);
-  kissat_terminate (solver);
+  kissat_mab_terminate (solver);
 }
 
 #ifndef NDEBUG
@@ -48,14 +48,14 @@ int
 main (int argc, char **argv)
 {
   int res;
-  solver = kissat_init ();
-  kissat_init_alarm (kissat_alarm_handler);
-  kissat_init_signal_handler (kissat_signal_handler);
-  res = kissat_application (solver, argc, argv);
-  kissat_reset_signal_handler ();
+  solver = kissat_mab_init ();
+  kissat_mab_init_alarm (kissat_mab_alarm_handler);
+  kissat_mab_init_signal_handler (kissat_mab_signal_handler);
+  res = kissat_mab_application (solver, argc, argv);
+  kissat_mab_reset_signal_handler ();
   ignore_alarm = true;
-  kissat_reset_alarm ();
-  kissat_release (solver);
+  kissat_mab_reset_alarm ();
+  kissat_mab_release (solver);
 #ifndef NDEBUG
   if (!res)
     return dump (0);

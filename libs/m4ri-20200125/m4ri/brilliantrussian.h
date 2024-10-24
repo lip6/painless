@@ -53,7 +53,8 @@
  * \param L prealloced table of length \f$2^k\f$
  */
 
-void mzd_make_table(mzd_t const *M, rci_t r, rci_t c, int k, mzd_t *T, rci_t *L);
+void
+mzd_make_table(mzd_t const* M, rci_t r, rci_t c, int k, mzd_t* T, rci_t* L);
 
 /**
  * \brief The function looks up k bits from position i,startcol in
@@ -71,8 +72,8 @@ void mzd_make_table(mzd_t const *M, rci_t r, rci_t c, int k, mzd_t *T, rci_t *L)
  * \param L Contains row number to be added
  */
 
-void mzd_process_rows(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k, mzd_t const *T,
-                      rci_t const *L);
+void
+mzd_process_rows(mzd_t* M, rci_t startrow, rci_t endrow, rci_t startcol, int k, mzd_t const* T, rci_t const* L);
 
 /**
  * \brief Same as mzd_process_rows but works with two Gray code tables
@@ -89,8 +90,16 @@ void mzd_process_rows(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, in
  * \param L1 Contains row number to be added
  */
 
-void mzd_process_rows2(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k,
-                       mzd_t const *T0, rci_t const *L0, mzd_t const *T1, rci_t const *L1);
+void
+mzd_process_rows2(mzd_t* M,
+				  rci_t startrow,
+				  rci_t endrow,
+				  rci_t startcol,
+				  int k,
+				  mzd_t const* T0,
+				  rci_t const* L0,
+				  mzd_t const* T1,
+				  rci_t const* L1);
 
 /**
  * \brief Same as mzd_process_rows but works with three Gray code tables
@@ -109,9 +118,18 @@ void mzd_process_rows2(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, i
  * \param L2 Contains row number to be added
  */
 
-void mzd_process_rows3(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k,
-                       mzd_t const *T0, rci_t const *L0, mzd_t const *T1, rci_t const *L1,
-                       mzd_t const *T2, rci_t const *L2);
+void
+mzd_process_rows3(mzd_t* M,
+				  rci_t startrow,
+				  rci_t endrow,
+				  rci_t startcol,
+				  int k,
+				  mzd_t const* T0,
+				  rci_t const* L0,
+				  mzd_t const* T1,
+				  rci_t const* L1,
+				  mzd_t const* T2,
+				  rci_t const* L2);
 
 /**
  * \brief Same as mzd_process_rows but works with four Gray code tables
@@ -132,9 +150,20 @@ void mzd_process_rows3(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, i
  * \param L3 Contains row number to be added
  */
 
-void mzd_process_rows4(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k,
-                       mzd_t const *T0, rci_t const *L0, mzd_t const *T1, rci_t const *L1,
-                       mzd_t const *T2, rci_t const *L2, mzd_t const *T3, rci_t const *L3);
+void
+mzd_process_rows4(mzd_t* M,
+				  rci_t startrow,
+				  rci_t endrow,
+				  rci_t startcol,
+				  int k,
+				  mzd_t const* T0,
+				  rci_t const* L0,
+				  mzd_t const* T1,
+				  rci_t const* L1,
+				  mzd_t const* T2,
+				  rci_t const* L2,
+				  mzd_t const* T3,
+				  rci_t const* L3);
 
 /**
  * \brief Same as mzd_process_rows but works with five Gray code tables
@@ -157,10 +186,22 @@ void mzd_process_rows4(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, i
  * \param L4 Contains row number to be added
  */
 
-void mzd_process_rows5(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k,
-                       mzd_t const *T0, rci_t const *L0, mzd_t const *T1, rci_t const *L1,
-                       mzd_t const *T2, rci_t const *L2, mzd_t const *T3, rci_t const *L3,
-                       mzd_t const *T4, rci_t const *L4);
+void
+mzd_process_rows5(mzd_t* M,
+				  rci_t startrow,
+				  rci_t endrow,
+				  rci_t startcol,
+				  int k,
+				  mzd_t const* T0,
+				  rci_t const* L0,
+				  mzd_t const* T1,
+				  rci_t const* L1,
+				  mzd_t const* T2,
+				  rci_t const* L2,
+				  mzd_t const* T3,
+				  rci_t const* L3,
+				  mzd_t const* T4,
+				  rci_t const* L4);
 
 /**
  * \brief Same as mzd_process_rows but works with six Gray code tables
@@ -185,10 +226,24 @@ void mzd_process_rows5(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, i
  * \param L5 Contains row number to be added
  */
 
-void mzd_process_rows6(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, int k,
-                       mzd_t const *T0, rci_t const *L0, mzd_t const *T1, rci_t const *L1,
-                       mzd_t const *T2, rci_t const *L2, mzd_t const *T3, rci_t const *L3,
-                       mzd_t const *T4, rci_t const *L4, mzd_t const *T5, rci_t const *L5);
+void
+mzd_process_rows6(mzd_t* M,
+				  rci_t startrow,
+				  rci_t endrow,
+				  rci_t startcol,
+				  int k,
+				  mzd_t const* T0,
+				  rci_t const* L0,
+				  mzd_t const* T1,
+				  rci_t const* L1,
+				  mzd_t const* T2,
+				  rci_t const* L2,
+				  mzd_t const* T3,
+				  rci_t const* L3,
+				  mzd_t const* T4,
+				  rci_t const* L4,
+				  mzd_t const* T5,
+				  rci_t const* L5);
 
 /**
  * \brief Matrix elimination using the 'Method of the Four Russians'
@@ -212,7 +267,8 @@ void mzd_process_rows6(mzd_t *M, rci_t startrow, rci_t endrow, rci_t startcol, i
  * \return Rank of A.
  */
 
-rci_t _mzd_echelonize_m4ri(mzd_t *A, const int full, int k, int heuristic, const double threshold);
+rci_t
+_mzd_echelonize_m4ri(mzd_t* A, const int full, int k, int heuristic, const double threshold);
 
 /**
  * \brief Given a matrix in upper triangular form compute the reduced row
@@ -224,7 +280,8 @@ rci_t _mzd_echelonize_m4ri(mzd_t *A, const int full, int k, int heuristic, const
  *
  */
 
-void mzd_top_echelonize_m4ri(mzd_t *M, int k);
+void
+mzd_top_echelonize_m4ri(mzd_t* M, int k);
 
 /**
  * \brief Given a matrix in upper triangular form compute the reduced
@@ -240,7 +297,8 @@ void mzd_top_echelonize_m4ri(mzd_t *M, int k);
  *
  */
 
-rci_t _mzd_top_echelonize_m4ri(mzd_t *A, int k, rci_t r, rci_t c, rci_t max_r);
+rci_t
+_mzd_top_echelonize_m4ri(mzd_t* A, int k, rci_t r, rci_t c, rci_t max_r);
 
 /**
  * \brief Invert the matrix src using Konrod's method.
@@ -253,7 +311,8 @@ rci_t _mzd_top_echelonize_m4ri(mzd_t *A, int k, rci_t r, rci_t c, rci_t max_r);
  * \return Inverse of src if src has full rank
  */
 
-mzd_t *mzd_inv_m4ri(mzd_t *dst, const mzd_t *src, int k);
+mzd_t*
+mzd_inv_m4ri(mzd_t* dst, const mzd_t* src, int k);
 
 /**
  * \brief Matrix multiplication using Konrod's method, i.e. compute C
@@ -271,7 +330,8 @@ mzd_t *mzd_inv_m4ri(mzd_t *dst, const mzd_t *src, int k);
  * \return Pointer to C.
  */
 
-mzd_t *mzd_mul_m4rm(mzd_t *C, mzd_t const *A, mzd_t const *B, int k);
+mzd_t*
+mzd_mul_m4rm(mzd_t* C, mzd_t const* A, mzd_t const* B, int k);
 
 /**
  * Set C to C + AB using Konrod's method.
@@ -288,7 +348,8 @@ mzd_t *mzd_mul_m4rm(mzd_t *C, mzd_t const *A, mzd_t const *B, int k);
  * \return Pointer to C.
  */
 
-mzd_t *mzd_addmul_m4rm(mzd_t *C, mzd_t const *A, mzd_t const *B, int k);
+mzd_t*
+mzd_addmul_m4rm(mzd_t* C, mzd_t const* A, mzd_t const* B, int k);
 
 /**
  * \brief Matrix multiplication using Konrod's method, i.e. compute C such
@@ -314,6 +375,7 @@ mzd_t *mzd_addmul_m4rm(mzd_t *C, mzd_t const *A, mzd_t const *B, int k);
  * \return Pointer to C.
  */
 
-mzd_t *_mzd_mul_m4rm(mzd_t *C, mzd_t const *A, mzd_t const *B, int k, int clear);
+mzd_t*
+_mzd_mul_m4rm(mzd_t* C, mzd_t const* A, mzd_t const* B, int k, int clear);
 
-#endif  // M4RI_BRILLIANTRUSSIAN_H
+#endif // M4RI_BRILLIANTRUSSIAN_H

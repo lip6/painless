@@ -31,38 +31,26 @@ extern bool tissat_found_xz;
 extern bool tissat_found_7z;
 #endif
 
-extern const char *tissat_root;
+extern const char* tissat_root;
 
-#define tissat_assert(COND) \
-( \
-  (COND) ? \
-    (void) 0 \
-  : \
-  \
-    ( \
-      tissat_restore_stdout_and_stderr (), \
-      printf ("tissat: %s:%ld: %s: Assertion `%s' failed.\n", \
-	__FILE__, (long) __LINE__, __func__, #COND), \
-      abort (), \
-      (void) 0 \
-    ) \
-)
+#define tissat_assert(COND)                                                                                            \
+	((COND) ? (void)0 :                                                                                                \
+                                                                                                                       \
+			(tissat_restore_stdout_and_stderr(),                                                                       \
+			 printf("tissat: %s:%ld: %s: Assertion `%s' failed.\n", __FILE__, (long)__LINE__, __func__, #COND),        \
+			 abort(),                                                                                                  \
+			 (void)0))
 
-#define tissat_assume(COND) \
-( \
-  (COND) ? \
-    (void) 0 \
-  : \
-  \
-    ( \
-      tissat_restore_stdout_and_stderr (), \
-      tissat_warning ("tissat: %s:%ld: %s: Assumption `%s' failed.\n", \
-	__FILE__, (long) __LINE__, __func__, #COND), \
-      tissat_divert_stdout_and_stderr_to_dev_null (), \
-      tissat_warnings++, \
-      (void) 0 \
-    ) \
-)
+#define tissat_assume(COND)                                                                                            \
+	((COND)                                                                                                            \
+		 ? (void)0                                                                                                     \
+		 :                                                                                                             \
+                                                                                                                       \
+		 (tissat_restore_stdout_and_stderr(),                                                                          \
+		  tissat_warning("tissat: %s:%ld: %s: Assumption `%s' failed.\n", __FILE__, (long)__LINE__, __func__, #COND),  \
+		  tissat_divert_stdout_and_stderr_to_dev_null(),                                                               \
+		  tissat_warnings++,                                                                                           \
+		  (void)0))
 
 #ifdef assert
 #undef assert
@@ -71,18 +59,19 @@ extern const char *tissat_root;
 #define assume tissat_assume
 #define assert tissat_assert
 
-#define FATAL(...) \
-do { \
-  fflush (stdout); \
-  tissat_restore_stdout_and_stderr (); \
-  tissat_fatal (__VA_ARGS__); \
-} while (0)
+#define FATAL(...)                                                                                                     \
+	do {                                                                                                               \
+		fflush(stdout);                                                                                                \
+		tissat_restore_stdout_and_stderr();                                                                            \
+		tissat_fatal(__VA_ARGS__);                                                                                     \
+	} while (0)
 
-void tissat_init_solver (struct kissat *);
+void
+tissat_init_solver(struct kissat*);
 
-#define DECLARE_AND_INIT_SOLVER(SOLVER) \
-  kissat dummy_solver, *solver = &dummy_solver; \
-  memset (&dummy_solver, 0, sizeof dummy_solver); \
-  tissat_init_solver (solver)
+#define DECLARE_AND_INIT_SOLVER(SOLVER)                                                                                \
+	kissat dummy_solver, *solver = &dummy_solver;                                                                      \
+	memset(&dummy_solver, 0, sizeof dummy_solver);                                                                     \
+	tissat_init_solver(solver)
 
 #endif

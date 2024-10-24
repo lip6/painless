@@ -7,6 +7,7 @@
 
 struct kissat;
 
-bool kissat_backward_subsume_temporary (struct kissat *, reference ignore);
+bool
+kissat_mab_backward_subsume_temporary(struct kissat*, reference ignore);
 
 #endif

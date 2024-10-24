@@ -3,7 +3,9 @@
 
 struct kissat;
 
-char kissat_walk (struct kissat *);
-int kissat_walk_initially (struct kissat *);
+char
+kissat_mab_walk(struct kissat*);
+int
+kissat_mab_walk_initially(struct kissat*);
 
 #endif

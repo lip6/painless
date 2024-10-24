@@ -17,15 +17,17 @@ namespace Eigen {
  * This function computes the regularized incomplete beta function (integral).
  *
  */
-template <typename ADerived, typename BDerived, typename XDerived>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const
-    TensorCwiseTernaryOp<internal::scalar_betainc_op<typename XDerived::Scalar>,
-                         const ADerived, const BDerived, const XDerived>
-    betainc(const ADerived& a, const BDerived& b, const XDerived& x) {
-  return TensorCwiseTernaryOp<
-      internal::scalar_betainc_op<typename XDerived::Scalar>, const ADerived,
-      const BDerived, const XDerived>(
-      a, b, x, internal::scalar_betainc_op<typename XDerived::Scalar>());
+template<typename ADerived, typename BDerived, typename XDerived>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const TensorCwiseTernaryOp<internal::scalar_betainc_op<typename XDerived::Scalar>,
+																 const ADerived,
+																 const BDerived,
+																 const XDerived>
+betainc(const ADerived& a, const BDerived& b, const XDerived& x)
+{
+	return TensorCwiseTernaryOp<internal::scalar_betainc_op<typename XDerived::Scalar>,
+								const ADerived,
+								const BDerived,
+								const XDerived>(a, b, x, internal::scalar_betainc_op<typename XDerived::Scalar>());
 }
 
 } // end namespace Eigen

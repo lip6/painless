@@ -217,7 +217,7 @@ enum ClausePicking {
   OPT (crit,1,0,1,"dynamic break values (using critical lits)"); \
   OPT (defrag,1,0,1,"defragemtation of unsat queue"); \
   OPT (eager,0,0,1,"eagerly pick minimum break literals"); \
-  OPT (fixed,4,0,INT_MAX,"fixed default strategy frequency (1=always)"); \
+  OPT (fixed,4,1,INT_MAX,"fixed default strategy frequency (1=always)"); \
   OPT (geomfreq,66,0,100,"geometric picking first frequency (percent)"); \
   OPT (hitlim,-1,-1,INT_MAX,"minimum hit limit"); \
   OPT (keep,0,0,1,"keep assignment during restart"); \

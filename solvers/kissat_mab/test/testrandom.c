@@ -32,7 +32,7 @@ test_random_range (void)
       memset (count, 0, sizeof count);
       for (unsigned i = 0; i < N; i++)
 	{
-	  const unsigned picked = kissat_pick_random (&random, L, R);
+	  const unsigned picked = kissat_mab_pick_random (&random, L, R);
 	  assert (L <= picked), assert (picked < R);
 	  count[picked - L]++;
 	}
@@ -79,7 +79,7 @@ test_random_bool (void)
       memset (count, 0, sizeof count);
       for (unsigned i = 0; i < N; i++)
 	{
-	  const bool picked = kissat_pick_bool (&random);
+	  const bool picked = kissat_mab_pick_bool (&random);
 	  count[picked]++;
 	}
       for (unsigned i = 0; i < 2; i++)

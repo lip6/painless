@@ -7,7 +7,7 @@ test_options_parse_value (void)
 
 #define CHECKVAL(STR,VAL) \
 do { \
-  assert (kissat_parse_option_value (STR, &value)); \
+  assert (kissat_mab_parse_option_value (STR, &value)); \
   if (value != VAL) \
     FATAL ("parsing '%s' gives '%d' and not '%s' (%d)", \
       STR, value, #VAL, (int)(VAL)); \
@@ -41,7 +41,7 @@ do { \
 
 #define FAILVAL(STR) \
 do { \
-  assert (!kissat_parse_option_value (STR, &value)); \
+  assert (!kissat_mab_parse_option_value (STR, &value)); \
   printf ("checked parsing value string '%s' failed as expected\n", STR); \
 } while (0)
 
@@ -76,11 +76,11 @@ test_options_parse_name (void)
 
 #define CHECKNAME(STR,NAME,EXPECTED) \
 do { \
-  valstr = kissat_parse_option_name (STR, NAME); \
+  valstr = kissat_mab_parse_option_name (STR, NAME); \
   if (!valstr) \
-    FATAL ("kissat_parse_option_name (\"" STR "\", \"" NAME "\") returns 0"); \
+    FATAL ("kissat_mab_parse_option_name (\"" STR "\", \"" NAME "\") returns 0"); \
   if (strcmp (valstr, EXPECTED)) \
-    FATAL ("kissat_parse_option_name (\"" STR "\", \"" NAME "\") != \"" EXPECTED "\""); \
+    FATAL ("kissat_mab_parse_option_name (\"" STR "\", \"" NAME "\") != \"" EXPECTED "\""); \
   printf ("checked parsing of option string '%s' name '%s' expected '%s'\n", \
           STR, NAME, EXPECTED); \
 } while (0)
@@ -95,9 +95,9 @@ do { \
 
 #define FAILNAME(STR,NAME) \
 do { \
-  valstr = kissat_parse_option_name (STR, NAME); \
+  valstr = kissat_mab_parse_option_name (STR, NAME); \
   if (valstr) \
-    FATAL ("kissat_parse_option_name (\"" STR "\", \"" NAME "\") succeeded"); \
+    FATAL ("kissat_mab_parse_option_name (\"" STR "\", \"" NAME "\") succeeded"); \
   printf ("checked parsing of option string '%s' name '%s' failed as expected\n", \
           STR, NAME); \
 } while (0)
@@ -118,36 +118,36 @@ static void
 test_options_basic (void)
 {
   options options;
-  kissat_init_options (&options);
-  const opt *opt = kissat_options_has ("eliminate");
+  kissat_mab_init_options (&options);
+  const opt *opt = kissat_mab_options_has ("eliminate");
   assert (opt);
   assert (opt->low == 0);
   assert (opt->high == 1);
-  kissat_options_set_opt (&options, opt, 0);
+  kissat_mab_options_set_opt (&options, opt, 0);
   assert (options.eliminate == 0);
-  kissat_options_set_opt (&options, opt, 1);
+  kissat_mab_options_set_opt (&options, opt, 1);
   assert (options.eliminate == 1);
-  kissat_options_set_opt (&options, opt, -1);
+  kissat_mab_options_set_opt (&options, opt, -1);
   assert (options.eliminate == 0);
-  kissat_options_set_opt (&options, opt, 2);
+  kissat_mab_options_set_opt (&options, opt, 2);
   assert (options.eliminate == 1);
-  kissat_options_set_opt (&options, opt, INT_MIN);
+  kissat_mab_options_set_opt (&options, opt, INT_MIN);
   assert (options.eliminate == 0);
-  kissat_options_set_opt (&options, opt, INT_MAX);
+  kissat_mab_options_set_opt (&options, opt, INT_MAX);
   assert (options.eliminate == 1);
 
-  assert (!kissat_options_get (&options, "nonexistingoption"));
+  assert (!kissat_mab_options_get (&options, "nonexistingoption"));
 }
 
 static void
 test_options_parse_arg (void)
 {
-  char buffer[kissat_options_max_name_buffer_size];
+  char buffer[kissat_mab_options_max_name_buffer_size];
   int value;
 
 #define CHECKARG(STR,NAME,VAL) \
 do { \
-  assert (kissat_options_parse_arg (STR, buffer, &value)); \
+  assert (kissat_mab_options_parse_arg (STR, buffer, &value)); \
   if (strcmp (buffer, NAME)) \
     FATAL ("parsing '%s' yields name '%s' and not '%s'", \
       STR, buffer, NAME); \
@@ -167,7 +167,7 @@ do { \
 
 #define FAILARG(STR) \
 do { \
-  assert (!kissat_options_parse_arg (STR, buffer, &value)); \
+  assert (!kissat_mab_options_parse_arg (STR, buffer, &value)); \
   printf ("checked parsing option string '%s' failed as expected\n", STR); \
 } while (0)
 
@@ -191,7 +191,7 @@ do { \
   // Force name too large for sure.
   //
   {
-    char tmp[2 * kissat_options_max_name_buffer_size];
+    char tmp[2 * kissat_mab_options_max_name_buffer_size];
     const size_t len = sizeof tmp - 1;
     memset (tmp, 'a', len);
     tmp[0] = '-';

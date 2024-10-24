@@ -5,7 +5,7 @@
 
 #include <strings.h>
 
-void kissat_clear_clueue(kissat *solver, clueue *clueue)
+void kissat_mab_clear_clueue(kissat *solver, clueue *clueue)
 {
   if (!clueue->size)
     return;
@@ -17,23 +17,23 @@ void kissat_clear_clueue(kissat *solver, clueue *clueue)
 #endif
 }
 
-void kissat_release_clueue(kissat *solver, clueue *clueue)
+void kissat_mab_release_clueue(kissat *solver, clueue *clueue)
 {
   if (!clueue->size)
     return;
   const size_t bytes = clueue->size * sizeof *clueue->elements;
-  kissat_free(solver, clueue->elements, bytes);
+  kissat_mab_free(solver, clueue->elements, bytes);
 }
 
-void kissat_init_clueue(kissat *solver, clueue *clueue, unsigned size)
+void kissat_mab_init_clueue(kissat *solver, clueue *clueue, unsigned size)
 {
   assert(size);
   assert(!clueue->size);
   clueue->size = size;
-  clueue->elements = kissat_malloc(solver, size * sizeof *clueue->elements);
+  clueue->elements = kissat_mab_malloc(solver, size * sizeof *clueue->elements);
   assert(!clueue->next);
   LOG("initialized clueue of size %u", size);
-  kissat_clear_clueue(solver, clueue);
+  kissat_mab_clear_clueue(solver, clueue);
 }
 
 #define all_clueue(REF, CLUEUE)                          \
@@ -42,7 +42,7 @@ void kissat_init_clueue(kissat *solver, clueue *clueue, unsigned size)
   REF##_PTR != REF##_END && (REF = *REF##_PTR, true);    \
   REF##_PTR++
 
-void kissat_eager_subsume(kissat *solver)
+void kissat_mab_eager_subsume(kissat *solver)
 {
   assert(!solver->probing);
   clueue *clueue = &solver->clueue;
@@ -64,7 +64,7 @@ void kissat_eager_subsume(kissat *solver)
     if (ref == INVALID_REF)
       continue;
     clause *c = (clause *)(arena + ref);
-    assert(kissat_clause_in_arena(solver, c));
+    assert(kissat_mab_clause_in_arena(solver, c));
     if (c->garbage)
       goto REMOVE;
     if (!c->redundant)
@@ -80,7 +80,7 @@ void kissat_eager_subsume(kissat *solver)
     LOGCLS(c, "eagerly subsumed");
     INC(subsumed);
     INC(eager_subsumed);
-    kissat_mark_clause_as_garbage(solver, c);
+    kissat_mab_mark_clause_as_garbage(solver, c);
   REMOVE:
     *ref_PTR = INVALID_REF;
   }

@@ -15,17 +15,17 @@ reimport_literal (kissat * solver, unsigned eidx, unsigned mlit)
 }
 
 unsigned
-kissat_compact_literals (kissat * solver, unsigned *mfixed_ptr)
+kissat_mab_compact_literals (kissat * solver, unsigned *mfixed_ptr)
 {
   INC (compacted);
 #if !defined(QUIET) || !defined(NDEBUG)
   const unsigned active = solver->active;
 #ifndef QUIET
   const unsigned inactive = solver->vars - active;
-  kissat_phase (solver, "compact", GET (compacted),
+  kissat_mab_phase (solver, "compact", GET (compacted),
 		"compacting garbage collection "
 		"(%u inactive variables %.2f%%)",
-		inactive, kissat_percent (inactive, solver->vars));
+		inactive, kissat_mab_percent (inactive, solver->vars));
 #endif
 #endif
 #ifdef LOGGING
@@ -43,7 +43,7 @@ kissat_compact_literals (kissat * solver, unsigned *mfixed_ptr)
       unsigned mlit;
       if (flags->fixed)
 	{
-	  const value value = kissat_fixed (solver, ilit);
+	  const value value = kissat_mab_fixed (solver, ilit);
 	  assert (value);
 	  if (mfixed == INVALID_LIT)
 	    {
@@ -102,7 +102,7 @@ kissat_compact_literals (kissat * solver, unsigned *mfixed_ptr)
     }
   *mfixed_ptr = mfixed;
   LOG ("compacting to %u variables %.2f%% from %u",
-       vars, kissat_percent (vars, solver->vars), solver->vars);
+       vars, kissat_mab_percent (vars, solver->vars), solver->vars);
   assert (vars == active || vars == active + 1);
   return vars;
 }
@@ -194,7 +194,7 @@ compact_scores (kissat * solver, unsigned vars, heap *old_scores)
 
   heap new_scores;
   memset (&new_scores, 0, sizeof new_scores);
-  kissat_resize_heap (solver, &new_scores, vars);
+  kissat_mab_resize_heap (solver, &new_scores, vars);
 
 
   if (old_scores->tainted)
@@ -205,8 +205,8 @@ compact_scores (kissat * solver, unsigned vars, heap *old_scores)
 	  const unsigned midx = map_idx (solver, idx);
 	  if (midx == INVALID_IDX)
 	    continue;
-	  const double score = kissat_get_heap_score (old_scores, idx);
-	  kissat_update_heap (solver, &new_scores, midx, score);
+	  const double score = kissat_mab_get_heap_score (old_scores, idx);
+	  kissat_mab_update_heap (solver, &new_scores, midx, score);
 	}
     }
   else
@@ -218,10 +218,10 @@ compact_scores (kissat * solver, unsigned vars, heap *old_scores)
       const unsigned midx = map_idx (solver, idx);
       if (midx == INVALID_IDX)
 	continue;
-      kissat_push_heap (solver, &new_scores, midx);
+      kissat_mab_push_heap (solver, &new_scores, midx);
     }
 
-  kissat_release_heap (solver, old_scores);
+  kissat_mab_release_heap (solver, old_scores);
   if(solver->heuristic==0)
      solver->scores = new_scores;
   else
@@ -236,7 +236,7 @@ compact_trail (kissat * solver)
   for (size_t i = 0; i < size; i++)
     {
       const unsigned ilit = PEEK_STACK (solver->trail, i);
-      const unsigned mlit = kissat_map_literal (solver, ilit, true);
+      const unsigned mlit = kissat_mab_map_literal (solver, ilit, true);
       assert (mlit != INVALID_LIT);
       POKE_STACK (solver->trail, i, mlit);
       const unsigned idx = IDX (ilit);
@@ -245,7 +245,7 @@ compact_trail (kissat * solver)
 	continue;
       const unsigned other = a->reason;
       assert (VALID_INTERNAL_LITERAL (other));
-      const unsigned mother = kissat_map_literal (solver, other, true);
+      const unsigned mother = kissat_mab_map_literal (solver, other, true);
       assert (mother != INVALID_LIT);
       a->reason = mother;
     }
@@ -260,7 +260,7 @@ compact_frames (kissat * solver)
     {
       frame *frame = &FRAME (level);
       const unsigned ilit = frame->decision;
-      const unsigned mlit = kissat_map_literal (solver, ilit, true);
+      const unsigned mlit = kissat_mab_map_literal (solver, ilit, true);
       assert (mlit != INVALID_LIT);
       frame->decision = mlit;
     }
@@ -309,7 +309,7 @@ static void
 compact_units (kissat * solver, unsigned mfixed)
 {
   LOG ("compacting units (first fixed %u)", mfixed);
-  assert (kissat_fixed (solver, mfixed) > 0);
+  assert (kissat_mab_fixed (solver, mfixed) > 0);
   for (all_stack (int, elit, solver->units))
     {
       const unsigned eidx = ABS (elit);
@@ -332,7 +332,7 @@ compact_transitive (kissat * solver, unsigned vars)
       unsigned ilit = solver->transitive;
       unsigned iidx = IDX (ilit);
       if (ACTIVE (iidx))
-	mlit = kissat_map_literal (solver, ilit, true);
+	mlit = kissat_mab_map_literal (solver, ilit, true);
       else
 	{
 	  while (iidx < VARS && !ACTIVE (iidx))
@@ -342,7 +342,7 @@ compact_transitive (kissat * solver, unsigned vars)
 	  else
 	    {
 	      ilit = LIT (iidx);
-	      mlit = kissat_map_literal (solver, ilit, true);
+	      mlit = kissat_mab_map_literal (solver, ilit, true);
 	    }
 	}
       if (mlit == INVALID_LIT)
@@ -386,11 +386,11 @@ compact_best_and_target_values (kissat * solver, unsigned vars)
       solver->best_assigned = best_assigned;
     }
 
-  kissat_reset_consistently_assigned (solver);
+  kissat_mab_reset_consistently_assigned (solver);
 }
 
 void
-kissat_finalize_compacting (kissat * solver, unsigned vars, unsigned mfixed)
+kissat_mab_finalize_compacting (kissat * solver, unsigned vars, unsigned mfixed)
 {
   LOG ("finalizing compacting");
   assert (vars <= solver->vars);
@@ -426,7 +426,7 @@ kissat_finalize_compacting (kissat * solver, unsigned vars, unsigned mfixed)
   for (all_variables (iidx))
     {
       const unsigned ilit = LIT (iidx);
-      const unsigned mlit = kissat_map_literal (solver, ilit, true);
+      const unsigned mlit = kissat_mab_map_literal (solver, ilit, true);
       if (mlit != INVALID_LIT && ilit != mlit)
 	compact_literal (solver, mlit, ilit);
     }
@@ -463,5 +463,5 @@ kissat_finalize_compacting (kissat * solver, unsigned vars, unsigned mfixed)
 #ifdef LOGGING
   solver->compacting = false;
 #endif
-  kissat_decrease_size (solver);
+  kissat_mab_decrease_size (solver);
 }

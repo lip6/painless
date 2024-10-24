@@ -3,7 +3,7 @@
 #include <sys/time.h>
 
 double
-kissat_wall_clock_time (void)
+kissat_mab_wall_clock_time (void)
 {
   struct timeval tv;
   if (gettimeofday (&tv, 0))
@@ -24,7 +24,7 @@ kissat_wall_clock_time (void)
 #include <unistd.h>
 
 double
-kissat_process_time (void)
+kissat_mab_process_time (void)
 {
   struct rusage u;
   double res;
@@ -36,7 +36,7 @@ kissat_process_time (void)
 }
 
 uint64_t
-kissat_maximum_resident_set_size (void)
+kissat_mab_maximum_resident_set_size (void)
 {
   struct rusage u;
   if (getrusage (RUSAGE_SELF, &u))
@@ -45,7 +45,7 @@ kissat_maximum_resident_set_size (void)
 }
 
 uint64_t
-kissat_current_resident_set_size (void)
+kissat_mab_current_resident_set_size (void)
 {
   char path[48];
   sprintf (path, "/proc/%" PRIu64 "/statm", (uint64_t) getpid ());
@@ -59,10 +59,10 @@ kissat_current_resident_set_size (void)
 }
 
 void
-kissat_print_resources (kissat * solver)
+kissat_mab_print_resources (kissat * solver)
 {
-  uint64_t rss = kissat_maximum_resident_set_size ();
-  double t = kissat_time (solver);
+  uint64_t rss = kissat_mab_maximum_resident_set_size ();
+  double t = kissat_mab_time (solver);
   printf ("c "
 	  "%-" SFW1 "s "
 	  "%" SFW2 PRIu64 " "
@@ -81,7 +81,7 @@ kissat_print_resources (kissat * solver)
 	  "%" SFW4 ".0f "
 	  "%%\n",
 	  "max-allocated:",
-	  max_allocated, "bytes", kissat_percent (max_allocated, rss));
+	  max_allocated, "bytes", kissat_mab_percent (max_allocated, rss));
 #endif
   printf ("c process-time: %30s %18.2f seconds\n", FORMAT_TIME (t), t);
   fflush (stdout);

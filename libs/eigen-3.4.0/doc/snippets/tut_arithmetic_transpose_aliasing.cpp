@@ -1,4 +1,5 @@
-Matrix2i a; a << 1, 2, 3, 4;
+Matrix2i a;
+a << 1, 2, 3, 4;
 cout << "Here is the matrix a:\n" << a << endl;
 
 a = a.transpose(); // !!! do NOT do this !!!

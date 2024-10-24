@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_hppapstat_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_hppapstat(void);
-extern long long cpucycles_hppapstat_persecond(void);
+	extern long long cpucycles_hppapstat(void);
+	extern long long cpucycles_hppapstat_persecond(void);
 
 #ifdef __cplusplus
 }

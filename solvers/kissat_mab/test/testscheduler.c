@@ -190,7 +190,7 @@ handle_exit (tissat_job * job, int status)
 static void
 sequential_signal_handler (int sig)
 {
-  kissat_reset_signal_handler ();
+  kissat_mab_reset_signal_handler ();
   tissat_restore_stdout_and_stderr ();
   if (!running_job)
     tissat_signal (sig, "but no job seems to run");
@@ -200,13 +200,13 @@ sequential_signal_handler (int sig)
 static void
 set_sequential_signal_handler (void)
 {
-  kissat_init_signal_handler (sequential_signal_handler);
+  kissat_mab_init_signal_handler (sequential_signal_handler);
 }
 
 static void
 reset_signal_handler (void)
 {
-  kissat_reset_signal_handler ();
+  kissat_mab_reset_signal_handler ();
 }
 
 static void

@@ -8,11 +8,15 @@
 
 using namespace Eigen;
 
-void call_ref(Ref<VectorXf> a) { }
-
-int main()
+void
+call_ref(Ref<VectorXf> a)
 {
-  VectorXf a(10);
-  CV_QUALIFIER VectorXf& ac(a);
-  call_ref(ac);
+}
+
+int
+main()
+{
+	VectorXf a(10);
+	CV_QUALIFIER VectorXf& ac(a);
+	call_ref(ac);
 }

@@ -8,11 +8,12 @@ Public domain.
 #define CPUCYCLES_amd64cpuinfo_h
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern long long cpucycles_amd64cpuinfo(void);
-extern long long cpucycles_amd64cpuinfo_persecond(void);
+	extern long long cpucycles_amd64cpuinfo(void);
+	extern long long cpucycles_amd64cpuinfo_persecond(void);
 
 #ifdef __cplusplus
 }
