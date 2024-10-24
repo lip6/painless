@@ -42,6 +42,7 @@ The framework includes preprocessing techniques from:
 
 ### Prerequisites
 - C++20 compatible compiler (GCC recommended)
+- [Boost Library](https://www.boost.org/) headers
 - [OpenMPI](https://www.open-mpi.org/) implementation
 - Standard build tools (make, autoconf)
 - POSIX-compatible environment
