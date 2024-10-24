@@ -54,6 +54,7 @@ class AllGatherSharing : public GlobalSharingStrategy
   protected:
 	/**
 	 * @brief Serializes clauses for sharing.
+	 * @details Serialization Pattern ([size][lbd][literals])*0+
 	 * @param serialized_v_cls Vector to store the serialized clauses.
 	 * @return The number of clauses serialized.
 	 */

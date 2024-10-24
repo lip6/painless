@@ -100,6 +100,7 @@ class MallobSharing : public GlobalSharingStrategy
 
 	/**
 	 * @brief Merges serialized buffers with local clauses from the m_clauseDB database.
+	 * @details Serialization Pattern ([size][lbd][literals])*
 	 * @param buffers Vector of references to buffers containing serialized clauses.
 	 * @param result Vector to store the merged result.
 	 * @param nonFreeLiteralsCount Output parameter to store the count of non-free literals.

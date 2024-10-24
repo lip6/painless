@@ -55,6 +55,7 @@ class GenericGlobalSharing : public GlobalSharingStrategy
 	/**
 	 * @brief Serializes clauses for sharing.
 	 * @param serialized_v_cls Vector to store the serialized clauses.
+	 * @details Serialization Pattern ([size][lbd][literals])*
 	 * @return The number of clauses serialized.
 	 */
 	int serializeClauses(std::vector<int>& serialized_v_cls);
