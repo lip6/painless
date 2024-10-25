@@ -4,7 +4,7 @@ D-Painless: A Framework for Parallel SAT Solving
 ## Overview
 D-Painless is a flexible framework for parallel and distributed SAT solving that integrates multiple state-of-the-art SAT solvers and preprocessing techniques.
 
-- The doxygen different [Topics](topics.html) is a good introduction to the different components in the framework.
+- The doxygen different [Topics](https://lip6.github.io/painless/topics.html) is a good introduction to the different components in the framework.
 - For TACAS25 experiment reproducability, please check [TACAS25](./docs/source/TACAS25.md).
 - For an overview on the main interfaces, please check [Main Interfaces](./docs/source/DevelopComponents.md).
 
