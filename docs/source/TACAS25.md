@@ -2,7 +2,9 @@
 
 This guide details how to reproduce the experimental results presented in our TACAS25 paper. We evaluated four different configurations of Painless, each representing different sharing strategies and solver combinations.
 
-[TOC]
+> [!important]
+> On October 21st,2024, we were notified that the [paravance](https://www.grid5000.fr/w/Rennes:Hardware#paravance) cluster will become unavailable after November 4th,2024. We apologize for these circumstances. You can test on the [parasilo](https://www.grid5000.fr/w/Rennes:Hardware#parasilo) cluster which has the same CPU as paravance, however only 24 nodes are available.
+> `oarsub -l nodes=24,walltime=13:30:00 -p "cluster='parasilo'" -t night "bash launch_solvers.sh`
 
 ## Experimental Environment
 
@@ -20,22 +22,70 @@ This guide details how to reproduce the experimental results presented in our TA
 
 ### Setup
 
-#### Environment Setup:
+### Environment Setup:
 ```bash
 # Set up hostfile from node allocation in bashrc
 export HOSTFILE=~/software/hostfile
 uniq $OAR_NODE_FILE > $HOSTFILE
 ```
 
-#### Compile Painless:
+### Benchmark Instances
+The instances can be downloaded via:
+
 ```bash
-make cleanall && make
+wget --content-disposition https://gist.githubusercontent.com/S-Mazigh/f6ad9157a7f47cffb34887ab0bfd203b/raw/5ccb9c5db1ebeeba4a1e6ea39b0b6c361d6b9910/track_tacas25_painless.uri
+mkdir cnf && cd cnf
+wget --content-disposition -i ../track_tacas25_painless.uri
 ```
+
+> [!important]
+> The instances from the International SAT Competition 2024([GBD-ISC24](https://benchmark-database.de/?track=main_2024&context=cnf)) were used. However, due to some out of memory errors, not all instances were solved. The intersection of the non crashed instances can be found [here](https://gist.github.com/S-Mazigh/f6ad9157a7f47cffb34887ab0bfd203b).
+
+### Tool-Specific Setup
+
+#### D-Painless
+```bash
+cd /path/to/painless
+make
+```
+
+#### Mallob
+- Please note that jemalloc was unavailable
+```bash
+cd /path/to/mallob
+bash ./lib/fetch_and_build_solvers.sh
+mkdir build && cd build
+CC=$(which mpicc) CXX=$(which mpicxx) cmake -DCMAKE_BUILD_TYPE=RELEASE \
+    -DMALLOB_APP_SAT=1 \
+    -DMALLOB_USE_JEMALLOC=0 \
+    -DMALLOB_LOG_VERBOSITY=4 \
+    -DMALLOB_ASSERT=1 \
+    -DMALLOB_SUBPROC_DISPATCH_PATH=\"build/\" ..
+make
+```
+
+#### PRS
+```bash
+cd /path/to/PRS-distributed-sc24
+bash ./build.sh
+```
+
+## Running Experiments
+
+### Grid5000 Execution
+```bash
+# Reserve 25 nodes on Paravance cluster
+oarsub -l nodes=25,walltime=15:00:00 -p "cluster='paravance'" -t night "bash ~/jobs_out/launch_solvers.sh"
+```
+
+> [!note]
+> Each benchmark requires at least 15 hours of execution time.
 
 #### Create Input File List:
 - Create a text file containing paths to CNF formulas, one per line.
-> [!important]
-> The instances from the International SAT Competition 2024([GBD-ISC24](https://benchmark-database.de/?track=main_2024&context=cnf)) were used. However, due to some out of memory errors, not all instances were solved. The intersection of the non crashed instances can be found [here](https://gist.github.com/S-Mazigh/f6ad9157a7f47cffb34887ab0bfd203b).
+```sh
+ls -d /absolute/path/to/cnfs/*.cnf >formula_list.txt
+```
 
 #### Launch Script:
 - For each configuration:
@@ -82,8 +132,12 @@ hostfile=$HOSTFILE # Hostfile is set to the environment variable
 # Number of mpi processes == number of sockets per node * number of nodes
 nb_procs_per_node=$(lscpu | grep ^Socket\(s\):\\s | awk '{print $2}')
 nb_nodes=$(ls $hostfile | wc)
-# mpi mapping is: --bind-to hwthread --map-by ppr:$nb_procs_per_node:node:pe=$nb_physical_cores
+# mpi mapping in launch.sh is:
+# --bind-to hwthread --map-by ppr:$nb_procs_per_node:node:pe=$nb_physical_cores
 ```
+
+> [!tip]
+> In case, you want to run the tools in a local machine, you have only to set manually the `nb_procs_per_node` and `nb_physical_cores` variables to the wanted values of MPI processes and solvers per MPI process, respectively.
 
 ### Configuration Details
 
@@ -149,7 +203,7 @@ outputs/
 - Use the provided plotting script to analyze results:
 
 ```bash
-python scripts/plot.py --base-dir outputs --timeout 500
+python3 scripts/plot.py --base-dir outputs --timeout 500
 ```
 
 This generates:

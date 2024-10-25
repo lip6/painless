@@ -108,7 +108,7 @@ class Bitset
 	 *       usage with different types of binary operations without explicitly
 	 *       specifying the template parameter.
 	 *
-	 * @example
+	 * @details
 	 *     // Using a lambda function
 	 *     bitset.merge(other_bitsets, [](unsigned long long a, unsigned long long b) { return a | b; });
 	 *
