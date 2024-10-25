@@ -1,0 +1,5 @@
+<map id="PreprocessorInterface" name="PreprocessorInterface">
+<area shape="rect" id="Node000001" title="Interface for preprocessor algorithms in SAT solving." alt="" coords="11,699,192,844"/>
+<area shape="rect" id="Node000002" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="5,5,197,651"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,665,104,699,99,699,99,665"/>
+</map>

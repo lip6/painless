@@ -1,0 +1,5 @@
+<map id="PortfolioPRS" name="PortfolioPRS">
+<area shape="rect" id="Node000001" title="An Implementation of WorkingStrategy that mimics the strategy used in the PRS&#45;Distributed solver from..." alt="" coords="5,279,153,724"/>
+<area shape="rect" id="Node000002" href="$classWorkingStrategy.html" title="Base Interface for Working Strategies." alt="" coords="5,5,153,231"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,246,82,279,77,279,77,246"/>
+</map>

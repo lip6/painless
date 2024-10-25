@@ -1,0 +1,5 @@
+<map id="Parsers::SBVAInit" name="Parsers::SBVAInit">
+<area shape="rect" id="Node000001" title="A filter for Structured BVA (Binary Variable Addition)" alt="" coords="28,179,145,284"/>
+<area shape="rect" id="Node000002" href="$classParsers_1_1ClauseProcessor.html" title="Abstract base class for clause processors." alt="" coords="5,5,168,131"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,146,89,179,84,179,84,146"/>
+</map>

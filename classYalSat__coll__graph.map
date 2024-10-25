@@ -1,0 +1,9 @@
+<map id="YalSat" name="YalSat">
+<area shape="rect" id="Node000001" title="Implements LocalSearchInterface to interact with the YalSAT local search solver." alt="" coords="125,928,273,1294"/>
+<area shape="rect" id="Node000002" href="$classLocalSearchInterface.html" title="Interface for Local Search solvers." alt="" coords="117,714,280,879"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="201,894,201,928,196,928,196,894"/>
+<area shape="rect" id="Node000003" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="5,5,197,651"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="174,664,184,713,179,714,169,666"/>
+<area shape="rect" id="Node000004" href="$structLocalSearchStats.html" title="Local search statistics." alt="" coords="222,285,370,371"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="290,371,222,698,217,696,285,370"/>
+</map>

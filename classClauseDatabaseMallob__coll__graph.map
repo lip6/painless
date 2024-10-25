@@ -1,0 +1,7 @@
+<map id="ClauseDatabaseMallob" name="ClauseDatabaseMallob">
+<area shape="rect" id="Node000001" title="A clause database implementation attempting to naively mimic the Simplified Adaptive Database from Ma..." alt="" coords="69,454,249,899"/>
+<area shape="rect" id="Node000002" href="$classClauseDatabase.html" title="Abstract base class defining the interface for clause storage and management." alt="" coords="5,85,139,311"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,325,121,453,116,454,92,326"/>
+<area shape="rect" id="Node000003" href="$classClauseBuffer.html" title="Wrapper for boost::lockfree::queue to manage ClauseExchange objects." alt="" coords="163,5,330,391"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="214,391,205,438,200,437,209,390"/>
+</map>

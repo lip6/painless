@@ -1,0 +1,5 @@
+<map id="GlobalSharingStatistics" name="GlobalSharingStatistics">
+<area shape="rect" id="Node000001" title="Statistics of a global sharing strategy." alt="" coords="5,159,165,264"/>
+<area shape="rect" id="Node000002" href="$structSharingStatistics.html" title="Local Sharing statistics.Sharing statistics." alt="" coords="25,5,145,111"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,125,88,159,83,159,83,125"/>
+</map>

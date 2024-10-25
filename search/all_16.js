@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['receivedclauses_0',['receivedClauses',['../classAllGatherSharing.html#ad31788eafb6104c17f4e9cd3bbe945fe',1,'AllGatherSharing::receivedClauses'],['../classGenericGlobalSharing.html#a43fdf2bfac5f0428d2b11fe17462937a',1,'GenericGlobalSharing::receivedClauses'],['../structSharingStatistics.html#a5dc8d6a531395ace17c9e2e72ecf33f6',1,'SharingStatistics::receivedClauses']]],
+  ['receivedclausesfather_1',['receivedClausesFather',['../classMallobSharing.html#a0c4b19a6097e43e8843dc6ec2b04c904',1,'MallobSharing']]],
+  ['receivedclausesleft_2',['receivedClausesLeft',['../classMallobSharing.html#abf6686b8633c0a38cc6c67862cf88905',1,'MallobSharing']]],
+  ['receivedclausesright_3',['receivedClausesRight',['../classMallobSharing.html#a4a436d243d7e0de583373d847261e57a',1,'MallobSharing']]],
+  ['receivedduplicas_4',['receivedDuplicas',['../structGlobalSharingStatistics.html#a5fcc38fa63c950a9a8bd57020ee545be',1,'GlobalSharingStatistics']]],
+  ['receivedfinalresultroot_5',['receivedFinalResultRoot',['../classGlobalSharingStrategy.html#a519fdd44282dd445fce3477e3748ff9b',1,'GlobalSharingStrategy']]],
+  ['recv_5fend_5frequests_6',['recv_end_requests',['../classGlobalSharingStrategy.html#ae71e8be7624a37a245f3ef819002cd06',1,'GlobalSharingStrategy']]],
+  ['redundancyfilter_7',['RedundancyFilter',['../classParsers_1_1RedundancyFilter.html',1,'Parsers']]],
+  ['refcounter_8',['refCounter',['../classClauseExchange.html#a94ec59f48ab3b1f9e53e65baa03a2dc6',1,'ClauseExchange']]],
+  ['releasememory_9',['releaseMemory',['../classPreprocessorInterface.html#a84c890418d3014c4a764e0506b8d557b',1,'PreprocessorInterface::releaseMemory()'],['../structpreprocess.html#a00ae53b45b5011f987a1e7fea6512eb5',1,'preprocess::releaseMemory()'],['../classStructuredBVA.html#a7fa88a532edca9355af7f6cfc9785868',1,'StructuredBVA::releaseMemory()']]],
+  ['removeclient_10',['removeClient',['../classSharingEntity.html#aa04d0abb6cead1aa0a3207e1c8068f11',1,'SharingEntity']]],
+  ['removeproducer_11',['removeProducer',['../classHordeSatSharing.html#ae950861fc3e4970701c436f209415b3b',1,'HordeSatSharing::removeProducer()'],['../classSharingStrategy.html#a1d1c2eb7af415eb937064c691f36e02d',1,'SharingStrategy::removeProducer()']]],
+  ['reproducing_20d_20painless_20sat_20solver_20experiments_20from_20tacas25_12',['Reproducing D-Painless SAT Solver Experiments from TACAS25',['../md_source_2TACAS25.html',1,'']]],
+  ['requests_5fsent_13',['requests_sent',['../classGlobalSharingStrategy.html#a38d2b236ddd6c6c33bc27325ed9f0c2e',1,'GlobalSharingStrategy']]],
+  ['required_20functions_14',['Required Functions',['../md_source_2DevelopComponents.html#required-functions',1,'Required Functions'],['../md_source_2DevelopComponents.html#required-functions-1',1,'Required Functions'],['../md_source_2DevelopComponents.html#required-functions-2',1,'Required Functions'],['../md_source_2DevelopComponents.html#required-functions-3',1,'Required Functions'],['../md_source_2DevelopComponents.html#required-functions-4',1,'Required Functions']]],
+  ['requirements_15',['Build Requirements',['../index.html#build-requirements',1,'']]],
+  ['resize_16',['resize',['../classBitset.html#aae0475e10cc724175fee043b8a7e0bfb',1,'Bitset']]],
+  ['restarts_17',['restarts',['../structSolvingCdclStatistics.html#a10c0c9c96bb4e87de4d6ec73cfe282ab',1,'SolvingCdclStatistics']]],
+  ['restoremodel_18',['restoreModel',['../classPreprocessorInterface.html#a5cb0b443b634cd27592cc9a11eac4a0a',1,'PreprocessorInterface::restoreModel()'],['../structpreprocess.html#ab40065d8a00c7e4c20255f03337d5e09',1,'preprocess::restoreModel()'],['../classStructuredBVA.html#a0f5c403723622b7dc0f5e0b1567da408',1,'StructuredBVA::restoreModel()']]],
+  ['result_20analysis_20script_20scripts_20plot_20py_19',['Result Analysis Script (scripts/plot.py)',['../index.html#result-analysis-script-scriptsplotpy',1,'']]],
+  ['right_5fchild_20',['right_child',['../classMallobSharing.html#a7eb742a81f52823315e92e5ef0b8160d',1,'MallobSharing']]],
+  ['round_21',['round',['../classHordeSatSharing.html#a0ac23cc111ce00e8afa8296e7f21d117',1,'HordeSatSharing::round'],['../classSharer.html#ab80afd4c60a3cfdcdf19b45146d06d4c',1,'Sharer::round']]],
+  ['roundbeforeincrease_22',['roundBeforeIncrease',['../classHordeSatSharing.html#a7ba45dd77157a375afb53120ede5a6f3',1,'HordeSatSharing']]],
+  ['running_20experiments_23',['Running Experiments',['../md_source_2TACAS25.html#running-experiments',1,'']]]
+];

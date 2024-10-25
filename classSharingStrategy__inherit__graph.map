@@ -1,0 +1,19 @@
+<map id="SharingStrategy" name="SharingStrategy">
+<area shape="rect" id="Node000001" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="413,527,617,832"/>
+<area shape="rect" id="Node000004" href="$classGlobalSharingStrategy.html" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="199,890,367,1215"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="408,841,382,881,369,901,365,899,377,879,403,838"/>
+<area shape="rect" id="Node000008" href="$classHordeSatSharing.html" title="This strategy is a HordeSat&#45;like sharing strategy." alt="" coords="391,880,639,1225"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="518,847,518,881,513,881,513,847"/>
+<area shape="rect" id="Node000009" href="$classSimpleSharing.html" title="This strategy is a simple sharing strategy." alt="" coords="663,960,786,1145"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="628,834,654,879,692,959,687,962,649,881,623,837"/>
+<area shape="rect" id="Node000002" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="438,133,593,479"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="518,494,518,527,513,527,513,494"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="429,5,601,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="518,100,518,133,513,133,513,100"/>
+<area shape="rect" id="Node000005" href="$classAllGatherSharing.html" title="Implements a global sharing strategy using MPI_Allgather for clause exchange." alt="" coords="5,1651,175,1916"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="204,1230,189,1274,162,1371,140,1471,109,1651,104,1650,134,1470,157,1370,183,1273,199,1228"/>
+<area shape="rect" id="Node000006" href="$classGenericGlobalSharing.html" title="Implements a generic global sharing strategy for clause exchange." alt="" coords="199,1621,368,1946"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="286,1230,286,1621,281,1621,281,1230"/>
+<area shape="rect" id="Node000007" href="$classMallobSharing.html" title="Implements a global sharing strategy based on the Mallob algorithm." alt="" coords="393,1273,585,2293"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="366,1228,382,1272,395,1317,390,1318,377,1274,361,1230"/>
+</map>

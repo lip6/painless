@@ -1,0 +1,11 @@
+<map id="GlucoseSyrup" name="GlucoseSyrup">
+<area shape="rect" id="Node000001" title="Instance of a Glucose solver." alt="" coords="123,1100,277,1665"/>
+<area shape="rect" id="Node000002" href="$classSolverCdclInterface.html" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="123,827,277,1052"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="203,1067,203,1100,197,1100,197,1067"/>
+<area shape="rect" id="Node000003" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="5,133,197,779"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="173,793,180,826,175,827,168,794"/>
+<area shape="rect" id="Node000004" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="221,283,376,629"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="263,644,225,827,220,826,258,643"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="213,5,385,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="301,100,301,284,296,284,296,100"/>
+</map>

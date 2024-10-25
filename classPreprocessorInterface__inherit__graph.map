@@ -1,0 +1,9 @@
+<map id="PreprocessorInterface" name="PreprocessorInterface">
+<area shape="rect" id="Node000001" title="Interface for preprocessor algorithms in SAT solving." alt="" coords="111,699,292,844"/>
+<area shape="rect" id="Node000003" href="$classStructuredBVA.html" title="Structured Binary Variable Addition (SBVA) preprocessing algorithm." alt="" coords="5,1824,187,2389"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="197,859,121,1824,116,1824,192,859"/>
+<area shape="rect" id="Node000004" href="$structpreprocess.html" title="The different simplification techniques implemented in PRS framework." alt="" coords="211,892,402,3321"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="211,859,214,899,209,900,205,859"/>
+<area shape="rect" id="Node000002" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="105,5,297,651"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,665,204,699,199,699,199,665"/>
+</map>

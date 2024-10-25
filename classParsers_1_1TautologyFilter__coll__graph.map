@@ -1,0 +1,5 @@
+<map id="Parsers::TautologyFilter" name="Parsers::TautologyFilter">
+<area shape="rect" id="Node000001" title="Filter for removing tautological clauses. A tautological clause or simple a tautology is a clause tha..." alt="" coords="12,179,161,264"/>
+<area shape="rect" id="Node000002" href="$classParsers_1_1ClauseProcessor.html" title="Abstract base class for clause processors." alt="" coords="5,5,168,131"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,146,89,179,84,179,84,146"/>
+</map>

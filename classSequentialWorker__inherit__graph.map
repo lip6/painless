@@ -1,0 +1,5 @@
+<map id="SequentialWorker" name="SequentialWorker">
+<area shape="rect" id="Node000001" title="Basic Implementation of WorkingStrategy for a sequential execution." alt="" coords="5,279,153,604"/>
+<area shape="rect" id="Node000002" href="$classWorkingStrategy.html" title="Base Interface for Working Strategies." alt="" coords="5,5,153,231"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,246,82,279,77,279,77,246"/>
+</map>

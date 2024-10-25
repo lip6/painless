@@ -1,0 +1,6 @@
+<map id="SAT Solvers" name="SAT Solvers">
+<area shape="rect" id="Node000004" href="$group__localsearch__solving.html" title="Different Classes for Local Search solver interaction." alt="" coords="163,5,307,31"/>
+<area shape="rect" id="Node000002" href="$group__preproc__solving.html" title="Different Classes for SAT Formula preprocessing." alt="" coords="148,55,322,80"/>
+<area shape="rect" id="Node000001" title="Different Classes for SAT formula processing." alt="" coords="5,55,100,80"/>
+<area shape="rect" id="Node000003" href="$group__solving__cdcl.html" title="Different Classes for CDCL (Conflict&#45;Driven Clause Learning) solvers interaction." alt="" coords="183,104,286,130"/>
+</map>

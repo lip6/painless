@@ -1,0 +1,11 @@
+<map id="MallobSharing" name="MallobSharing">
+<area shape="rect" id="Node000001" title="Implements a global sharing strategy based on the Mallob algorithm." alt="" coords="11,1253,203,2273"/>
+<area shape="rect" id="Node000002" href="$classGlobalSharingStrategy.html" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="23,880,191,1205"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,1220,110,1254,105,1254,105,1220"/>
+<area shape="rect" id="Node000003" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="5,527,209,832"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="110,847,110,880,105,880,105,847"/>
+<area shape="rect" id="Node000004" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="30,133,185,479"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="110,494,110,527,105,527,105,494"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="21,5,193,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="110,100,110,133,105,133,105,100"/>
+</map>

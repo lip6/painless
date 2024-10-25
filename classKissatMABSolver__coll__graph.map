@@ -1,0 +1,13 @@
+<map id="KissatMABSolver" name="KissatMABSolver">
+<area shape="rect" id="Node000001" title="Instance of a KissatMABSolver solver." alt="" coords="176,1278,333,1903"/>
+<area shape="rect" id="Node000002" href="$classSolverCdclInterface.html" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="41,909,194,1135"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="150,1148,182,1277,177,1279,145,1150"/>
+<area shape="rect" id="Node000003" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="5,135,197,780"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,795,117,909,112,910,108,795"/>
+<area shape="rect" id="Node000004" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="221,285,376,630"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="253,645,212,781,165,910,160,909,207,779,248,643"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="213,5,385,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="301,100,301,285,296,285,296,100"/>
+<area shape="rect" id="Node000006" href="$classClauseBuffer.html" title="Wrapper for boost::lockfree::queue to manage ClauseExchange objects." alt="" coords="218,829,385,1215"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="288,1215,284,1261,279,1260,283,1214"/>
+</map>

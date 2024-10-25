@@ -1,0 +1,37 @@
+<map id="SharingEntity" name="SharingEntity">
+<area shape="rect" id="Node000001" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="890,133,1045,479"/>
+<area shape="rect" id="Node000003" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="519,527,723,832"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="882,402,724,571,720,567,878,399"/>
+<area shape="rect" id="Node000010" href="$classSolverCdclInterface.html" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="1343,567,1496,792"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="1058,378,1345,613,1341,617,1054,382"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="881,5,1053,85"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="970,100,970,133,965,133,965,100"/>
+<area shape="rect" id="Node000004" href="$classGlobalSharingStrategy.html" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="199,1040,367,1365"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="509,754,440,812,409,845,382,881,360,919,342,959,314,1041,309,1040,337,957,355,916,377,879,405,842,437,808,505,750"/>
+<area shape="rect" id="Node000008" href="$classHordeSatSharing.html" title="This strategy is a HordeSat&#45;like sharing strategy." alt="" coords="391,1030,639,1375"/>
+<area shape="poly" id="edge7_Node000003_Node000008" title=" " alt="" coords="590,847,553,1031,547,1030,584,846"/>
+<area shape="rect" id="Node000009" href="$classSimpleSharing.html" title="This strategy is a simple sharing strategy." alt="" coords="663,1110,786,1295"/>
+<area shape="poly" id="edge8_Node000003_Node000009" title=" " alt="" coords="656,846,709,1110,704,1111,651,847"/>
+<area shape="rect" id="Node000005" href="$classAllGatherSharing.html" title="Implements a global sharing strategy using MPI_Allgather for clause exchange." alt="" coords="5,1951,175,2216"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="237,1380,189,1574,148,1772,115,1951,109,1950,142,1771,183,1573,232,1379"/>
+<area shape="rect" id="Node000006" href="$classGenericGlobalSharing.html" title="Implements a generic global sharing strategy for clause exchange." alt="" coords="199,1921,368,2246"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="286,1380,286,1921,281,1921,281,1380"/>
+<area shape="rect" id="Node000007" href="$classMallobSharing.html" title="Implements a global sharing strategy based on the Mallob algorithm." alt="" coords="393,1573,585,2593"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="333,1379,382,1573,395,1630,390,1631,377,1574,328,1380"/>
+<area shape="rect" id="Node000011" href="$classCadical.html" title="Implements the different interfaces to interact with the Cadical CDCL solver." alt="" coords="811,890,964,1515"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="1329,700,1245,724,1150,760,1103,784,1058,812,1016,845,979,882,966,898,962,895,975,878,1012,841,1055,808,1100,779,1148,755,1243,719,1328,695"/>
+<area shape="rect" id="Node000012" href="$classGlucoseSyrup.html" title="Instance of a Glucose solver." alt="" coords="988,920,1141,1485"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="1332,729,1286,759,1239,794,1194,835,1156,882,1133,922,1128,919,1152,878,1190,832,1235,790,1283,754,1329,725"/>
+<area shape="rect" id="Node000013" href="$classKissat.html" title="Instance of a Kissat solver." alt="" coords="1165,890,1319,1515"/>
+<area shape="poly" id="edge12_Node000010_Node000013" title=" " alt="" coords="1363,807,1334,881,1321,918,1316,916,1329,879,1358,805"/>
+<area shape="rect" id="Node000014" href="$classKissatINCSolver.html" title="Instance of a KissatINCSolver solver." alt="" coords="1343,910,1496,1495"/>
+<area shape="poly" id="edge13_Node000010_Node000014" title=" " alt="" coords="1422,807,1422,910,1417,910,1417,807"/>
+<area shape="rect" id="Node000015" href="$classKissatMABSolver.html" title="Instance of a KissatMABSolver solver." alt="" coords="1521,880,1678,1525"/>
+<area shape="poly" id="edge14_Node000010_Node000015" title=" " alt="" coords="1481,805,1511,879,1523,914,1518,916,1506,881,1476,807"/>
+<area shape="rect" id="Node000016" href="$classLingeling.html" title="Instance of a Lingeling solver." alt="" coords="1703,890,1856,1515"/>
+<area shape="poly" id="edge15_Node000010_Node000016" title=" " alt="" coords="1510,724,1557,753,1606,789,1653,831,1692,878,1705,899,1701,902,1688,882,1649,835,1603,793,1555,757,1508,728"/>
+<area shape="rect" id="Node000017" href="$classMapleCOMSPSSolver.html" title="Instance of a MapleCOMSPS solver." alt="" coords="1881,900,2049,1505"/>
+<area shape="poly" id="edge16_Node000010_Node000017" title=" " alt="" coords="1511,695,1597,718,1693,755,1742,779,1789,807,1832,840,1871,878,1887,899,1883,902,1867,882,1829,844,1786,812,1739,784,1691,760,1595,723,1510,700"/>
+<area shape="rect" id="Node000018" href="$classMiniSat.html" title="Instance of a Minisat solver." alt="" coords="2073,940,2227,1465"/>
+<area shape="poly" id="edge17_Node000010_Node000018" title=" " alt="" coords="1511,680,1635,693,1707,706,1783,725,1859,750,1933,783,2002,826,2063,878,2086,907,2105,939,2101,941,2082,910,2059,882,1999,830,1930,788,1857,755,1781,730,1706,711,1634,698,1510,685"/>
+</map>

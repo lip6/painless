@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['d_20painless_20sat_20solver_20experiments_20from_20tacas25_0',['Reproducing D-Painless SAT Solver Experiments from TACAS25',['../md_source_2TACAS25.html',1,'']]],
+  ['d_20painless_3a_20a_20framework_20for_20parallel_20sat_20solving_1',['D-Painless: A Framework for Parallel SAT Solving',['../index.html',1,'']]],
+  ['data_2',['data',['../classBitset.html#a7fbe31b629db36085b83dd0af6663900',1,'Bitset::data()'],['../classBitset.html#aa9d6821cf20817f7acc2ca02c5356d95',1,'Bitset::data() const']]],
+  ['databases_3',['Clause Databases',['../group__pl__containers__db.html',1,'']]],
+  ['datatype_4',['DataType',['../structDataType.html',1,'']]],
+  ['decisions_5',['decisions',['../structSolvingCdclStatistics.html#af65751645875a9487a130a4b813ca7b7',1,'SolvingCdclStatistics']]],
+  ['default_20behaviors_6',['Default Behaviors',['../md_source_2DevelopComponents.html#default-behaviors',1,'Default Behaviors'],['../md_source_2DevelopComponents.html#default-behaviors-1',1,'Default Behaviors'],['../md_source_2DevelopComponents.html#default-behaviors-2',1,'Default Behaviors']]],
+  ['defaultbuffersize_7',['defaultBufferSize',['../classMallobSharing.html#a085a6ec5eda672351b7531e6d7237d33',1,'MallobSharing']]],
+  ['delete_5felement_8',['delete_element',['../classpainless_1_1vector2D.html#a8420ae829237154e8cd3b5d0e2b71a8d',1,'painless::vector2D']]],
+  ['delete_5flit_5fnonunit_9',['delete_lit_nonUnit',['../classFormula.html#add43a93badcc3781fe52226fb8e30220',1,'Formula']]],
+  ['delete_5fnonunit_10',['delete_nonUnit',['../classFormula.html#a9b8cfa1c72a16e0a2adf8c973d968ef5',1,'Formula']]],
+  ['delete_5fnonunit_5foccurence_11',['delete_nonUnit_occurence',['../classFormula.html#a970e63c459490b6fd89c9429cb86186e',1,'Formula']]],
+  ['delete_5frow_12',['delete_row',['../classpainless_1_1vector2D.html#a47e235c32a79e6f26da08e066a2870d9',1,'painless::vector2D']]],
+  ['delete_5funit_13',['delete_unit',['../classFormula.html#a2006c065d84598ff24451bf3d4df1cd2',1,'Formula']]],
+  ['deserializeclauses_14',['deserializeClauses',['../classAllGatherSharing.html#a817e29e78c8a6eca7fd407c31cfe1042',1,'AllGatherSharing::deserializeClauses()'],['../classGenericGlobalSharing.html#a9f277436b9d350eacb86396f7d5eece7',1,'GenericGlobalSharing::deserializeClauses()'],['../classMallobSharing.html#aa062cb5c2a3281f1623cd7fe78f436df',1,'MallobSharing::deserializeClauses()'],['../namespacempiutils.html#a5824f89ea29b2e9a17f22ea7a3519903',1,'mpiutils::deserializeClauses()']]],
+  ['deserializedclauses_15',['deserializedClauses',['../classMallobSharing.html#a10b2cc9b52b24744ca8c4be48c9ac7f9',1,'MallobSharing']]],
+  ['details_16',['Configuration Details',['../md_source_2TACAS25.html#configuration-details',1,'']]],
+  ['diversification_17',['diversification',['../classSolverFactory.html#a0ebb94eb4eddcc4834d54bfd68857a00',1,'SolverFactory']]],
+  ['diversify_18',['diversify',['../structpreprocess.html#aaa502218ec570e6b092674fbbefb961f',1,'preprocess::diversify()'],['../classStructuredBVA.html#a86c35ef883ec92ebf88a64f023e3553f',1,'StructuredBVA::diversify()'],['../classCadical.html#a493515b05fe002168f54a1a055738e6d',1,'Cadical::diversify()'],['../classGlucoseSyrup.html#af0b8857b87c609b3181d36ad61bdfaab',1,'GlucoseSyrup::diversify()'],['../classKissat.html#a37cb3fa5c8b43831dc9b4b2da9a73869',1,'Kissat::diversify()'],['../classKissatINCSolver.html#a1ebf5e10033d6b0be118d83e3b45d1e1',1,'KissatINCSolver::diversify()'],['../classKissatMABSolver.html#a1c83222c1908fe03836f2617590c7694',1,'KissatMABSolver::diversify()'],['../classLingeling.html#a5db076d29b5f696ac454d14a21f239eb',1,'Lingeling::diversify()'],['../classMapleCOMSPSSolver.html#afff42907c1b31bfe54c3b2a82e538edf',1,'MapleCOMSPSSolver::diversify()'],['../classMiniSat.html#ae8e5e04fe7cb669187b39e971f4763f0',1,'MiniSat::diversify()'],['../classYalSat.html#ad2540e160276ece5b5e73cb599c26b76',1,'YalSat::diversify()'],['../classSolverInterface.html#aeef39e246e5a5013a9e5c2b0cc6db4a2',1,'SolverInterface::diversify()']]],
+  ['doesclauseexist_19',['doesClauseExist',['../classMallobSharing.html#a54a1af3d3309580b06fa259fd3b7db73',1,'MallobSharing']]],
+  ['dosharing_20',['doSharing',['../classAllGatherSharing.html#ac3c1dcc6fbc6e6a5fcf520f6e9a0bd6e',1,'AllGatherSharing::doSharing()'],['../classGenericGlobalSharing.html#ac2af65186a2ca644237c045ed5aaf43c',1,'GenericGlobalSharing::doSharing()'],['../classGlobalSharingStrategy.html#a375a351c2c456d98393eb9d4a72cae6d',1,'GlobalSharingStrategy::doSharing()'],['../classMallobSharing.html#a2d7791e28cb33dfb92aadfc30f8dbcf0',1,'MallobSharing::doSharing()'],['../classHordeSatSharing.html#a38c22c01233928f0d4dad60ee5a0af03',1,'HordeSatSharing::doSharing()'],['../classSimpleSharing.html#ad3bfa08eee29ea0bf4fe0760a8a09ab6',1,'SimpleSharing::doSharing()'],['../classSharingStrategy.html#a0dfa4648088cf82d641ae8d1683022ae',1,'SharingStrategy::doSharing()']]]
+];

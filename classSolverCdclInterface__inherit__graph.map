@@ -1,0 +1,25 @@
+<map id="SolverCdclInterface" name="SolverCdclInterface">
+<area shape="rect" id="Node000001" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="627,827,780,1052"/>
+<area shape="rect" id="Node000005" href="$classCadical.html" title="Implements the different interfaces to interact with the Cadical CDCL solver." alt="" coords="5,1110,159,1735"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="612,945,510,955,451,966,391,981,331,1001,273,1028,220,1061,172,1102,160,1115,156,1111,168,1098,216,1057,271,1023,329,996,390,976,450,961,509,950,611,939"/>
+<area shape="rect" id="Node000006" href="$classGlucoseSyrup.html" title="Instance of a Glucose solver." alt="" coords="183,1140,336,1705"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="613,961,547,981,476,1009,408,1049,377,1074,349,1102,321,1142,317,1139,345,1098,373,1070,405,1045,474,1005,545,975,611,956"/>
+<area shape="rect" id="Node000007" href="$classKissat.html" title="Instance of a Kissat solver." alt="" coords="360,1110,513,1735"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="617,1004,568,1049,527,1101,516,1121,511,1118,522,1099,564,1045,613,1000"/>
+<area shape="rect" id="Node000008" href="$classKissatINCSolver.html" title="Instance of a KissatINCSolver solver." alt="" coords="537,1130,691,1715"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="683,1067,671,1131,665,1130,677,1066"/>
+<area shape="rect" id="Node000009" href="$classKissatMABSolver.html" title="Instance of a KissatMABSolver solver." alt="" coords="715,1100,873,1745"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="730,1066,736,1100,731,1101,724,1067"/>
+<area shape="rect" id="Node000010" href="$classLingeling.html" title="Instance of a Lingeling solver." alt="" coords="897,1110,1051,1735"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="793,999,844,1044,887,1098,900,1121,895,1123,882,1102,840,1048,790,1003"/>
+<area shape="rect" id="Node000011" href="$classMapleCOMSPSSolver.html" title="Instance of a MapleCOMSPS solver." alt="" coords="1075,1120,1243,1725"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="795,956,862,976,935,1005,1005,1045,1037,1070,1065,1098,1081,1119,1077,1122,1061,1102,1033,1074,1002,1049,932,1010,860,981,794,961"/>
+<area shape="rect" id="Node000012" href="$classMiniSat.html" title="Instance of a Minisat solver." alt="" coords="1268,1160,1421,1685"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="795,938,901,948,962,958,1025,973,1088,994,1150,1021,1207,1055,1257,1098,1281,1127,1300,1159,1296,1161,1277,1130,1253,1102,1203,1060,1147,1026,1086,999,1024,978,961,963,900,953,794,944"/>
+<area shape="rect" id="Node000002" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="509,133,701,779"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="676,793,683,826,678,827,671,794"/>
+<area shape="rect" id="Node000003" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="725,283,879,629"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="766,644,729,827,724,826,761,643"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="716,5,888,85"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="805,100,805,284,799,284,799,100"/>
+</map>

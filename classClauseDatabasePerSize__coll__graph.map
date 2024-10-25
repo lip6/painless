@@ -1,0 +1,5 @@
+<map id="ClauseDatabasePerSize" name="ClauseDatabasePerSize">
+<area shape="rect" id="Node000001" title="A clause database that organizes clauses based on their size." alt="" coords="5,279,184,544"/>
+<area shape="rect" id="Node000002" href="$classClauseDatabase.html" title="Abstract base class defining the interface for clause storage and management." alt="" coords="28,5,161,231"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,245,97,279,92,279,92,245"/>
+</map>

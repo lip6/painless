@@ -1,0 +1,9 @@
+<map id="Parsers::ClauseProcessor" name="Parsers::ClauseProcessor">
+<area shape="rect" id="Node000001" title="Abstract base class for clause processors." alt="" coords="171,5,334,131"/>
+<area shape="rect" id="Node000002" href="$classParsers_1_1RedundancyFilter.html" title="Filter for removing redundant clauses." alt="" coords="5,189,169,274"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="181,143,132,191,128,187,177,139"/>
+<area shape="rect" id="Node000003" href="$classParsers_1_1SBVAInit.html" title="A filter for Structured BVA (Binary Variable Addition)" alt="" coords="194,179,311,284"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="255,146,255,179,250,179,250,146"/>
+<area shape="rect" id="Node000004" href="$classParsers_1_1TautologyFilter.html" title="Filter for removing tautological clauses. A tautological clause or simple a tautology is a clause tha..." alt="" coords="335,189,485,274"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="325,139,372,187,368,191,321,143"/>
+</map>

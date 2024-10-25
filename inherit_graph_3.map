@@ -1,0 +1,11 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classClauseDatabase.html" title="Abstract base class defining the interface for clause storage and management." alt="" coords="5,80,122,106"/>
+<area shape="rect" id="Node000001" href="$classClauseDatabaseBufferPerEntity.html" title="A clause database that maintain separate buffers for each entity, mimicing old painless default behav..." alt="" coords="170,5,372,31"/>
+<area shape="poly" id="edge1_Node000000_Node000001" title=" " alt="" coords="101,70,169,40,204,29,205,34,171,45,103,75"/>
+<area shape="rect" id="Node000002" href="$classClauseDatabaseMallob.html" title="A clause database implementation attempting to naively mimic the Simplified Adaptive Database from Ma..." alt="" coords="194,55,348,80"/>
+<area shape="poly" id="edge2_Node000000_Node000002" title=" " alt="" coords="136,81,193,74,194,80,137,87"/>
+<area shape="rect" id="Node000003" href="$classClauseDatabasePerSize.html" title="A clause database that organizes clauses based on their size." alt="" coords="190,104,352,130"/>
+<area shape="poly" id="edge3_Node000000_Node000003" title=" " alt="" coords="137,99,190,105,190,110,136,104"/>
+<area shape="rect" id="Node000004" href="$classClauseDatabaseSingleBuffer.html" title="This is just a ClauseDatabase wrapper around a ClauseBuufer." alt="" coords="178,153,364,179"/>
+<area shape="poly" id="edge4_Node000000_Node000004" title=" " alt="" coords="104,111,171,140,206,150,204,155,169,145,102,116"/>
+</map>

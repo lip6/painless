@@ -1,0 +1,15 @@
+<map id="GlobalSharingStrategy" name="GlobalSharingStrategy">
+<area shape="rect" id="Node000001" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="199,880,367,1205"/>
+<area shape="rect" id="Node000005" href="$classAllGatherSharing.html" title="Implements a global sharing strategy using MPI_Allgather for clause exchange." alt="" coords="5,1631,175,1896"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="201,1220,189,1254,161,1351,139,1450,108,1631,103,1630,134,1449,156,1350,183,1253,196,1218"/>
+<area shape="rect" id="Node000006" href="$classGenericGlobalSharing.html" title="Implements a generic global sharing strategy for clause exchange." alt="" coords="199,1601,368,1926"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="286,1220,286,1601,281,1601,281,1220"/>
+<area shape="rect" id="Node000007" href="$classMallobSharing.html" title="Implements a global sharing strategy based on the Mallob algorithm." alt="" coords="393,1253,585,2273"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="371,1218,383,1252,395,1290,390,1292,378,1254,366,1220"/>
+<area shape="rect" id="Node000002" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="181,527,385,832"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="286,847,286,880,281,880,281,847"/>
+<area shape="rect" id="Node000003" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="206,133,361,479"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="286,494,286,527,281,527,281,494"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="197,5,369,85"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="286,100,286,133,281,133,281,100"/>
+</map>

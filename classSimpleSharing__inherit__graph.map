@@ -1,0 +1,9 @@
+<map id="SimpleSharing" name="SimpleSharing">
+<area shape="rect" id="Node000001" title="This strategy is a simple sharing strategy." alt="" coords="46,880,169,1065"/>
+<area shape="rect" id="Node000002" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="5,527,209,832"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,847,110,880,105,880,105,847"/>
+<area shape="rect" id="Node000003" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="30,133,185,479"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="110,494,110,527,105,527,105,494"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="21,5,193,85"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="110,100,110,133,105,133,105,100"/>
+</map>

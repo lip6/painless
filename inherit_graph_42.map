@@ -1,0 +1,9 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classWorkingStrategy.html" title="Base Interface for Working Strategies." alt="" coords="5,55,122,80"/>
+<area shape="rect" id="Node000001" href="$classPortfolioPRS.html" title="An Implementation of WorkingStrategy that mimics the strategy used in the PRS&#45;Distributed solver from..." alt="" coords="183,5,280,31"/>
+<area shape="poly" id="edge34_Node000000_Node000001" title=" " alt="" coords="123,47,184,29,186,34,125,52"/>
+<area shape="rect" id="Node000002" href="$classPortfolioSimple.html" title="A Simple Implementation of WorkingStrategy for the portfolio parallel strategy This strategy uses the..." alt="" coords="177,55,286,80"/>
+<area shape="poly" id="edge35_Node000000_Node000002" title=" " alt="" coords="137,65,176,65,176,70,137,70"/>
+<area shape="rect" id="Node000003" href="$classSequentialWorker.html" title="Basic Implementation of WorkingStrategy for a sequential execution." alt="" coords="170,104,293,130"/>
+<area shape="poly" id="edge36_Node000000_Node000003" title=" " alt="" coords="125,83,186,101,184,106,123,88"/>
+</map>

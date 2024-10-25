@@ -1,0 +1,9 @@
+<map id="HordeSatSharing" name="HordeSatSharing">
+<area shape="rect" id="Node000001" title="This strategy is a HordeSat&#45;like sharing strategy." alt="" coords="5,880,253,1225"/>
+<area shape="rect" id="Node000002" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="27,527,231,832"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="132,847,132,881,127,881,127,847"/>
+<area shape="rect" id="Node000003" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="52,133,207,479"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="132,494,132,527,127,527,127,494"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="43,5,215,85"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="132,100,132,133,127,133,127,100"/>
+</map>

@@ -1,0 +1,18 @@
+<map id="GenericGlobalSharing" name="GenericGlobalSharing">
+<area shape="rect" id="Node000001" title="Implements a generic global sharing strategy for clause exchange." alt="" coords="213,1275,383,1560"/>
+<area shape="rect" id="Node000002" href="$classGlobalSharingStrategy.html" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="126,891,294,1197"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="252,1211,267,1274,262,1275,247,1212"/>
+<area shape="rect" id="Node000003" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="5,543,209,828"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="155,842,169,891,164,893,150,843"/>
+<area shape="rect" id="Node000004" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="30,135,185,480"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="110,494,110,543,105,543,105,494"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="21,5,193,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="110,100,110,135,105,135,105,100"/>
+<area shape="rect" id="Node000006" href="$structSharingStatistics.html" title="Local Sharing statistics.Sharing statistics." alt="" coords="231,255,351,360"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="269,361,187,529,182,526,264,359"/>
+<area shape="rect" id="Node000007" href="$structGlobalSharingStatistics.html" title="Statistics of a global sharing strategy." alt="" coords="234,633,394,738"/>
+<area shape="poly" id="edge7_Node000007_Node000006" title=" " alt="" coords="298,375,314,633,308,634,293,375"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="302,739,262,876,256,874,297,737"/>
+<area shape="rect" id="Node000008" href="$classBloomFilter.html" title=" " alt="" coords="319,931,456,1157"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="363,1157,339,1259,333,1258,358,1156"/>
+</map>

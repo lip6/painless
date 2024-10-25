@@ -1,0 +1,10 @@
+<map id="SequentialWorker" name="SequentialWorker">
+<area shape="rect" id="Node000001" title="Basic Implementation of WorkingStrategy for a sequential execution." alt="" coords="237,274,385,559"/>
+<area shape="rect" id="Node000002" href="$classWorkingStrategy.html" title="Base Interface for Working Strategies." alt="" coords="5,5,153,211"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="164,217,240,316,235,319,160,220"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="154,82,173,90,180,108,177,119,171,127,167,124,173,117,175,108,169,94,152,86"/>
+<area shape="rect" id="Node000003" href="$classThread.html" title="Thread class." alt="" coords="247,55,375,161"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="314,160,314,257,309,257,309,160"/>
+<area shape="rect" id="Node000004" href="$classMutex.html" title="Mutex class." alt="" coords="399,35,474,181"/>
+<area shape="poly" id="edge4_Node000001_Node000004" title=" " alt="" coords="410,182,378,259,373,257,405,180"/>
+</map>

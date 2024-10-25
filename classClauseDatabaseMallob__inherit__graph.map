@@ -1,0 +1,5 @@
+<map id="ClauseDatabaseMallob" name="ClauseDatabaseMallob">
+<area shape="rect" id="Node000001" title="A clause database implementation attempting to naively mimic the Simplified Adaptive Database from Ma..." alt="" coords="5,279,185,744"/>
+<area shape="rect" id="Node000002" href="$classClauseDatabase.html" title="Abstract base class defining the interface for clause storage and management." alt="" coords="29,5,162,231"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,245,98,279,93,279,93,245"/>
+</map>

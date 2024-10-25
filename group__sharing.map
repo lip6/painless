@@ -1,0 +1,5 @@
+<map id="Sharing" name="Sharing">
+<area shape="rect" id="Node000002" href="$group__global__sharing.html" title="Different Classes for Sharing clauses between different processes." alt="" coords="119,5,265,46"/>
+<area shape="rect" id="Node000003" href="$group__local__sharing.html" title="Different Classes for Sharing clauses between different threads in the same process." alt="" coords="119,71,265,111"/>
+<area shape="rect" id="Node000001" title="Different Classes for Sharing clauses between solvers and other type of entities." alt="" coords="5,46,71,72"/>
+</map>

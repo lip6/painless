@@ -1,0 +1,9 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classParsers_1_1ClauseProcessor.html" title="Abstract base class for clause processors." alt="" coords="5,55,177,80"/>
+<area shape="rect" id="Node000001" href="$classParsers_1_1RedundancyFilter.html" title="Filter for removing redundant clauses." alt="" coords="225,5,397,31"/>
+<area shape="poly" id="edge5_Node000000_Node000001" title=" " alt="" coords="166,48,250,29,251,34,167,53"/>
+<area shape="rect" id="Node000002" href="$classParsers_1_1SBVAInit.html" title="A filter for Structured BVA (Binary Variable Addition)" alt="" coords="248,55,374,80"/>
+<area shape="poly" id="edge6_Node000000_Node000002" title=" " alt="" coords="192,65,247,65,247,70,192,70"/>
+<area shape="rect" id="Node000003" href="$classParsers_1_1TautologyFilter.html" title="Filter for removing tautological clauses. A tautological clause or simple a tautology is a clause tha..." alt="" coords="232,104,390,130"/>
+<area shape="poly" id="edge7_Node000000_Node000003" title=" " alt="" coords="167,82,251,101,250,106,166,87"/>
+</map>

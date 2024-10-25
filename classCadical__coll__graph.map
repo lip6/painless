@@ -1,0 +1,17 @@
+<map id="Cadical" name="Cadical">
+<area shape="rect" id="Node000001" title="Implements the different interfaces to interact with the Cadical CDCL solver." alt="" coords="273,1278,426,1883"/>
+<area shape="rect" id="Node000002" href="$classSolverCdclInterface.html" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="41,909,194,1135"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,1147,275,1395,270,1397,167,1149"/>
+<area shape="rect" id="Node000003" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="5,135,197,780"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,795,117,909,112,910,108,795"/>
+<area shape="rect" id="Node000004" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="221,285,376,630"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="253,645,212,781,165,910,160,909,207,779,248,643"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="213,5,385,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="301,100,301,285,296,285,296,100"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="219,989,333,1055"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="285,1069,312,1277,307,1278,279,1070"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="357,989,491,1055"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="420,1070,392,1278,387,1277,415,1069"/>
+<area shape="rect" id="Node000008" href="$classClauseBuffer.html" title="Wrapper for boost::lockfree::queue to manage ClauseExchange objects." alt="" coords="515,829,682,1215"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="518,1210,435,1394,431,1391,513,1208"/>
+</map>

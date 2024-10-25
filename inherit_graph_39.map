@@ -1,0 +1,53 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,246,135,286"/>
+<area shape="rect" id="Node000001" href="$classSharingEntity.html" title="A base class representing entities that can exchange clauses between themselves." alt="" coords="189,253,286,279"/>
+<area shape="poly" id="edge9_Node000000_Node000001" title=" " alt="" coords="150,264,188,264,188,269,150,269"/>
+<area shape="rect" id="Node000002" href="$classSharingStrategy.html" title="SharingStrategy class, inheriting from SharingEntity." alt="" coords="358,117,471,143"/>
+<area shape="poly" id="edge10_Node000001_Node000002" title=" " alt="" coords="258,239,294,202,338,164,379,141,382,146,342,168,297,206,262,243"/>
+<area shape="rect" id="Node000009" href="$classSolverCdclInterface.html" title="Interface for CDCL (Conflict&#45;Driven Clause Learning) solvers This class provides a common interface f..." alt="" coords="347,376,482,402"/>
+<area shape="poly" id="edge17_Node000001_Node000009" title=" " alt="" coords="271,286,396,373,393,378,268,290"/>
+<area shape="rect" id="Node000003" href="$classGlobalSharingStrategy.html" title="Base class for global clause sharing strategies across MPI processes." alt="" coords="537,55,688,80"/>
+<area shape="poly" id="edge11_Node000002_Node000003" title=" " alt="" coords="472,110,569,78,570,83,473,115"/>
+<area shape="rect" id="Node000007" href="$classHordeSatSharing.html" title="This strategy is a HordeSat&#45;like sharing strategy." alt="" coords="552,104,673,130"/>
+<area shape="poly" id="edge15_Node000002_Node000007" title=" " alt="" coords="487,123,552,118,552,124,487,128"/>
+<area shape="rect" id="Node000008" href="$classSimpleSharing.html" title="This strategy is a simple sharing strategy." alt="" coords="560,153,665,179"/>
+<area shape="poly" id="edge16_Node000002_Node000008" title=" " alt="" coords="487,141,560,154,559,159,486,146"/>
+<area shape="rect" id="Node000004" href="$classAllGatherSharing.html" title="Implements a global sharing strategy using MPI_Allgather for clause exchange." alt="" coords="750,5,869,31"/>
+<area shape="poly" id="edge12_Node000003_Node000004" title=" " alt="" coords="681,48,754,29,756,34,682,53"/>
+<area shape="rect" id="Node000005" href="$classGenericGlobalSharing.html" title="Implements a generic global sharing strategy for clause exchange." alt="" coords="736,55,883,80"/>
+<area shape="poly" id="edge13_Node000003_Node000005" title=" " alt="" coords="703,65,736,65,736,70,703,70"/>
+<area shape="rect" id="Node000006" href="$classMallobSharing.html" title="Implements a global sharing strategy based on the Mallob algorithm." alt="" coords="758,104,861,130"/>
+<area shape="poly" id="edge14_Node000003_Node000006" title=" " alt="" coords="682,82,758,101,756,106,681,87"/>
+<area shape="rect" id="Node000010" href="$classCadical.html" title="Implements the different interfaces to interact with the Cadical CDCL solver." alt="" coords="580,203,645,228"/>
+<area shape="poly" id="edge18_Node000009_Node000010" title=" " alt="" coords="429,361,472,299,502,266,536,237,557,226,579,219,581,224,559,231,539,242,505,270,476,302,433,364"/>
+<area shape="rect" id="Node000013" href="$classGlucoseSyrup.html" title="Instance of a Glucose solver." alt="" coords="561,252,664,278"/>
+<area shape="poly" id="edge19_Node000009_Node000013" title=" " alt="" coords="438,363,481,324,536,287,560,276,562,281,539,291,484,328,441,367"/>
+<area shape="rect" id="Node000014" href="$classKissat.html" title="Instance of a Kissat solver." alt="" coords="583,301,642,327"/>
+<area shape="poly" id="edge20_Node000009_Node000014" title=" " alt="" coords="459,367,536,336,582,320,584,325,538,341,461,372"/>
+<area shape="rect" id="Node000015" href="$classKissatINCSolver.html" title="Instance of a KissatINCSolver solver." alt="" coords="553,351,672,376"/>
+<area shape="poly" id="edge21_Node000009_Node000015" title=" " alt="" coords="497,376,552,368,553,374,498,381"/>
+<area shape="rect" id="Node000016" href="$classKissatMABSolver.html" title="Instance of a KissatMABSolver solver." alt="" coords="550,400,675,426"/>
+<area shape="poly" id="edge22_Node000009_Node000016" title=" " alt="" coords="498,396,550,403,550,408,497,402"/>
+<area shape="rect" id="Node000017" href="$classLingeling.html" title="Instance of a Lingeling solver." alt="" coords="576,449,649,475"/>
+<area shape="poly" id="edge23_Node000009_Node000017" title=" " alt="" coords="462,406,538,436,576,449,574,454,536,441,460,411"/>
+<area shape="rect" id="Node000018" href="$classMapleCOMSPSSolver.html" title="Instance of a MapleCOMSPS solver." alt="" coords="537,499,688,524"/>
+<area shape="poly" id="edge24_Node000009_Node000018" title=" " alt="" coords="442,411,485,449,539,485,562,496,560,501,536,490,482,453,438,415"/>
+<area shape="rect" id="Node000019" href="$classMiniSat.html" title="Instance of a Minisat solver." alt="" coords="580,548,645,574"/>
+<area shape="poly" id="edge25_Node000009_Node000019" title=" " alt="" coords="433,413,476,474,505,507,539,535,559,545,580,552,578,557,557,550,536,539,502,511,472,478,429,417"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="353,179,476,204"/>
+<area shape="poly" id="edge26_Node000011_Node000010" title=" " alt="" coords="492,198,580,209,580,214,492,203"/>
+<area shape="rect" id="Node000020" href="$classSolverInterface.html" title="Interface for a SAT solver with standard features." alt="" coords="183,597,292,623"/>
+<area shape="poly" id="edge32_Node000020_Node000009" title=" " alt="" coords="256,584,401,401,405,404,260,587"/>
+<area shape="rect" id="Node000021" href="$classLocalSearchInterface.html" title="Interface for Local Search solvers." alt="" coords="342,597,487,623"/>
+<area shape="poly" id="edge27_Node000020_Node000021" title=" " alt="" coords="308,608,341,608,341,613,308,613"/>
+<area shape="rect" id="Node000023" href="$classPreprocessorInterface.html" title="Interface for preprocessor algorithms in SAT solving." alt="" coords="340,647,489,672"/>
+<area shape="poly" id="edge29_Node000020_Node000023" title=" " alt="" coords="301,625,366,643,365,649,300,630"/>
+<area shape="rect" id="Node000022" href="$classYalSat.html" title="Implements LocalSearchInterface to interact with the YalSAT local search solver." alt="" coords="582,597,643,623"/>
+<area shape="poly" id="edge28_Node000021_Node000022" title=" " alt="" coords="503,608,582,608,582,613,503,613"/>
+<area shape="rect" id="Node000024" href="$classStructuredBVA.html" title="Structured Binary Variable Addition (SBVA) preprocessing algorithm." alt="" coords="558,647,667,672"/>
+<area shape="poly" id="edge30_Node000023_Node000024" title=" " alt="" coords="505,657,558,657,558,662,505,662"/>
+<area shape="rect" id="Node000025" href="$structpreprocess.html" title="The different simplification techniques implemented in PRS framework." alt="" coords="570,696,655,722"/>
+<area shape="poly" id="edge31_Node000023_Node000025" title=" " alt="" coords="485,674,570,696,569,701,483,679"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="344,228,485,254"/>
+<area shape="poly" id="edge33_Node000012_Node000010" title=" " alt="" coords="501,227,580,217,580,222,501,232"/>
+</map>
