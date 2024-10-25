@@ -4,7 +4,10 @@ This guide details how to reproduce the experimental results presented in our TA
 
 > [!important]
 > On October 21st,2024, we were notified that the [paravance](https://www.grid5000.fr/w/Rennes:Hardware#paravance) cluster will become unavailable after November 4th,2024. We apologize for these circumstances. You can test on the [parasilo](https://www.grid5000.fr/w/Rennes:Hardware#parasilo) cluster which has the same CPU as paravance, however only 24 nodes are available.
-> `oarsub -l nodes=24,walltime=13:30:00 -p "cluster='parasilo'" -t night "bash launch_solvers.sh`
+> ```sh
+> oarsub -l nodes=24,walltime=13:30:00 -p "cluster='parasilo'" -t night "bash launch_solvers.sh`
+> ```
+
 
 ## Experimental Environment
 
