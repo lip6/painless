@@ -59,6 +59,8 @@ class Cadical
 	/// Add a list of initial clauses to the formula.
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
 
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars);
+
 	/// Add a permanent clause to the formula.
 	void addClause(ClauseExchangePtr clause) override;
 

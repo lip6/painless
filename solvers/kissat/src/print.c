@@ -29,7 +29,7 @@ void kissat_warning (kissat *solver, const char *fmt, ...) {
   if (verbosity (solver) < 0)
     return;
   TERMINAL (stdout, 1);
-  fputs ("c ", stdout);
+  fputs (solver->prefix, stdout);
   COLOR (BOLD YELLOW);
   fputs ("warning:", stdout);
   COLOR (NORMAL);
@@ -48,7 +48,7 @@ void kissat_signal (kissat *solver, const char *type, int sig) {
   if (verbosity (solver) < 0)
     return;
   TERMINAL (stdout, 1);
-  fputs ("c ", stdout);
+  fputs (solver->prefix, stdout);
   COLOR (BOLD RED);
   printf ("%s signal %d (%s)", type, sig, kissat_signal_name (sig));
   COLOR (NORMAL);
@@ -56,10 +56,10 @@ void kissat_signal (kissat *solver, const char *type, int sig) {
   fflush (stdout);
 }
 
-static void print_message (const char *color, const char *fmt,
-                           va_list *ap) {
+static void print_message (kissat *solver, const char *color,
+                           const char *fmt, va_list *ap) {
   TERMINAL (stdout, 1);
-  fputs ("c ", stdout);
+  fputs (solver->prefix, stdout);
   COLOR (color);
   vprintf (fmt, *ap);
   fputc ('\n', stdout);
@@ -67,8 +67,12 @@ static void print_message (const char *color, const char *fmt,
   fflush (stdout);
 }
 
-static void print_line (void) {
-  fputs ("c\n", stdout);
+static void print_line (kissat *solver) {
+  char ch;
+  for (const char *p = solver->prefix; (ch = *p); p++)
+    if (ch && (ch != ' ' || p[1]))
+      fputc (ch, stdout);
+  fputc ('\n', stdout);
   fflush (stdout);
 }
 
@@ -79,21 +83,23 @@ void kissat_message (kissat *solver, const char *fmt, ...) {
     return;
   va_list ap;
   va_start (ap, fmt);
-  print_message ("", fmt, &ap);
+  print_message (solver, "", fmt, &ap);
   va_end (ap);
 }
 
 void kissat_line (kissat *solver) {
   if (verbosity (solver) >= 0)
-    print_line ();
+    print_line (solver);
 }
+
+void kissat_prefix (kissat *solver) { fputs (solver->prefix, stdout); }
 
 void kissat_verbose (kissat *solver, const char *fmt, ...) {
   if (verbosity (solver) < 1)
     return;
   va_list ap;
   va_start (ap, fmt);
-  print_message (LIGHT_GRAY, fmt, &ap);
+  print_message (solver, LIGHT_GRAY, fmt, &ap);
   va_end (ap);
 }
 
@@ -102,7 +108,7 @@ void kissat_very_verbose (kissat *solver, const char *fmt, ...) {
     return;
   va_list ap;
   va_start (ap, fmt);
-  print_message (DARK_GRAY, fmt, &ap);
+  print_message (solver, DARK_GRAY, fmt, &ap);
   va_end (ap);
 }
 
@@ -111,7 +117,7 @@ void kissat_extremely_verbose (kissat *solver, const char *fmt, ...) {
     return;
   va_list ap;
   va_start (ap, fmt);
-  print_message (DARK_GRAY, fmt, &ap);
+  print_message (solver, DARK_GRAY, fmt, &ap);
   va_end (ap);
 }
 
@@ -120,10 +126,10 @@ void kissat_section (kissat *solver, const char *name) {
     return;
   TERMINAL (stdout, 1);
   if (solver->sectioned)
-    fputs ("c\n", stdout);
+    kissat_line (solver);
   else
     solver->sectioned = true;
-  fputs ("c ", stdout);
+  fputs (solver->prefix, stdout);
   COLOR (BLUE);
   fputs ("---- [ ", stdout);
   COLOR (BOLD BLUE);
@@ -133,7 +139,8 @@ void kissat_section (kissat *solver, const char *name) {
   for (size_t i = strlen (name); i < 66; i++)
     fputc ('-', stdout);
   COLOR (NORMAL);
-  fputs ("\nc\n", stdout);
+  fputc ('\n', stdout);
+  print_line (solver);
   fflush (stdout);
 }
 
@@ -142,7 +149,7 @@ void kissat_phase (kissat *solver, const char *name, uint64_t count,
   if (verbosity (solver) < 1)
     return;
   TERMINAL (stdout, 1);
-  printf ("c ");
+  fputs (solver->prefix, stdout);
   if (solver->stable)
     COLOR (CYAN);
   else

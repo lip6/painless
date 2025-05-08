@@ -3,7 +3,6 @@
 
 struct kissat;
 
-void
-kissat_warmup(struct kissat*);
+void kissat_warmup (struct kissat *);
 
 #endif

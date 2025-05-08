@@ -9,14 +9,13 @@
 typedef struct frame frame;
 typedef struct slice slice;
 
-struct frame
-{
-	bool promote;
-	unsigned decision;
-	unsigned trail;
-	unsigned used;
+struct frame {
+  bool promote;
+  unsigned decision;
+  unsigned trail;
+  unsigned used;
 #ifndef NDEBUG
-	unsigned saved;
+  unsigned saved;
 #endif
 };
 
@@ -28,6 +27,6 @@ typedef STACK (frame) frames;
 
 struct kissat;
 
-#define FRAME(LEVEL) (PEEK_STACK(solver->frames, (LEVEL)))
+#define FRAME(LEVEL) (PEEK_STACK (solver->frames, (LEVEL)))
 
 #endif

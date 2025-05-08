@@ -43,6 +43,14 @@ namespace mpiutils {
 bool
 sendFormula(std::vector<simpleClause>& clauses, unsigned int* varCount, int rootRank);
 
+/// @brief Sends a formula represented by clauses and variable count over MPI.
+/// @param clauses The vector of zero ending clauses representing the formula.
+/// @param varCount The number of variables in the formula (pointer).
+/// @param rootRank The mpi process rank broadcasting the formula.
+/// @return Returns true if the formula was successfully received, false otherwise.
+bool
+sendFormula(simpleClause& clauses, unsigned int *clsCount, unsigned int* varCount, int rootRank);
+
 /// @brief Serializes a vector of Clauses into a vector of integers.
 /// @param clauses The vector of Clauses to be serialized.
 /// @param serializedClauses The vector where the serialized clauses will be stored.

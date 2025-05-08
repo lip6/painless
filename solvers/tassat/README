@@ -1,0 +1,13 @@
+TaSSAT is a SLS SAT solver that implements a weight transferring algorithm.
+It is based on Yalsat (by Armin Biere)
+Copyright (C) 2023  Md Solimul Chowdhury, Cayden Codel, and Marijn Heule
+Carnegie Mellon University, Pittsburgh, PA, USA. 
+
+Build Instructions
+------------------
+./configure.sh
+make
+Run Instructions
+----------------
+sequential version: ./tassat $CNF
+parallel version: ./passat $CNF

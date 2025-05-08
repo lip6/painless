@@ -147,7 +147,7 @@ class MallobSharing : public GlobalSharingStrategy
 
 	std::vector<ClauseExchangePtr> deserializedClauses; ///< Buffer for deserialized clauses
 
-	Bitset myBitVector; ///< Bitset for tracking shared clauses
+	pl::Bitset myBitVector; ///< Bitset for tracking shared clauses
 
 	int father;		 ///< MPI rank of the parent node
 	int left_child;	 ///< MPI rank of the left child

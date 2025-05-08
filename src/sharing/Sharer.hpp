@@ -78,7 +78,7 @@ class Sharer
     /// Pointer to the thread in charge of sharing.
     Thread* sharer;
 
-    /// @brief Heuristic for strategy implementation comparison (TODO: ifndef NSTAT for such probes)
+    /// @brief Heuristic for strategy implementation comparison
     double totalSharingTime = 0;
 
     /// Number of sharing rounds completed.

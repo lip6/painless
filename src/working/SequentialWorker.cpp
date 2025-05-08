@@ -27,7 +27,7 @@ mainWorker(void* arg)
 
 		pthread_mutex_unlock(&sq->mutexStart);
 
-		LOGDEBUG3("Sequential Worker for solver of %s %d before solve",
+		LOGDEBUG1("Sequential Worker for solver of %s %d before solve",
 				  typeid(*(sq->solver)).name(),
 				  sq->solver->getSolverId());
 

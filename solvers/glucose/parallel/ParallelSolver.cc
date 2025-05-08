@@ -312,7 +312,8 @@ bool ParallelSolver::parallelImportClauses() {
 
     assert(decisionLevel() == 0);
     int importedFromThread;
-    while (importClause(issuer, &importedFromThread, importedClause)) {
+    int lbd;
+    while (importClause(issuer, &importedFromThread, &lbd, importedClause)) {
         assert(importedFromThread >= 0);
 
         assert(importedFromThread != thn);
@@ -322,7 +323,7 @@ bool ParallelSolver::parallelImportClauses() {
 
         //printf("Thread %d imports clause from thread %d\n", threadNumber(), importedFromThread);
         CRef cr = ca.alloc(importedClause, true, true);
-        ca[cr].setLBD(importedClause.size());
+        ca[cr].setLBD(lbd);
         if (plingeling) // 0 means a broadcasted clause (good clause), 1 means a survivor clause, broadcasted
             ca[cr].setExported(2); // A broadcasted clause (or a survivor clause) do not share it anymore
         else {

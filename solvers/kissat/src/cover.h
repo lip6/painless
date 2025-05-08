@@ -4,25 +4,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define COVER(COND)                                                                                                    \
-	((COND) ?                                                                                                          \
-                                                                                                                       \
-			(fflush(stdout),                                                                                           \
-			 fprintf(stderr, "%s:%ld: %s: Coverage goal `%s' reached.\n", __FILE__, (long)__LINE__, __func__, #COND),  \
-			 abort(),                                                                                                  \
-			 (void)0)                                                                                                  \
-			: (void)0)
+#define COVER(COND) \
+  ((COND) ? \
+\
+          (fflush (stdout), \
+           fprintf (stderr, "%s:%ld: %s: Coverage goal `%s' reached.\n", \
+                    __FILE__, (long) __LINE__, __func__, #COND), \
+           abort (), (void) 0) \
+          : (void) 0)
 
 #ifdef COVERAGE
-#define FLUSH_COVERAGE()                                                                                               \
-	do {                                                                                                               \
-		void __gcov_dump(void);                                                                                        \
-		__gcov_dump();                                                                                                 \
-	} while (0)
+#define FLUSH_COVERAGE() \
+  do { \
+    void __gcov_dump (void); \
+    __gcov_dump (); \
+  } while (0)
 #else
-#define FLUSH_COVERAGE()                                                                                               \
-	do {                                                                                                               \
-	} while (0)
+#define FLUSH_COVERAGE() \
+  do { \
+  } while (0)
 #endif
 
 #endif

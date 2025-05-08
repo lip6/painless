@@ -1,5 +1,6 @@
 #include "MpiUtils.hpp"
 #include "Logger.hpp"
+#include "containers/SimpleTypes.hpp"
 #include "painless.hpp"
 #include <mpi.h>
 
@@ -9,7 +10,6 @@
 
 #include <cstring>
 #include <zlib.h>
-
 
 int mpi_rank = -1;
 int mpi_world_size = -1;
@@ -51,8 +51,6 @@ decompressBuffer(const std::vector<unsigned char>& input, size_t originalSize)
 
 	return output;
 }
-
-typedef std::vector<int> simpleClause;
 
 bool
 serializeClauses(const std::vector<simpleClause>& clauses, std::vector<int>& serializedClauses)
@@ -99,6 +97,64 @@ deserializeClauses(const std::vector<int>& serializedClauses, std::vector<simple
 
 		// Move to the next clause
 		index += clauseSize;
+	}
+
+	return true;
+}
+
+bool
+sendFormula(simpleClause& serializedClauses, unsigned int* clsCount, unsigned int* varCount, int rootRank)
+{
+	// Broadcast varCount
+	TESTRUNMPI(MPI_Bcast(varCount, 1, MPI_UNSIGNED, rootRank, MPI_COMM_WORLD));
+	// Broadcast clsCount
+	TESTRUNMPI(MPI_Bcast(clsCount, 1, MPI_UNSIGNED, rootRank, MPI_COMM_WORLD));
+
+	LOGDEBUG1("VarCount = %u, ClsCount = %u", *varCount, *clsCount);
+	std::vector<unsigned char> compressedBuffer;
+	int64_t originalSize = 0;
+	int64_t compressedSize = 0;
+
+	if (mpi_rank == rootRank) {
+		LOGDEBUG1("Root clauses number: %u", *clsCount);
+
+		originalSize = static_cast<int64_t>(serializedClauses.size() * sizeof(int));
+		try {
+			compressedBuffer = compressBuffer(serializedClauses);
+			compressedSize = static_cast<int64_t>(compressedBuffer.size());
+		} catch (const std::exception& e) {
+			LOGERROR("Compression failed: %s", e.what());
+			originalSize = -1; // Use as error flag
+		}
+	}
+
+	// Broadcast the original size (or error flag)
+	TESTRUNMPI(MPI_Bcast(&originalSize, 1, MPI_INT64_T, rootRank, MPI_COMM_WORLD));
+
+	if (originalSize == -1) {
+		LOGERROR("Root failed to serialize or compress clauses");
+		return false;
+	}
+
+	// Broadcast the compressed size
+	TESTRUNMPI(MPI_Bcast(&compressedSize, 1, MPI_INT64_T, rootRank, MPI_COMM_WORLD));
+
+	// Resize buffer for non-root processes
+	if (mpi_rank != rootRank) {
+		compressedBuffer.resize(compressedSize);
+		LOGDEBUG1("Data to transfer: %ld bytes (compressed from %ld bytes)", compressedSize, originalSize);
+	}
+
+	// Broadcast the compressed data
+	TESTRUNMPI(MPI_Bcast(compressedBuffer.data(), compressedSize, MPI_UNSIGNED_CHAR, rootRank, MPI_COMM_WORLD));
+
+	if (mpi_rank != rootRank) {
+		try {
+			serializedClauses = decompressBuffer(compressedBuffer, originalSize);
+		} catch (const std::exception& e) {
+			LOGERROR("Decompression failed: %s", e.what());
+			return false;
+		}
 	}
 
 	return true;

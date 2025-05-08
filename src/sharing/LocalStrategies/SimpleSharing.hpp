@@ -6,7 +6,7 @@
 #include <vector>
 
 /**
- * @brief This strategy is a simple sharing strategy.
+ * @brief This strategy is a simple sharing strategy using size to filter out long clauses.
  * @ingroup local_sharing
  */
 class SimpleSharing : public SharingStrategy

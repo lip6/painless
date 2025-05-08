@@ -65,6 +65,16 @@ void kissat_free (kissat *solver, void *ptr, size_t bytes) {
     assert (!bytes);
 }
 
+char *kissat_strdup (kissat *solver, const char *str) {
+  char *res = kissat_malloc (solver, strlen (str) + 1);
+  return strcpy (res, str);
+}
+
+void kissat_freestr (struct kissat *solver, char *str) {
+  assert (str);
+  kissat_free (solver, str, strlen (str) + 1);
+}
+
 void *kissat_nalloc (kissat *solver, size_t n, size_t size) {
   void *res;
   if (!n || !size)
@@ -117,8 +127,18 @@ void *kissat_realloc (kissat *solver, void *p, size_t old_bytes,
     return 0;
   }
   dec_bytes (solver, old_bytes);
+#ifdef LOGGING
+  if (GET_OPTION (log) > 3)
+    kissat_begin_logging (solver, LOGPREFIX, "realloc (%p[%zu, %zu) = ", p,
+                          old_bytes, new_bytes);
+#endif
   void *res = realloc (p, new_bytes);
-  LOG4 ("realloc (%p[%zu], %zu) = %p", p, old_bytes, new_bytes, res);
+#ifdef LOGGING
+  if (GET_OPTION (log) > 3) {
+    printf ("%p", res);
+    kissat_end_logging ();
+  }
+#endif
   if (new_bytes && !res)
     kissat_fatal ("out-of-memory reallocating from %zu to %zu bytes",
                   old_bytes, new_bytes);

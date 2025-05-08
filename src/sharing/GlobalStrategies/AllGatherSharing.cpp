@@ -140,8 +140,8 @@ AllGatherSharing::serializeClauses(std::vector<int>& serialized_v_cls)
 		}
 	}
 
-	// add final zero and fill with zero if needed
-	serialized_v_cls.insert(serialized_v_cls.end(), totalSize - dataCount + 1, 0);
+	// fill with zeroes if needed
+	serialized_v_cls.insert(serialized_v_cls.end(), totalSize - dataCount, 0);
 
 	LOGDEBUG1("Serialized %u clauses into buffer of size %u", nb_clauses, serialized_v_cls.size());
 	return nb_clauses;

@@ -1,4 +1,4 @@
-#include "containers/ClauseDatabaseMallob.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseMallob.hpp"
 #include "containers/ClauseExchange.hpp"
 #include "containers/ClauseUtils.hpp"
 #include "utils/Logger.hpp"

@@ -318,7 +318,7 @@ MallobSharing::doSharing()
 	// Nodes will wait on recv
 	if (nb_children >= 1) // has right child
 	{
-		std::vector<Bitset> bitVectorsToMerge;
+		std::vector<pl::Bitset> bitVectorsToMerge;
 
 		bitVectorsToMerge.emplace_back(deserializedCount, 0);
 

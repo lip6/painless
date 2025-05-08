@@ -109,6 +109,8 @@ class StructuredBVA : public PreprocessorInterface
 
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVariables) override;
 
+	void addInitialClauses(const lit_t *literals, unsigned int nbClauses, unsigned int nbVariables) override;
+
 	void loadFormula(const char* filename) override;
 
 	void printStatistics() override;

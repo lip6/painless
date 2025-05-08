@@ -52,6 +52,8 @@ class GlucoseSyrup : public SolverCdclInterface
 	/// Add a list of permanent clauses to the formula.
 	void addClauses(const std::vector<ClauseExchangePtr>& clauses);
 
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) override;
+
 	/// Add a list of initial clauses to the formula.
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
 
@@ -116,7 +118,7 @@ class GlucoseSyrup : public SolverCdclInterface
 	friend Glucose::Lit glucoseImportUnary(void*);
 
 	/// Callback to import clauses.
-	friend bool glucoseImportClause(void*, int*, Glucose::vec<Glucose::Lit>&);
+	friend bool glucoseImportClause(void*, int*, int*, Glucose::vec<Glucose::Lit>&);
 
   public:
 	;

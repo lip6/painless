@@ -1,4 +1,4 @@
-#include "containers/ClauseDatabasePerSize.hpp"
+#include "containers/ClauseDatabases/ClauseDatabasePerSize.hpp"
 #include "containers/ClauseExchange.hpp"
 #include "utils/Logger.hpp"
 

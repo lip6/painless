@@ -77,16 +77,10 @@ std::vector<int> finalModel;
 int
 main(int argc, char** argv)
 {
-	// setupExitHandlers();
 
 	Parameters::init(argc, argv);
 
-	setVerbosityLevel(__globalParameters__.verbosity);
-
-	if(__globalParameters__.help)
-	{
-		Parameters::printHelp();
-	}
+	setupExitHandlers();
 
 	dist = __globalParameters__.enableDistributed;
 
@@ -114,18 +108,16 @@ main(int argc, char** argv)
 		}
 	}
 
-	if (!mpi_rank)
+	if (mpi_rank <= 0)
 		Parameters::printParams();
 
 	// Init timeout detection before starting the solvers and sharers
 	std::unique_lock<std::mutex> lock(mutexGlobalEnd);
 	// to make sure that the broadcast is done when main has done its wait
 
-	// TODO: better choice options, think about description file using yaml or json with semantic checking
-	if (__globalParameters__.simple)
-		working = new PortfolioSimple();
-	else
-		working = new PortfolioPRS();
+	working = new PortfolioSimple();
+	// working = new PortfolioPRS();
+	// working = new Test();
 
 	// Launch working
 	std::vector<int> cube;

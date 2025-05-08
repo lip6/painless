@@ -136,11 +136,29 @@ YalSat::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int
 }
 
 void
+YalSat::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	this->clausesCount = 0;
+	int lit;
+	for (lit = *literals; this->clausesCount < clsCount; literals++, lit=*literals) {
+		yals_add(this->solver, lit);
+		if(!lit)
+			this->clausesCount++;
+	}
+
+	this->setInitialized(true);
+
+	LOG2("Yalsat %d loaded all the %d clauses with %u variables", this->getSolverId(), this->clausesCount, nbVars);
+}
+
+void
 YalSat::loadFormula(const char* filename)
 {
 	unsigned int parsedVarCount;
 	std::vector<std::vector<int>> clauses;
-	Parsers::parseCNF(filename, clauses, &parsedVarCount);
+	if (!Parsers::parseCNF(filename, clauses, &parsedVarCount)) {
+		PABORT(PERR_PARSING, "Error at parsing!");
+	}
 	this->addInitialClauses(clauses, parsedVarCount);
 }
 
@@ -191,8 +209,9 @@ YalSat::diversify(const SeedGenerator& getSeed)
 
 	// Walk probability: controls the probability of random walks during the local search
 	yals_setopt(this->solver, "walk", uniform_dist(rng_engine) > (m_maxNoise / 2));
-	yals_setopt(
-		this->solver, "walkprobability", (uniform_dist(rng_engine) * 100 + m_maxNoise) / m_maxNoise); /* shouldn't be < 1*/
+	yals_setopt(this->solver,
+				"walkprobability",
+				(uniform_dist(rng_engine) * 100 + m_maxNoise) / m_maxNoise); /* shouldn't be < 1*/
 
 	// Eager: controls whether to eagerly pick minimum break literals
 	yals_setopt(this->solver, "eager", uniform_dist(rng_engine) % 2);

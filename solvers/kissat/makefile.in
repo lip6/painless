@@ -7,9 +7,10 @@ VPATH=../src:../test
 %.o: %.c ../[st]*/*.h makefile
 	$(CC) -c $<
 
-#parse.c
+# Begin Painless (need parse in lib)
+# APPSRC=application.c handle.c parse.c witness.c
 APPSRC=application.c handle.c witness.c
-
+# End Painless
 LIBSRT=$(sort $(wildcard ../src/*.c))
 LIBSUB=$(subst ../src/,,$(LIBSRT))
 LIBSRC=$(filter-out main.c $(APPSRC),$(LIBSUB))

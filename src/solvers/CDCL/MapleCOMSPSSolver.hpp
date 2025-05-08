@@ -65,6 +65,8 @@ class MapleCOMSPSSolver : public SolverCdclInterface
 	/// Add a list of permanent clauses to the formula.
 	void addClauses(const std::vector<ClauseExchangePtr>& clauses);
 
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars);
+
 	/// Add a list of initial clauses to the formula.
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
 
@@ -112,8 +114,7 @@ class MapleCOMSPSSolver : public SolverCdclInterface
 	/// Pointer to a MapleCOMSPS solver.
 	MapleCOMSPS::SimpSolver* solver;
 
-	/// Buffer used to import clauses (units included).
-
+	/// Buffer used to units clauses.
 	std::unique_ptr<ClauseDatabase> unitsToImport;
 
 	/// Buffer used to add permanent clauses.

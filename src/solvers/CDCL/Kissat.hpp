@@ -16,7 +16,7 @@
 // Kissat includes
 extern "C"
 {
-#include "kissat/src/kissat.h"
+#include <kissat/src/kissat.h>
 }
 
 /// Instance of a Kissat solver
@@ -51,6 +51,8 @@ class Kissat : public SolverCdclInterface
 
 	/// Load formula from a given dimacs file, return false if failed.
 	void loadFormula(const char* filename) override;
+
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) override;
 
 	/// Add a list of initial clauses to the formula.
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;

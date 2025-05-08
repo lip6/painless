@@ -250,6 +250,26 @@ KissatMABSolver::addInitialClauses(const std::vector<simpleClause>& clauses, uns
 }
 
 void
+KissatMABSolver::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	kissat_mab_set_maxVar(this->solver, nbVars);
+	kissat_mab_reserve(this->solver, nbVars);
+
+	unsigned int clausesCount = 0;
+
+	int lit;
+	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
+		kissat_mab_add(this->solver, lit);
+		if (!lit)
+			clausesCount++;
+	}
+
+	this->setInitialized(true);
+
+	LOG2("KissatMAB %d loaded all the %d clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
+}
+
+void
 KissatMABSolver::printStatistics()
 {
 	LOGERROR("Not implemented yet !!");

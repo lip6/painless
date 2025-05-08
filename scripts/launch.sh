@@ -182,7 +182,7 @@ for f in $(cat ${input_files}); do
     echo -e "${info_theme}Nb Clause = ${nb_clauses}${reset_theme}"
 
     # Init outputs
-    result="UNKNOWN"
+    result=""
     instance=${f##*/}       # extract the file name
     instance=${instance%.*} # remove the .cnf from file name
     output_file="${metric_dir}/logs/log_${instance}.txt"
@@ -254,7 +254,9 @@ for f in $(cat ${input_files}); do
         ((nbUNSAT++))
         ;;
     *)
-        continue
+        echo -e "${error_theme} Error occured with file $f, please check logs: \n\t$error_file\n\t$output_file ${reset_theme}"
+        cat $error_file
+        exit -1
         ;;
     esac
 

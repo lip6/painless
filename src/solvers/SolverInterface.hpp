@@ -19,13 +19,13 @@
 #include <unordered_map>
 #include <vector>
 
-
 /**
  * @defgroup solving SAT Solvers
  * @ingroup solving
  * @brief Different Classes for SAT formula processing
+ * @todo Implement all the functions in the different solvers, in order to have all parallel strategies runnable
  * @{
-*/
+ */
 
 /* Forward Declaration */
 class SolverInterface;
@@ -56,7 +56,7 @@ enum class SolverAlgorithmType
 };
 
 /**
- * @brief Interface for a SAT solver with standard features. 
+ * @brief Interface for a SAT solver with standard features.
  */
 class SolverInterface
 {
@@ -113,6 +113,14 @@ class SolverInterface
 	 * @param nbVars The number of variables.
 	 */
 	virtual void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) = 0;
+
+	/**
+	 * @brief Add an initial list of zero terminated clauses
+	 * @param literals The list of initial clauses.
+	 * @param clsCount The number of clauses.
+	 * @param nbVars The number of variables.
+	 */
+	virtual void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) = 0;
 
 	/**
 	 * @brief Load formula from a given dimacs file.

@@ -3,7 +3,6 @@
 
 struct kissat;
 
-int
-kissat_application(struct kissat*, int argc, char** argv);
+int kissat_application (struct kissat *, int argc, char **argv);
 
 #endif

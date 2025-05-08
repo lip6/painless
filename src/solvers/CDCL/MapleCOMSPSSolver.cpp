@@ -9,27 +9,48 @@
 
 #include "solvers/CDCL/MapleCOMSPSSolver.hpp"
 
-#include "containers/ClauseDatabaseSingleBuffer.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseSingleBuffer.hpp"
 
 #include <iomanip>
 
-using namespace MapleCOMSPS;
+// Due to namespace expansion
+#define mp_True (MapleCOMSPS::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+#define mp_False (MapleCOMSPS::lbool((uint8_t)1))
+#define mp_Undef (MapleCOMSPS::lbool((uint8_t)2))
 
 // Macros for minisat literal representation conversion
-#define MINI_LIT(lit) lit > 0 ? mkLit(lit - 1, false) : mkLit((-lit) - 1, true)
+#define MINI_LIT(lit) lit > 0 ? MapleCOMSPS::mkLit(lit - 1, false) : MapleCOMSPS::mkLit((-lit) - 1, true)
 
-#define INT_LIT(lit) sign(lit) ? -(var(lit) + 1) : (var(lit) + 1)
+#define INT_LIT(lit) MapleCOMSPS::sign(lit) ? -(MapleCOMSPS::var(lit) + 1) : (MapleCOMSPS::var(lit) + 1)
 
-static void
-makeMiniVec(ClauseExchangePtr cls, vec<Lit>& mcls)
+static bool
+checkLiteral(const MapleCOMSPS::Lit& l, MapleCOMSPS::Solver* maple)
+{
+	// Assert if not negative (error)
+	assert(l.x >= 0);
+	// Check if the literal is not out of bound
+	if (maple->nVars() <= var(l)) {
+		LOGDEBUG2("Literal %d is out of bound for MapleCOMSPS", l.x);
+		return false;
+	}
+	return true;
+}
+
+static bool
+makeMiniVec(ClauseExchangePtr cls, MapleCOMSPS::vec<MapleCOMSPS::Lit>& mcls, MapleCOMSPS::Solver* maple)
 {
 	for (size_t i = 0; i < cls->size; i++) {
-		mcls.push(MINI_LIT(cls->lits[i]));
+		MapleCOMSPS::Lit internalLit = MINI_LIT(cls->lits[i]);
+		mcls.push(internalLit);
+		// Checks
+		if (!checkLiteral(internalLit, maple))
+			return false;
 	}
+	return true;
 }
 
 void
-cbkMapleCOMSPSExportClause(void* issuer, unsigned int lbd, vec<Lit>& cls)
+cbkMapleCOMSPSExportClause(void* issuer, unsigned int lbd, MapleCOMSPS::vec<MapleCOMSPS::Lit>& cls)
 {
 	MapleCOMSPSSolver* mp = (MapleCOMSPSSolver*)issuer;
 
@@ -42,47 +63,57 @@ cbkMapleCOMSPSExportClause(void* issuer, unsigned int lbd, vec<Lit>& cls)
 	mp->exportClause(ncls);
 }
 
-Lit
+MapleCOMSPS::Lit
 cbkMapleCOMSPSImportUnit(void* issuer)
 {
 	MapleCOMSPSSolver* mp = (MapleCOMSPSSolver*)issuer;
 
-	Lit l = lit_Undef;
+	MapleCOMSPS::Lit l;
 
 	ClauseExchangePtr cls;
 
-	if (mp->unitsToImport->getOneClause(cls) == false)
-		return l;
+	while (mp->unitsToImport->getOneClause(cls)) {
+		assert(cls->size == 1);
+		l = MINI_LIT(cls->lits[0]);
 
-	l = MINI_LIT(cls->lits[0]);
-
-	return l;
+		if (checkLiteral(l, mp->solver) == true) {
+			assert(l.x >= 0);
+			LOGDEBUG2("Importing to Maple %u unit literal %d", mp->getSharingId(), l.x);
+			return l;
+		}
+	}
+	return MapleCOMSPS::lit_Undef;
 }
 
 bool
-cbkMapleCOMSPSImportClause(void* issuer, unsigned int* lbd, vec<Lit>& mcls)
+cbkMapleCOMSPSImportClause(void* issuer, unsigned int* lbd, MapleCOMSPS::vec<MapleCOMSPS::Lit>& mcls)
 {
 	MapleCOMSPSSolver* mp = (MapleCOMSPSSolver*)issuer;
 
 	ClauseExchangePtr cls;
 
-	if (mp->m_clausesToImport->getOneClause(cls) == false)
-	{
-		mp->m_clausesToImport->shrinkDatabase();
-		return false;
+	while (mp->m_clausesToImport->getOneClause(cls)) {
+		if (makeMiniVec(cls, mcls, mp->solver)) {
+			*lbd = cls->lbd;
+
+			LOGCLAUSE1(cls->lits, cls->size, "Importing to Maple %u clause: ", mp->getSharingId());
+			assert(mcls.size() > 1 && mcls[0].x >= 0 && *lbd > 1);
+
+			return true;
+		}
+		mcls.clear();
 	}
-	makeMiniVec(cls, mcls);
 
-	*lbd = cls->lbd;
-
-	return true;
+	// If we couldn't get any clause
+	mp->m_clausesToImport->shrinkDatabase();
+	return false;
 }
 
 MapleCOMSPSSolver::MapleCOMSPSSolver(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
 	: SolverCdclInterface(id, clauseDB, SolverCdclType::MAPLECOMSPS)
 	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
 {
-	solver = new SimpSolver();
+	solver = new MapleCOMSPS::SimpSolver();
 
 	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
 
@@ -100,7 +131,7 @@ MapleCOMSPSSolver::MapleCOMSPSSolver(const MapleCOMSPSSolver& other,
 	: SolverCdclInterface(id, clauseDB, SolverCdclType::MAPLECOMSPS)
 	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
 {
-	solver = new SimpSolver(*(other.solver));
+	solver = new MapleCOMSPS::SimpSolver(*(other.solver));
 
 	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
 
@@ -213,26 +244,26 @@ MapleCOMSPSSolver::solve(const std::vector<int>& cube)
 	clausesToAdd.getClauses(tmp);
 
 	for (size_t ind = 0; ind < tmp.size(); ind++) {
-		vec<Lit> mcls;
-		makeMiniVec(tmp[ind], mcls);
+		MapleCOMSPS::vec<MapleCOMSPS::Lit> mcls;
+		makeMiniVec(tmp[ind], mcls, this->solver);
 
 		if (solver->addClause(mcls) == false) {
-			LOG0(" unsat when adding cls");
+			LOGWARN(" unsat when adding cls");
 			return SatResult::UNSAT;
 		}
 	}
 
-	vec<Lit> miniAssumptions;
+	MapleCOMSPS::vec<MapleCOMSPS::Lit> miniAssumptions;
 	for (size_t ind = 0; ind < cube.size(); ind++) {
 		miniAssumptions.push(MINI_LIT(cube[ind]));
 	}
 
-	lbool res = solver->solveLimited(miniAssumptions);
+	MapleCOMSPS::lbool res = solver->solveLimited(miniAssumptions);
 
-	if (res == l_True)
+	if (res == mp_True)
 		return SatResult::SAT;
 
-	if (res == l_False)
+	if (res == mp_False)
 		return SatResult::UNSAT;
 
 	return SatResult::UNKNOWN;
@@ -278,27 +309,62 @@ MapleCOMSPSSolver::addClauses(const std::vector<ClauseExchangePtr>& clauses)
 void
 MapleCOMSPSSolver::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars)
 {
+	while (solver->nVars() < nbVars) {
+		solver->newVar();
+	}
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
-		vec<Lit> mcls;
+		MapleCOMSPS::vec<MapleCOMSPS::Lit> mcls;
 
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
 			int lit = clauses[ind][i];
-			int var = abs(lit);
-
-			while (solver->nVars() < var) {
-				solver->newVar();
-			}
 
 			mcls.push(MINI_LIT(lit));
 		}
 
 		if (solver->addClause(mcls) == false) {
-			LOG0(" unsat when adding initial cls");
+			LOGWARN(" unsat when adding initial cls");
 			return;
 		}
 	}
 
 	LOG2("The Maple Solver %d loaded all the clauses", this->getSolverId());
+}
+
+void
+MapleCOMSPSSolver::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	unsigned int clausesCount = 0;
+	int lit;
+
+	while (solver->nVars() < nbVars) {
+		solver->newVar();
+	}
+
+	for (unsigned int i = 0; clausesCount < clsCount; i++) {
+
+		MapleCOMSPS::vec<MapleCOMSPS::Lit> mcls;
+		std::vector<lit_t> clause;
+
+		for (lit = *literals; lit; literals++, lit = *literals) {
+			if (!lit)
+				break;
+			mcls.push(MINI_LIT(lit));
+			clause.push_back(lit);
+		}
+
+		// Jump zero
+		literals++;
+		clausesCount++;
+
+		if (!solver->addClause(mcls)) {
+			LOGWARN("unsat when adding initial cls");
+			return;
+		}
+	}
+
+	this->setInitialized(true);
+
+	LOG2("The Maple Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
 }
 
 void
@@ -339,8 +405,8 @@ MapleCOMSPSSolver::getModel()
 	std::vector<int> model;
 
 	for (int i = 0; i < solver->nVars(); i++) {
-		if (solver->model[i] != l_Undef) {
-			int lit = solver->model[i] == l_True ? i + 1 : -(i + 1);
+		if (solver->model[i] != mp_Undef) {
+			int lit = solver->model[i] == mp_True ? i + 1 : -(i + 1);
 			model.push_back(lit);
 		}
 	}
@@ -364,7 +430,7 @@ std::vector<int>
 MapleCOMSPSSolver::getSatAssumptions()
 {
 	std::vector<int> outCls;
-	vec<Lit> lits;
+	MapleCOMSPS::vec<MapleCOMSPS::Lit> lits;
 	solver->getAssumptions(lits);
 	for (int i = 0; i < lits.size(); i++) {
 		outCls.push_back(-(INT_LIT(lits[i])));

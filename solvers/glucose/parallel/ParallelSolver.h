@@ -76,7 +76,7 @@ class ParallelSolver : public SimpSolver
 	void (*exportUnary)(void*, Lit&);
 	void (*exportClause)(void*, Clause&);
 	Lit (*importUnary)(void*);
-	bool (*importClause)(void*, int*, vec<Lit>&);
+	bool (*importClause)(void*, int*, int*, vec<Lit>&);
 
 	void* issuer;
 

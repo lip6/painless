@@ -1,8 +1,11 @@
+#pragma once
+
 #include <algorithm>
 #include <cstring>
 #include <functional>
 #include <vector>
 
+namespace pl {
 /**
  * @brief A class representing a bitset with dynamic size.
  *
@@ -165,3 +168,5 @@ class Bitset
 	size_t num_bits;
 	static const size_t BITS_PER_BLOCK = sizeof(unsigned long long) * 8;
 };
+
+}

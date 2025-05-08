@@ -14,22 +14,38 @@
 
 #include <vector>
 
-#define LOCAL_SHARING_STRATEGY_COUNT 5
+#define LOCAL_SHARING_STRATEGY_COUNT 3
 
 /**
  * @brief Factory class for creating and managing sharing strategies.
+ * 
+ * Local strategy numbers:
+ * 0 - Random selection from strategies 1-3
+ * 1 - HordeSatSharing with single group
+ * 2 - HordeSatSharing with two groups of producers
+ * 3 - SimpleSharing
+ * 
+ * Global strategy numbers:
+ * 0 - Default to AllGatherSharing (same as 1)
+ * 1 - AllGatherSharing
+ * 2 - MallobSharing
+ * 3 - GenericGlobalSharing configured as RingSharing
  */
 struct SharingStrategyFactory
 {
-    /// The selected local sharing strategy number.
+    /// The selected local sharing strategy number (0-3).
     static int selectedLocal;
 
-    /// The selected global sharing strategy number.
+    /// The selected global sharing strategy number (0-3).
     static int selectedGlobal;
 
     /**
      * @brief Instantiate local sharing strategies.
-     * @param strategyNumber The number of the strategy to instantiate.
+     * @param strategyNumber The number of the strategy to instantiate:
+     *        0: Random selection (1-3)
+     *        1: HordeSatSharing (1 group)
+     *        2: HordeSatSharing (2 groups)
+     *        3: SimpleSharing (1 group)
      * @param localStrategies Vector to store the created local strategies.
      * @param cdclSolvers Vector of CDCL solvers to be used in the strategies.
      */
@@ -39,7 +55,11 @@ struct SharingStrategyFactory
 
     /**
      * @brief Instantiate global sharing strategies.
-     * @param strategyNumber The number of the strategy to instantiate.
+     * @param strategyNumber The number of the strategy to instantiate:
+     *        0: Default to AllGatherSharing
+     *        1: AllGatherSharing
+     *        2: MallobSharing
+     *        3: GenericGlobalSharing configured as RingSharing
      * @param globalStrategies Vector to store the created global strategies.
      */
     static void instantiateGlobalStrategies(int strategyNumber,

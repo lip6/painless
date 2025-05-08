@@ -18,28 +18,31 @@
 #include <stdlib.h>
 
 // Begin Painless
-static inline void kissat_init_shuffle(kissat *solver, int max_var)
-{
-    // seed is set using seed option of kissat
-    srand(GET_OPTION(seed));
-    int *id;
-    id = (int *)malloc(sizeof(int) * (max_var + 1));
-    for (int i = 1; i <= max_var; i++)
-      id[i] = i;
-    for (int i = 1; i <= max_var; i++)
-    {
-      int j = (rand() % max_var) + 1;
-      int x = id[i];
-      id[i] = id[j];
-      id[j] = x;
-    }
-    for (int i = 1; i <= max_var; i++)
-      kissat_import_literal(solver, i);
-    for (int i = 1; i <= max_var; i++)
-      kissat_activate_literal(solver, kissat_import_literal(solver, id[i]));
-    free(id);
+static inline void kissat_init_shuffle (kissat *solver, int max_var) {
+  // seed is set using seed option of kissat
+  srand (GET_OPTION (seed));
+  int *id;
+  id = (int *) malloc (sizeof (int) * (max_var + 1));
+  for (int i = 1; i <= max_var; i++)
+    id[i] = i;
+  for (int i = 1; i <= max_var; i++) {
+    int j = (rand () % max_var) + 1;
+    int x = id[i];
+    id[i] = id[j];
+    id[j] = x;
+  }
+  for (int i = 1; i <= max_var; i++)
+    kissat_import_literal (solver, i);
+  for (int i = 1; i <= max_var; i++)
+    kissat_activate_literal (solver, kissat_import_literal (solver, id[i]));
+  free (id);
 }
 // End Painless
+
+void kissat_reset_last_learned (kissat *solver) {
+  for (really_all_last_learned (p))
+    *p = INVALID_REF;
+}
 
 kissat *kissat_init (void) {
   kissat *solver = kissat_calloc (0, 1, sizeof *solver);
@@ -57,17 +60,23 @@ kissat *kissat_init (void) {
   kissat_push_frame (solver, UINT_MAX);
   solver->watching = true;
   solver->conflict.size = 2;
-  solver->conflict.keep = true;
   solver->scinc = 1.0;
   solver->first_reducible = INVALID_REF;
   solver->last_irredundant = INVALID_REF;
+  kissat_reset_last_learned (solver);
   // Begin Painless
-  INIT_STACK(solver->pclause);
+  INIT_STACK (solver->pclause);
   // End Painless
 #ifndef NDEBUG
   kissat_init_checker (solver);
 #endif
+  solver->prefix = kissat_strdup (solver, "c ");
   return solver;
+}
+
+void kissat_set_prefix (kissat *solver, const char *prefix) {
+  kissat_freestr (solver, solver->prefix);
+  solver->prefix = kissat_strdup (solver, prefix);
 }
 
 #define DEALLOC_GENERIC(NAME, ELEMENTS_PER_BLOCK) \
@@ -96,7 +105,7 @@ void kissat_release (kissat *solver) {
   kissat_require_initialized (solver);
   kissat_release_heap (solver, SCORES);
   kissat_release_heap (solver, &solver->schedule);
-
+  kissat_release_vectors (solver);
   kissat_release_phases (solver);
 
   RELEASE_STACK (solver->export);
@@ -116,11 +125,10 @@ void kissat_release (kissat *solver) {
   RELEASE_STACK (solver->witness);
   RELEASE_STACK (solver->etrail);
 
-  //Begin Painless
-  RELEASE_STACK(solver->pclause);
-  //End Painless
+  // Begin Painless
+  RELEASE_STACK (solver->pclause);
+  // End Painless
 
-  RELEASE_STACK (solver->vectors.stack);
   RELEASE_STACK (solver->delayed);
 
   RELEASE_STACK (solver->clause);
@@ -147,7 +155,7 @@ void kissat_release (kissat *solver) {
   RELEASE_STACK (solver->xorted[0]);
   RELEASE_STACK (solver->xorted[1]);
 
-  RELEASE_STACK (solver->sweep);
+  RELEASE_STACK (solver->sweep_schedule);
 
   RELEASE_STACK (solver->ranks);
 
@@ -170,6 +178,8 @@ void kissat_release (kissat *solver) {
   RELEASE_STACK (solver->profiles.stack);
 #endif
 
+  kissat_freestr (solver, solver->prefix);
+
 #ifndef NDEBUG
   kissat_release_checker (solver);
 #endif
@@ -190,11 +200,16 @@ void kissat_reserve (kissat *solver, int max_var) {
   kissat_require (max_var <= EXTERNAL_MAX_VAR,
                   "invalid maximum variable argument '%d'", max_var);
   kissat_increase_size (solver, (unsigned) max_var);
-
   // Begin Painless
-  if (GET_OPTION(initshuffle))
-    kissat_init_shuffle(solver, max_var);
+  if (GET_OPTION (initshuffle))
+    kissat_init_shuffle (solver, max_var);
   // End Painless
+  if (!GET_OPTION (tumble)) {
+    for (int idx = 1; idx <= max_var; idx++)
+      (void) kissat_import_literal (solver, idx);
+    for (unsigned idx = 0; idx != (unsigned) max_var; idx++)
+      kissat_activate_literal (solver, LIT (idx));
+  }
 }
 
 int kissat_get_option (kissat *solver, const char *name) {
@@ -273,6 +288,8 @@ void kissat_print_statistics (kissat *solver) {
     kissat_print_checker_statistics (solver, verbose);
   }
 #endif
+  kissat_section (solver, "glue usage");
+  kissat_print_glue_usage (solver);
   kissat_section (solver, "resources");
   kissat_print_resources (solver);
 #endif

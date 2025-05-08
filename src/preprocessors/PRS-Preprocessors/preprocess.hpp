@@ -353,6 +353,12 @@ struct preprocess : public PreprocessorInterface
 		exit(PERR_NOT_SUPPORTED);
 	}
 
+	void addInitialClauses(const lit_t *literals, unsigned int nbClauses, unsigned int nbVariables)
+	{
+		LOGERROR("NOT IMPLEMENTED, YET!");
+		exit(PERR_NOT_SUPPORTED);
+	}
+
 	void printStatistics()
 	{
 		LOGERROR("NOT IMPLEMENTED, YET!");

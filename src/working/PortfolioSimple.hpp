@@ -4,6 +4,7 @@
 #include "working/WorkingStrategy.hpp"
 
 #include "solvers/CDCL/SolverCdclInterface.hpp"
+#include "preprocessors/PreprocessorInterface.hpp"
 #include "solvers/LocalSearch/LocalSearchInterface.hpp"
 
 #include "sharing/Sharer.hpp"
@@ -44,6 +45,7 @@ class PortfolioSimple : public WorkingStrategy
 	//--------
 	std::vector<std::shared_ptr<SolverCdclInterface>> cdclSolvers;
 	std::vector<std::shared_ptr<LocalSearchInterface>> localSolvers;
+	std::vector<std::shared_ptr<PreprocessorInterface>> preprocessors; /* kept for model restoration*/
 
 	// Sharing
 	//--------

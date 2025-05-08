@@ -85,6 +85,8 @@ class skipzero_span
 		friend difference_type operator-(const Iterator& a, const Iterator& b) { return a.m_ptr - b.m_ptr; }
 		friend bool operator==(const Iterator& a, const Iterator& b) { return a.m_ptr == b.m_ptr; }
 		friend bool operator!=(const Iterator& a, const Iterator& b) { return a.m_ptr != b.m_ptr; }
+		friend bool operator<(const Iterator& a, const Iterator& b) { return a.m_ptr < b.m_ptr;}
+		friend bool operator<=(const Iterator& a, const Iterator& b) { return a < b || a == b;}
 
 	  private:
 		void skip_zeros()

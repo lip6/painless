@@ -7,11 +7,8 @@
 #include "sharing/GlobalStrategies/GenericGlobalSharing.hpp"
 #include "sharing/GlobalStrategies/MallobSharing.hpp"
 
-#include "containers/ClauseDatabaseBufferPerEntity.hpp"
-#include "containers/ClauseDatabaseMallob.hpp"
-#include "containers/ClauseDatabasePerSize.hpp"
-
 #include "SharingStrategyFactory.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseFactory.hpp"
 
 int SharingStrategyFactory::selectedLocal = 0;
 int SharingStrategyFactory::selectedGlobal = 0;
@@ -36,86 +33,68 @@ SharingStrategyFactory::instantiateLocalStrategies(int strategyNumber,
 		strategyNumber = distShr(rng);
 	}
 
-	uint maxClauseSize = __globalParameters__.maxClauseSize;
+	// Initialize required fields of the Database Factory
+	ClauseDatabaseFactory::initialize(__globalParameters__.maxClauseSize, 100'000, 2, 1);
 
-	// TODO: decide weither or not to make a unique_ptr inside Sharer
+	unsigned currentSize = localStrategies.size();
+
+	std::shared_ptr<ClauseDatabase> lsharedDB =
+		ClauseDatabaseFactory::createDatabase(__globalParameters__.localSharingDB.at(0));
+	std::shared_ptr<ClauseDatabase> lsharedDB2 =
+		ClauseDatabaseFactory::createDatabase(__globalParameters__.localSharingDB.at(0));
+
 	switch (strategyNumber) {
 		case 1:
-			LOG0("LSTRAT>> HordeSatSharing(1Grp, per entity buffer)");
-			localStrategies.emplace_back(
-				new HordeSatSharing(std::make_shared<ClauseDatabaseBufferPerEntity>(maxClauseSize),
-									__globalParameters__.sharedLiteralsPerProducer,
-									__globalParameters__.hordeInitialLbdLimit,
-									__globalParameters__.hordeInitRound,
-									allEntities,
-									allEntities));
-			localStrategies.back()->connectConstructorProducers();
-			break;
-		case 2:
-			LOG0("LSTRAT>> HordeSatSharing(1Grp, common database)");
-			localStrategies.emplace_back(new HordeSatSharing(std::make_shared<ClauseDatabasePerSize>(maxClauseSize),
+			LOG0("LSTRAT>> HordeSatSharing(1Grp)");
+			localStrategies.emplace_back(new HordeSatSharing(lsharedDB,
 															 __globalParameters__.sharedLiteralsPerProducer,
 															 __globalParameters__.hordeInitialLbdLimit,
 															 __globalParameters__.hordeInitRound,
 															 allEntities,
 															 allEntities));
-			localStrategies.back()->connectConstructorProducers();
 			break;
-			break;
-		case 3:
+		case 2:
 			if (cdclSolvers.size() <= 2) {
-				LOGERROR("Please select another sharing strategy other than 2 or 3 if you want to have %d solvers.",
+				LOGERROR("Please select another sharing strategy other than 2 if you want to have %d solvers.",
 						 cdclSolvers.size());
 				LOGERROR("If you used -dist option, the strategies may not work");
 				exit(PWARN_LSTRAT_CPU_COUNT);
 			}
 
-			LOG0("LSTRAT>> HordeSatSharing(2Grp of producers)");
+			LOG0("LSTRAT>> HordeSatSharing (2Grp of producers, Common Per Size Database)");
 
 			localStrategies.emplace_back(
-				new HordeSatSharing(std::make_shared<ClauseDatabasePerSize>(maxClauseSize),
+				new HordeSatSharing(lsharedDB,
 									__globalParameters__.sharedLiteralsPerProducer,
 									__globalParameters__.hordeInitialLbdLimit,
 									__globalParameters__.hordeInitRound,
 									{ allEntities.begin(), allEntities.begin() + allEntities.size() / 2 },
 									{ allEntities.begin(), allEntities.end() }));
-			localStrategies.back()->connectConstructorProducers();
 			localStrategies.emplace_back(
-				new HordeSatSharing(std::make_shared<ClauseDatabasePerSize>(maxClauseSize),
+				new HordeSatSharing(lsharedDB2,
 									__globalParameters__.sharedLiteralsPerProducer,
 									__globalParameters__.hordeInitialLbdLimit,
 									__globalParameters__.hordeInitRound,
 									{ allEntities.begin() + allEntities.size() / 2, allEntities.end() },
 									{ allEntities.begin(), allEntities.end() }));
-			localStrategies.back()->connectConstructorProducers();
 			break;
-		case 4:
-			LOG0("LSTRAT>> SimpleSharing");
+		case 3:
+			LOG0("LSTRAT>> SimpleSharing (Common Per Size Database)");
 
-			localStrategies.emplace_back(new SimpleSharing(std::make_shared<ClauseDatabasePerSize>(maxClauseSize),
+			localStrategies.emplace_back(new SimpleSharing(lsharedDB,
 														   __globalParameters__.simpleShareLimit,
 														   __globalParameters__.sharedLiteralsPerProducer,
 														   allEntities,
 														   allEntities));
-			localStrategies.back()->connectConstructorProducers();
-			break;
-		case 5:
-			LOG0("LSTRAT>> HordeSatSharing(1Grp, MallobDB)");
-			localStrategies.emplace_back(
-				new HordeSatSharing(std::make_shared<ClauseDatabaseMallob>(maxClauseSize, 2, 100'000, 1),
-									__globalParameters__.sharedLiteralsPerProducer,
-									__globalParameters__.hordeInitialLbdLimit,
-									__globalParameters__.hordeInitRound,
-									allEntities,
-									allEntities));
-			localStrategies.back()->connectConstructorProducers();
 			break;
 		default:
-			LOGERROR("The sharing strategy number chosen isn't correct, use a value between 1 and %d",
-					 LOCAL_SHARING_STRATEGY_COUNT);
+			LOGERROR("The sharing strategy number chosen isn't correct. Sharing is disabled !");
 			break;
 	}
 
+	for (unsigned i = currentSize; i < localStrategies.size(); i++) {
+		localStrategies.at(i)->connectConstructorProducers();
+	}
 	SharingStrategyFactory::selectedLocal = strategyNumber;
 }
 
@@ -129,21 +108,23 @@ SharingStrategyFactory::instantiateGlobalStrategies(
 	std::vector<int> subscriptions;
 	std::vector<int> subscribers;
 
-	std::shared_ptr<ClauseDatabase> simpleDB;
+	ClauseDatabaseFactory::initialize(
+		__globalParameters__.maxClauseSize, __globalParameters__.globalSharedLiterals * 10, 2, 1);
+
+	std::shared_ptr<ClauseDatabase> gsharedDB =
+		ClauseDatabaseFactory::createDatabase(__globalParameters__.globalSharingDB.at(0));
 
 	switch (strategyNumber) {
 		case 0:
 			LOGWARN("For now, gshr-strat at 0 is AllGatherSharing, a future default one is in dev");
 		case 1:
 			LOG0("GSTRAT>> AllGatherSharing");
-			simpleDB = std::make_shared<ClauseDatabasePerSize>(__globalParameters__.maxClauseSize);
-			globalStrategies.emplace_back(new AllGatherSharing(simpleDB, __globalParameters__.globalSharedLiterals));
+			globalStrategies.emplace_back(new AllGatherSharing(gsharedDB,
+															   __globalParameters__.globalSharedLiterals));
 			break;
 		case 2:
 			LOG0("GSTRAT>> MallobSharing");
-			simpleDB = std::make_shared<ClauseDatabaseMallob>(
-				__globalParameters__.maxClauseSize, 2, __globalParameters__.globalSharedLiterals * 10, 1);
-			globalStrategies.emplace_back(new MallobSharing(simpleDB,
+			globalStrategies.emplace_back(new MallobSharing(gsharedDB,
 															__globalParameters__.globalSharedLiterals,
 															__globalParameters__.mallobMaxBufferSize,
 															__globalParameters__.mallobLBDLimit,
@@ -154,22 +135,23 @@ SharingStrategyFactory::instantiateGlobalStrategies(
 			break;
 		case 3:
 			LOG0("GSTRAT>> GenericGlobalSharing As RingSharing");
-			simpleDB = std::make_shared<ClauseDatabasePerSize>(__globalParameters__.maxClauseSize);
 			subscriptions.push_back(right_neighbor);
 			subscriptions.push_back(left_neighbor);
 			subscribers.push_back(right_neighbor);
 			subscribers.push_back(left_neighbor);
 
-			globalStrategies.emplace_back(new GenericGlobalSharing(
-				simpleDB, subscriptions, subscribers, __globalParameters__.globalSharedLiterals));
+			globalStrategies.emplace_back(new GenericGlobalSharing(gsharedDB,
+																   subscriptions,
+																   subscribers,
+																   __globalParameters__.globalSharedLiterals));
 			break;
 		default:
-			LOGERROR("Option gshr-lit=%d is not defined",strategyNumber);
+			LOGERROR("Global Strategy %d is not defined", strategyNumber);
 			std::abort();
 			break;
 	}
 
-	/*Since bootstraping, loop is not optimzed*/
+	/*Since it is bootstraping, loop is not optimzed*/
 	for (unsigned int i = 0; i < globalStrategies.size() && dist; i++) {
 		if (!globalStrategies.at(i)->initMpiVariables()) {
 			LOGERROR("The global sharing strategy %d wasn't able to initalize its MPI variables", i);

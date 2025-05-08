@@ -1,41 +1,55 @@
+
 // MiniSat includes
-#include "minisat/core/Dimacs.h"
-#include "minisat/simp/SimpSolver.h"
-#include "minisat/utils/System.h"
+#include <minisat/core/Dimacs.h>
+#include <minisat/simp/SimpSolver.h>
+#include <minisat/utils/System.h>
 
 #include "utils/Parameters.hpp"
 
-#include "containers/ClauseDatabaseSingleBuffer.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseSingleBuffer.hpp"
 
 #include "MiniSat.hpp"
 #include <iomanip>
 
-using namespace Minisat;
-
 // Macros for minisat literal representation conversion
-#define MINI_LIT(lit) lit > 0 ? mkLit(lit - 1, false) : mkLit((-lit) - 1, true)
+#define MINI_LIT(lit) lit > 0 ? Minisat::mkLit(lit - 1, false) : Minisat::mkLit((-lit) - 1, true)
 
-#define INT_LIT(lit) sign(lit) ? -(var(lit) + 1) : (var(lit) + 1)
+#define INT_LIT(lit) Minisat::sign(lit) ? -(Minisat::var(lit) + 1) : (Minisat::var(lit) + 1)
 
-static void
-makeMiniVec(ClauseExchangePtr cls, vec<Lit>& mcls)
+static bool
+checkLiteral(const Minisat::Lit& l, Minisat::Solver* minisat)
+{
+	// Assert if not negative (error)
+	assert(l.x >= 0);
+	// Check if the literal is not out of bound
+	if (minisat->nVars() <= var(l)) {
+		LOGDEBUG2("Literal %d is out of bound for Minisat", l.x);
+		return false;
+	}
+	return true;
+}
+
+static bool
+makeMiniVec(ClauseExchangePtr cls, Minisat::vec<Minisat::Lit>& mcls, Minisat::Solver* minisat)
 {
 	for (size_t i = 0; i < cls->size; i++) {
-		mcls.push(MINI_LIT(cls->lits[i]));
+		Minisat::Lit internalLit = MINI_LIT(cls->lits[i]);
+		mcls.push(internalLit);
+		// Checks
+		if (!checkLiteral(internalLit, minisat))
+			return false;
 	}
+	return true;
 }
 
 void
-minisatExportClause(void* issuer, vec<Lit>& cls)
+minisatExportClause(void* issuer, Minisat::vec<Minisat::Lit>& cls)
 {
 	/* TODO: a better fake glue management ?*/
 	MiniSat* ms = (MiniSat*)issuer;
 
-	ClauseExchangePtr ncls = ClauseExchange::create(cls.size());
-
 	// Fake glue value
-	int madeUpGlue = cls.size();
-	ncls->lbd = madeUpGlue;
+	ClauseExchangePtr ncls = ClauseExchange::create(cls.size(), cls.size(), ms->getSharingId());
 
 	for (int i = 0; i < cls.size(); i++) {
 		ncls->lits[i] = INT_LIT(cls[i]);
@@ -46,36 +60,47 @@ minisatExportClause(void* issuer, vec<Lit>& cls)
 	ms->exportClause(ncls);
 }
 
-Lit
+Minisat::Lit
 minisatImportUnit(void* issuer)
 {
 	MiniSat* ms = (MiniSat*)issuer;
 
-	Lit l = lit_Undef;
+	Minisat::Lit l;
 
 	ClauseExchangePtr cls;
 
-	if (ms->unitsToImport->getOneClause(cls) == false)
-		return l;
+	while (ms->unitsToImport->getOneClause(cls)) {
+		assert(cls->size == 1);
+		l = MINI_LIT(cls->lits[0]);
 
-	l = MINI_LIT(cls->lits[0]);
-	return l;
+		if (checkLiteral(l, ms->solver) == true) {
+			assert(l.x >= 0);
+			LOGDEBUG2("Importing to Minisat %u unit literal %d", ms->getSharingId(), l.x);
+			return l;
+		}
+	}
+	return Minisat::lit_Undef;
 }
 
 bool
-minisatImportClause(void* issuer, vec<Lit>& mcls)
+minisatImportClause(void* issuer, Minisat::vec<Minisat::Lit>& mcls)
 {
 	MiniSat* ms = (MiniSat*)issuer;
 
 	ClauseExchangePtr cls;
 
-	if (ms->m_clausesToImport->getOneClause(cls) == false) {
-		ms->m_clausesToImport->shrinkDatabase();
-		return false;
+	while (ms->m_clausesToImport->getOneClause(cls)) {
+		if (makeMiniVec(cls, mcls, ms->solver)) {
+			LOGCLAUSE1(cls->lits, cls->size, "Importing to Minisat %u clause: ", ms->getSharingId());
+			assert(mcls.size() > 1 && mcls[0].x >= 0);
+
+			return true;
+		}
+		mcls.clear();
 	}
 
-	makeMiniVec(cls, mcls);
-	return true;
+	ms->m_clausesToImport->shrinkDatabase();
+	return false;
 }
 
 MiniSat::MiniSat(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
@@ -84,7 +109,7 @@ MiniSat::MiniSat(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
 {
 	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
 
-	solver = new SimpSolver();
+	solver = new Minisat::SimpSolver();
 	solver->remove_satisfied = false;
 
 	solver->exportClauseCallback = minisatExportClause;
@@ -128,7 +153,7 @@ MiniSat::getDivisionVariable()
 void
 MiniSat::setPhase(const unsigned int var, const bool phase)
 {
-	solver->setPolarity(var - 1, phase ? l_True : l_False);
+	solver->setPolarity(var - 1, phase ? Minisat::l_True : Minisat::l_False);
 }
 
 // Bump activity for a given variable
@@ -171,26 +196,26 @@ MiniSat::solve(const std::vector<int>& cube)
 	clausesToAdd.getClauses(tmp);
 
 	for (size_t ind = 0; ind < tmp.size(); ind++) {
-		vec<Lit> mcls;
-		makeMiniVec(tmp[ind], mcls);
+		Minisat::vec<Minisat::Lit> mcls;
+		makeMiniVec(tmp[ind], mcls, this->solver);
 
 		if (solver->addClause(mcls) == false) {
-			printf("unsat when adding cls\n");
+			LOGWARN("unsat when adding cls");
 			return SatResult::UNSAT;
 		}
 	}
 
-	vec<Lit> miniAssumptions;
+	Minisat::vec<Minisat::Lit> miniAssumptions;
 	for (size_t ind = 0; ind < cube.size(); ind++) {
 		miniAssumptions.push(MINI_LIT(cube[ind]));
 	}
 
-	lbool res = solver->solveLimited(miniAssumptions);
+	Minisat::lbool res = solver->solveLimited(miniAssumptions);
 
-	if (res == l_True)
+	if (res == Minisat::l_True)
 		return SatResult::SAT;
 
-	if (res == l_False)
+	if (res == Minisat::l_False)
 		return SatResult::UNSAT;
 
 	return SatResult::UNKNOWN;
@@ -229,28 +254,63 @@ MiniSat::addClauses(const std::vector<ClauseExchangePtr>& clauses)
 void
 MiniSat::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars)
 {
+	while (solver->nVars() < nbVars) {
+		solver->newVar();
+	}
+
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
-		vec<Lit> mcls;
+		Minisat::vec<Minisat::Lit> mcls;
 
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
 			int lit = clauses[ind][i];
-			int var = abs(lit);
-
-			while (solver->nVars() < var) {
-				solver->newVar();
-			}
-
 			mcls.push(MINI_LIT(lit));
 		}
 
 		if (solver->addClause(mcls) == false) {
-			printf("unsat when adding initial cls\n");
+			LOGWARN("unsat when adding initial cls");
+			return;
 		}
 	}
 	LOG2("The Minisat Solver %d loaded all the %u clauses with %u variables",
 		 this->getSolverId(),
 		 clauses.size(),
 		 nbVars);
+}
+
+void
+MiniSat::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	unsigned int clausesCount = 0;
+	int lit;
+
+	while (solver->nVars() < nbVars) {
+		solver->newVar();
+	}
+
+	for (unsigned int i = 0; clausesCount < clsCount; i++) {
+
+		Minisat::vec<Minisat::Lit> mcls;
+
+		for (lit = *literals; lit; literals++, lit = *literals) {
+			if (!lit)
+				break;
+			mcls.push(MINI_LIT(lit));
+		}
+
+		// Jump zero
+		literals++;
+		clausesCount++;
+
+		if (!solver->addClause(mcls)) {
+			LOGWARN("unsat when adding initial cls");
+			return;
+		}
+	}
+
+	this->setInitialized(true);
+
+	LOG2(
+		"The MiniSat Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
 }
 
 void
@@ -291,8 +351,8 @@ MiniSat::getModel()
 	std::vector<int> model;
 
 	for (int i = 0; i < solver->nVars(); i++) {
-		if (solver->model[i] != l_Undef) {
-			int lit = solver->model[i] == l_True ? i + 1 : -(i + 1);
+		if (solver->model[i] != Minisat::l_Undef) {
+			int lit = solver->model[i] == Minisat::l_True ? i + 1 : -(i + 1);
 			model.push_back(lit);
 		}
 	}

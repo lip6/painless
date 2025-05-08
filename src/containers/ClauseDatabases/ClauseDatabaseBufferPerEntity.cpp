@@ -1,5 +1,5 @@
-#include "containers/ClauseDatabaseBufferPerEntity.hpp"
-#include "containers/ClauseDatabasePerSize.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseBufferPerEntity.hpp"
+#include "containers/ClauseDatabases/ClauseDatabasePerSize.hpp"
 #include "containers/ClauseExchange.hpp"
 #include "utils/Logger.hpp"
 #include <algorithm>

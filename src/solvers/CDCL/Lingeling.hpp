@@ -47,6 +47,8 @@ class Lingeling : public SolverCdclInterface
 	/// Add a list of permanent clauses to the formula.
 	void addClauses(const std::vector<ClauseExchangePtr>& clauses);
 
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars);
+
 	/// Add a list of initial clauses to the formula.
 	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
 

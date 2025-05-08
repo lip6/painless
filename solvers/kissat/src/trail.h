@@ -7,13 +7,10 @@
 
 struct kissat;
 
-void
-kissat_flush_trail(struct kissat*);
-bool
-kissat_flush_and_mark_reason_clauses(struct kissat*, reference start);
-void
-kissat_unmark_reason_clauses(struct kissat*, reference start);
-void
-kissat_mark_reason_clauses(struct kissat*, reference start);
+void kissat_flush_trail (struct kissat *);
+bool kissat_flush_and_mark_reason_clauses (struct kissat *,
+                                           reference start);
+void kissat_unmark_reason_clauses (struct kissat *, reference start);
+void kissat_mark_reason_clauses (struct kissat *, reference start);
 
 #endif

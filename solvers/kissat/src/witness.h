@@ -5,7 +5,6 @@
 
 struct kissat;
 
-void
-kissat_print_witness(struct kissat*, int max_var, bool partial);
+void kissat_print_witness (struct kissat *, int max_var, bool partial);
 
 #endif

@@ -3,7 +3,6 @@
 
 struct kissat;
 
-void
-kissat_transitive_reduction(struct kissat*);
+void kissat_transitive_reduction (struct kissat *);
 
 #endif

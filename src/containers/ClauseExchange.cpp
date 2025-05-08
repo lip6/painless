@@ -2,25 +2,25 @@
 #include "utils/Logger.hpp"
 #include <sstream>
 
-ClauseExchange::ClauseExchange(unsigned int size_, unsigned int lbd_, int from_)
+ClauseExchange::ClauseExchange(const csize_t size_, const lbd_t lbd_, const plid_it from_)
 	: lbd(lbd_)
 	, from(from_)
 	, size(size_)
 	, refCounter(0)
 {
 	// Some solvers can generate non unit clause with lbd == 1
-	if(size > 1 && lbd == 1) 
-	{
+	if (size > 1 && lbd == 1) {
 		lbd = 2;
 	}
-	assert(size > 1 && lbd > 1 || size == 1 && (lbd == 0 || lbd ==1)); // is there a solver that uses lbd = 1 for units ?
+	assert(size > 1 && lbd > 1 ||
+		   size == 1 && (lbd == 0 || lbd == 1)); // is there a solver that uses lbd = 1 for units ?
 }
 
 ClauseExchangePtr
-ClauseExchange::create(const unsigned int size, const unsigned int lbd, const int from)
+ClauseExchange::create(const csize_t size, const lbd_t lbd, const plid_it from)
 {
 	// Allocate memory for the object and the flexible array member
-	void* memory = std::malloc(sizeof(ClauseExchange) + size * sizeof(int));
+	void* memory = std::malloc(sizeof(ClauseExchange) + size * sizeof(lit_t));
 	if (!memory)
 		throw std::bad_alloc();
 
@@ -29,13 +29,13 @@ ClauseExchange::create(const unsigned int size, const unsigned int lbd, const in
 }
 
 ClauseExchangePtr
-ClauseExchange::create(const int* begin, const int* end, const unsigned int lbd, const int from)
+ClauseExchange::create(const lit_t* begin, const lit_t* end, const lbd_t lbd, const plid_it from)
 {
 	// Create a new ClauseExchange object
 	auto ce = create(end - begin, lbd, from);
 
 #ifndef NDEBUG
-	for (const int* it = begin; it != end; it++)
+	for (const lit_t* it = begin; it != end; it++)
 		assert(*it);
 #endif
 
@@ -46,7 +46,7 @@ ClauseExchange::create(const int* begin, const int* end, const unsigned int lbd,
 }
 
 ClauseExchangePtr
-ClauseExchange::create(const std::vector<int>& v_cls, const unsigned int lbd, const int from)
+ClauseExchange::create(const std::vector<lit_t>& v_cls, const lbd_t lbd, const plid_it from)
 {
 	// Create a new ClauseExchange object
 	auto ce = create(v_cls.size(), lbd, from);
@@ -74,7 +74,7 @@ ClauseExchange::toString() const
 	oss << ", lits: {";
 	if (size > 0) {
 		oss << lits[0];
-		for (unsigned int i = 1; i < size; i++) {
+		for (csize_t i = 1; i < size; i++) {
 			oss << ", " << lits[i];
 		}
 	}

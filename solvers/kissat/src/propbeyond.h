@@ -4,7 +4,6 @@
 struct kissat;
 struct clause;
 
-void
-kissat_propagate_beyond_conflicts(struct kissat*);
+void kissat_propagate_beyond_conflicts (struct kissat *);
 
 #endif

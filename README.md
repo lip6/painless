@@ -1,8 +1,8 @@
-D-Painless: A Framework for Parallel SAT Solving
+Painless: A Framework for Parallel SAT Solving
 ============================================== 
 [TOC]
 ## Overview
-D-Painless is a flexible framework for parallel and distributed SAT solving that integrates multiple state-of-the-art SAT solvers and preprocessing techniques.
+Painless is a flexible framework for parallel and distributed SAT solving that integrates multiple state-of-the-art SAT solvers and preprocessing techniques.
 
 - The doxygen different [Topics](https://lip6.github.io/painless/topics.html) is a good introduction to the different components in the framework.
 - For TACAS25 experiment reproducability, please check [TACAS25](./docs/source/TACAS25.md).
@@ -11,6 +11,8 @@ D-Painless is a flexible framework for parallel and distributed SAT solving that
 ## Contacts
 * Souheib BAARIR [souheib.baarir@lip6.fr](mailto:souheib.baarir@lip6.fr)
 * Mazigh SAOUDI [mazigh.saoudi@epita.fr](mailto:mazigh.saoudi@epita.fr)
+
+> [Contributors](./CONTRIBUTORS.md)
 
 ## Project Structure
 
@@ -24,7 +26,7 @@ D-Painless is a flexible framework for parallel and distributed SAT solving that
 
 ### Integrated SAT Solvers
 The framework integrates several state-of-the-art SAT solvers:
-- [Kissat](https://github.com/arminbiere/kissat/tree/71caafb4d182ced9f76cef45b00f37cc598f2a37) (v3.1.1)
+- [Kissat](https://github.com/arminbiere/kissat/tree/71caafb4d182ced9f76cef45b00f37cc598f2a37) (v4.0.2)
 - [CaDiCaL](https://github.com/arminbiere/cadical/tree/24d047563f5f4c9e37a74c04fa30059b2bbc4214) (v1.9.1)
 - [MapleCOMSPS](https://maplesat.github.io/solvers.html) (SAT Competition 17)
 - [Glucose](https://www.labri.fr/perso/lsimon/glucose/)
@@ -177,3 +179,41 @@ The analysis provides:
 - SAT/UNSAT instance statistics
 - Performance visualization plots
 - Virtual best solver (VBS) analysis
+
+### References
+
+```
+@InProceedings{10.1007/978-3-319-66263-3_15,
+author="Le Frioux, Ludovic
+and Baarir, Souheib
+and Sopena, Julien
+and Kordon, Fabrice",
+editor="Gaspers, Serge
+and Walsh, Toby",
+title="PaInleSS: A Framework for Parallel SAT Solving",
+booktitle="Theory and Applications of Satisfiability Testing -- SAT 2017",
+year="2017",
+publisher="Springer International Publishing",
+address="Cham",
+pages="233--250",
+isbn="978-3-319-66263-3"
+}
+```
+```
+@InProceedings{10.1007/978-3-031-90653-4_3,
+author="Saoudi, Mazigh
+and Baarir, Souheib
+and Sopena, Julien
+and Lejemble, Thibault",
+editor="Gurfinkel, Arie
+and Heule, Marijn",
+title="D-Painless: A Framework for Distributed Portfolio SAT Solving",
+booktitle="Tools and Algorithms for the Construction and Analysis of Systems",
+year="2025",
+publisher="Springer Nature Switzerland",
+address="Cham",
+pages="45--64",
+isbn="978-3-031-90653-4"
+}
+
+```

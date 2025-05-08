@@ -9,8 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-/// Simple clause definition
-using simpleClause = std::vector<int>;
+#include "containers/SimpleTypes.hpp"
 
 // Forward declaration of ClauseExchange
 class ClauseExchange;
@@ -32,7 +31,7 @@ using ClauseExchangePtr = boost::intrusive_ptr<ClauseExchange>;
  * This class provides a memory-efficient way to store and manage clauses
  * of varying sizes. It uses a flexible array member for storing the actual
  * clause data and supports reference counting through boost::intrusive_ptr.
- * 
+ *
  * @ingroup pl_containers
  *
  * @todo Template for metadata for better memory footprint.
@@ -41,41 +40,41 @@ using ClauseExchangePtr = boost::intrusive_ptr<ClauseExchange>;
 class ClauseExchange
 {
   public:
-	unsigned int lbd;					  ///< Literal Block Distance (LBD) of the clause
-	int from;							  ///< Source identifier of the clause
-	unsigned int size;					  ///< Size of the clause
-	std::atomic<unsigned int> refCounter; ///< Counter for intrusive_ptr copies and raw pointer conversions
-	int lits[0];						  ///< Flexible array member for storing clause literals (must be last)
+	lbd_t lbd;						  ///< Literal Block Distance (LBD) of the clause
+	plid_it from;						  ///< Source identifier of the clause
+	csize_t size;					  ///< Size of the clause
+	std::atomic<rcount_t> refCounter; ///< Counter for intrusive_ptr copies and raw pointer conversions
+	lit_t lits[0];					  ///< Flexible array member for storing clause literals (must be last)
 
 	/**
 	 * @brief Create a new ClauseExchange object.
-	 * @param lbd Literal Block Distance of the clause (default: 0).
+	 * @param lbd Literal Block Distance of the clause.
 	 * @param from Source identifier of the clause (default: -1).
 	 * @return ClauseExchangePtr Smart pointer to the created object.
 	 * @throw std::bad_alloc If memory allocation fails.
 	 */
-	static ClauseExchangePtr create(const unsigned int size, const unsigned int lbd = 0, const int from = -1);
+	static ClauseExchangePtr create(const csize_t size, const lbd_t lbd, const plid_it from = -1);
 
 	/**
 	 * @brief Create a new ClauseExchange object using pointers.
 	 * @param begin Start of integer data.
 	 * @param end End of integer data.
-	 * @param lbd Literal Block Distance of the clause (default: 0).
+	 * @param lbd Literal Block Distance of the clause.
 	 * @param from Source identifier of the clause (default: -1).
 	 * @return ClauseExchangePtr Smart pointer to the created object.
 	 * @throw std::bad_alloc If memory allocation fails.
 	 */
-	static ClauseExchangePtr create(const int* begin, const int* end, const unsigned int lbd = 0, const int from = -1);
+	static ClauseExchangePtr create(const lit_t* begin, const lit_t* end, const lbd_t lbd, const plid_it from = -1);
 
 	/**
 	 * @brief Create a new ClauseExchange object from a vector of literals.
 	 * @param v_cls Vector containing the clause literals.
-	 * @param lbd Literal Block Distance of the clause (default: 0).
+	 * @param lbd Literal Block Distance of the clause.
 	 * @param from Source identifier of the clause (default: -1).
 	 * @return ClauseExchangePtr Smart pointer to the created object.
 	 * @throw std::bad_alloc If memory allocation fails.
 	 */
-	static ClauseExchangePtr create(const std::vector<int>& v_cls, const unsigned int lbd = 0, const int from = -1);
+	static ClauseExchangePtr create(const std::vector<lit_t>& v_cls, const lbd_t lbd, const plid_it from = -1);
 
 	/**
 	 * @brief Destructor.
@@ -87,7 +86,7 @@ class ClauseExchange
 	 * @param index Index of the literal to access.
 	 * @return Reference to the literal at the specified index.
 	 */
-	int& operator[](unsigned int index)
+	lit_t operator[](csize_t index)
 	{
 		assert(index < size && "Index out of bounds");
 		return lits[index];
@@ -98,7 +97,7 @@ class ClauseExchange
 	 * @param index Index of the literal to access.
 	 * @return Const reference to the literal at the specified index.
 	 */
-	const int& operator[](unsigned int index) const
+	const lit_t operator[](csize_t index) const
 	{
 		assert(index < size && "Index out of bounds");
 		return lits[index];
@@ -108,25 +107,25 @@ class ClauseExchange
 	 * @brief Get iterator to the beginning of the clause.
 	 * @return Pointer to the first element of the clause.
 	 */
-	int* begin() { return lits; }
+	lit_t* begin() { return lits; }
 
 	/**
 	 * @brief Get iterator to the end of the clause.
 	 * @return Pointer to one past the last element of the clause.
 	 */
-	int* end() { return lits + size; }
+	lit_t* end() { return lits + size; }
 
 	/**
 	 * @brief Get const iterator to the beginning of the clause.
 	 * @return Const pointer to the first element of the clause.
 	 */
-	const int* begin() const { return lits; }
+	const lit_t* begin() const { return lits; }
 
 	/**
 	 * @brief Get const iterator to the end of the clause.
 	 * @return Const pointer to one past the last element of the clause.
 	 */
-	const int* end() const { return lits + size; }
+	const lit_t* end() const { return lits + size; }
 
 	/**
 	 * @brief Sort the literals in ascending order
@@ -136,7 +135,7 @@ class ClauseExchange
 	/**
 	 * @brief Sort the literals in descending order
 	 */
-	void sortLiteralsDescending() { std::sort(begin(), end(), std::greater<int>()); }
+	void sortLiteralsDescending() { std::sort(begin(), end(), std::greater<lit_t>()); }
 
 	/**
 	 * @brief Convert the clause to a string representation.
@@ -159,7 +158,11 @@ class ClauseExchange
 	 * @param ptr Raw pointer to a ClauseExchange object.
 	 * @return ClauseExchangePtr Smart pointer to the object.
 	 */
-	static ClauseExchangePtr fromRawPtr(ClauseExchange* ptr) { return ClauseExchangePtr(ptr, false); }
+	static ClauseExchangePtr fromRawPtr(ClauseExchange* ptr)
+	{
+		// False to not increment the ref counter at construction, thus no need to cancel the increment done at toRawPtr
+		return ClauseExchangePtr(ptr, false);
+	}
 
   private:
 	/**
@@ -168,7 +171,7 @@ class ClauseExchange
 	 * @param lbd Literal Block Distance of the clause.
 	 * @param from Source identifier of the clause.
 	 */
-	ClauseExchange(unsigned int size, unsigned int lbd, int from);
+	ClauseExchange(const csize_t size, const lbd_t lbd, const plid_it from);
 };
 
 /**

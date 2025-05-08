@@ -233,11 +233,6 @@ StructuredBVA::solve(const std::vector<int> &cube)
 				break; /* breaks while(1) : Not worth it */
 			}
 
-			/* DIVERSIFICATION shuffle the ties to select different lit if ties on heuristic value */
-			if (this->shuffleTies) {
-				std::random_shuffle(ties.begin(), ties.end());
-			}
-
 			/* DIVERSIFICATION : different tieBreakingHeuristics: take randomly a tie, take the least occuring / the
 			 * most occuring,  */
 			/* If several ties on lmaxMatches, select the most connected lmax to currentLit.lit */

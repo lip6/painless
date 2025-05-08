@@ -56,7 +56,7 @@ bool
 Cadical::hasClauseToImport()
 {
 	if (this->m_clausesToImport->getOneClause(tempClauseToImport)) {
-		LOGDEBUG2("Cadical %u will import clause %s", this->getSharingId(), tempClauseToImport->toString().c_str());
+		LOGDEBUG3("Cadical %u will import clause %s", this->getSharingId(), tempClauseToImport->toString().c_str());
 		return true;
 	} else {
 		m_clausesToImport->shrinkDatabase();
@@ -164,7 +164,7 @@ Cadical::initCadicalOptions()
 	cadicalOptions.insert({ "shuffle", 0 });	   /* shuffle variables */
 	cadicalOptions.insert({ "shufflequeue", 0 });  /* shuffle variable queue */
 	cadicalOptions.insert({ "shufflescores", 0 }); /* shuffle variable queue */
-	cadicalOptions.emplace("shufflerandom",0);
+	cadicalOptions.emplace("shufflerandom", 0);
 
 	// Random Walks
 	cadicalOptions.insert({ "walkredundant", 0 });
@@ -190,12 +190,12 @@ Cadical::initCadicalOptions()
 	cadicalOptions.insert({ "forcephase", 0 });
 
 	// Simplification Techniques
-	cadicalOptions.insert({ "block", 0 }); /* Blocked clause elimination */
-	cadicalOptions.insert({ "elim", 1 });  /* Bounded Variable elimination */
-	cadicalOptions.insert({ "otfs", 1 });  /* on the fly subsumption */
-	cadicalOptions.emplace("condition", 0); /* globally blocked clause elimination */
-	cadicalOptions.emplace("cover", 0); /* covered clause elimination */
-	cadicalOptions.emplace("inprocessing" ,1); /* enable inprocessing (search is stopped, simplification is resumed)*/
+	cadicalOptions.insert({ "block", 0 });	   /* Blocked clause elimination */
+	cadicalOptions.insert({ "elim", 1 });	   /* Bounded Variable elimination */
+	cadicalOptions.insert({ "otfs", 1 });	   /* on the fly subsumption */
+	cadicalOptions.emplace("condition", 0);	   /* globally blocked clause elimination */
+	cadicalOptions.emplace("cover", 0);		   /* covered clause elimination */
+	cadicalOptions.emplace("inprocessing", 1); /* enable inprocessing (search is stopped, simplification is resumed)*/
 
 	// Learnt Clauses
 	cadicalOptions.insert({ "reducetier1glue", 2 });
@@ -203,7 +203,6 @@ Cadical::initCadicalOptions()
 
 	// random seed
 	cadicalOptions.insert({ "seed", 0 });
-			
 
 	// Setting the options
 	for (auto& opt : cadicalOptions) {
@@ -310,6 +309,22 @@ Cadical::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned in
 		 this->getSolverId(),
 		 clauses.size(),
 		 nbVars);
+}
+
+void
+Cadical::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	solver->reserve(nbVars);
+
+	unsigned int clausesCount = 0;
+	int lit;
+	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
+		solver->add(lit);
+		if (!lit)
+			clausesCount++;
+	}
+	this->setInitialized(true);
+	LOG2("The Cadical Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clsCount, nbVars);
 }
 
 void

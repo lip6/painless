@@ -1,40 +1,54 @@
 // Glucose includes
-#include "core/Dimacs.h"
-#include "parallel/ParallelSolver.h"
-
-#include "glucose/utils/System.h"
-
 #include "GlucoseSyrup.hpp"
-#include "utils/Parameters.hpp"
 
-#include "containers/ClauseDatabaseSingleBuffer.hpp"
+#include <glucose/core/Dimacs.h>
+#include <glucose/parallel/ParallelSolver.h>
+#include <glucose/utils/System.h>
+
+#include "containers/ClauseDatabases/ClauseDatabaseSingleBuffer.hpp"
+#include "utils/Parameters.hpp"
 
 #include <iomanip>
 
-using namespace Glucose;
-
 // Macros to converte glucose literals
-#define GLUE_LIT(lit) lit > 0 ? mkLit(lit - 1, false) : mkLit((-lit) - 1, true)
+#define GLUE_LIT(lit) lit > 0 ? Glucose::mkLit(lit - 1, false) : Glucose::mkLit((-lit) - 1, true)
 
-#define INT_LIT(lit) sign(lit) ? -(var(lit) + 1) : (var(lit) + 1)
+#define INT_LIT(lit) Glucose::sign(lit) ? -(Glucose::var(lit) + 1) : (Glucose::var(lit) + 1)
 
-void
-makeGlueVec(ClauseExchangePtr cls, Glucose::vec<Lit>& gcls)
+static bool
+checkLiteral(const Glucose::Lit& l, Glucose::Solver* glucose)
+{
+	// Assert if not negative (error)
+	assert(l.x >= 0);
+	// Check if the literal is not out of bound
+	if (glucose->nVars() <= var(l)) {
+		LOGDEBUG2("Literal %d is out of bound for Glucose", l.x);
+		return false;
+	}
+	return true;
+}
+
+bool
+makeGlueVec(ClauseExchangePtr cls, Glucose::vec<Glucose::Lit>& gcls, Glucose::Solver* glucose)
 {
 	for (size_t i = 0; i < cls->size; i++) {
-		gcls.push(GLUE_LIT(cls->lits[i]));
+		Glucose::Lit internalLit = GLUE_LIT(cls->lits[i]);
+		gcls.push(internalLit);
+		// Checks
+		if (!checkLiteral(internalLit, glucose))
+			return false;
 	}
+
+	return true;
 }
 
 void
-glucoseExportUnary(void* issuer, Lit& l)
+glucoseExportUnary(void* issuer, Glucose::Lit& l)
 {
 	GlucoseSyrup* gs = (GlucoseSyrup*)issuer;
 
-	ClauseExchangePtr ncls = ClauseExchange::create(1);
+	ClauseExchangePtr ncls = ClauseExchange::create(1, 1, gs->getSharingId());
 
-	ncls->from = gs->getSharingId();
-	ncls->lbd = 1;
 	ncls->lits[0] = INT_LIT(l);
 
 	/* filtering defined by a sharing strategy */
@@ -42,7 +56,7 @@ glucoseExportUnary(void* issuer, Lit& l)
 }
 
 void
-glucoseExportClause(void* issuer, Clause& cls)
+glucoseExportClause(void* issuer, Glucose::Clause& cls)
 {
 	GlucoseSyrup* gs = (GlucoseSyrup*)issuer;
 
@@ -56,40 +70,50 @@ glucoseExportClause(void* issuer, Clause& cls)
 	gs->exportClause(ncls);
 }
 
-Lit
+Glucose::Lit
 glucoseImportUnary(void* issuer)
 {
 	GlucoseSyrup* gs = (GlucoseSyrup*)issuer;
 
-	Lit l = lit_Undef;
+	Glucose::Lit l;
 
 	ClauseExchangePtr cls;
 
-	if (gs->unitsToImport->getOneClause(cls) == false)
-		return l;
+	while (gs->unitsToImport->getOneClause(cls)) {
+		assert(cls->size == 1);
+		l = GLUE_LIT(cls->lits[0]);
 
-	l = GLUE_LIT(cls->lits[0]);
-
-	return l;
+		if (checkLiteral(l, gs->solver) == true) {
+			assert(l.x >= 0);
+			LOGDEBUG2("Importing to Glucose %u unit literal %d", gs->getSharingId(), l.x);
+			return l;
+		}
+	}
+	return Glucose::lit_Undef;
 }
 
 bool
-glucoseImportClause(void* issuer, int* from, vec<Lit>& gcls)
+glucoseImportClause(void* issuer, int* from, int* lbd, Glucose::vec<Glucose::Lit>& gcls)
 {
 	GlucoseSyrup* gs = (GlucoseSyrup*)issuer;
 
 	ClauseExchangePtr cls;
 
-	if (gs->m_clausesToImport->getOneClause(cls) == false) {
-		gs->m_clausesToImport->shrinkDatabase();
-		return false;
+	while (gs->m_clausesToImport->getOneClause(cls)) {
+		if (makeGlueVec(cls, gcls, gs->solver)) {
+			*from = cls->from;
+			*lbd = cls->lbd;
+
+			LOGCLAUSE1(cls->lits, cls->size, "Importing to Glucose %u clause: ", gs->getSharingId());
+			assert(gcls.size() > 1 && gcls[0].x >= 0);
+
+			return true;
+		}
+		gcls.clear();
 	}
 
-	makeGlueVec(cls, gcls);
-
-	*from = cls->from;
-
-	return true;
+	gs->m_clausesToImport->shrinkDatabase();
+	return false;
 }
 
 GlucoseSyrup::GlucoseSyrup(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
@@ -97,7 +121,7 @@ GlucoseSyrup::GlucoseSyrup(int id, const std::shared_ptr<ClauseDatabase>& clause
 	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
 {
 	/* use sharing id to not have the assert(importedFromThread != thn) fail */
-	solver = new ParallelSolver(this->getSharingId());
+	solver = new Glucose::ParallelSolver(this->getSharingId());
 
 	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
 
@@ -124,7 +148,7 @@ GlucoseSyrup::GlucoseSyrup(const GlucoseSyrup& other, int id, const std::shared_
 	: SolverCdclInterface(id, clauseDB, SolverCdclType::GLUCOSE)
 	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
 {
-	solver = new ParallelSolver(*(other.solver), this->getSharingId());
+	solver = new Glucose::ParallelSolver(*(other.solver), this->getSharingId());
 
 	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
 
@@ -183,7 +207,7 @@ GlucoseSyrup::getVariablesCount()
 int
 GlucoseSyrup::getDivisionVariable()
 {
-	Lit res;
+	Glucose::Lit res;
 
 	switch (__globalParameters__.glucoseSplitHeuristic) {
 		case 2:
@@ -319,24 +343,24 @@ GlucoseSyrup::solve(const std::vector<int>& cube)
 	clausesToAdd.getClauses(tmp);
 
 	for (size_t i = 0; i < tmp.size(); i++) {
-		vec<Lit> gcls;
-		makeGlueVec(tmp[i], gcls);
+		Glucose::vec<Glucose::Lit> gcls;
+		makeGlueVec(tmp[i], gcls, this->solver);
 
 		if (solver->addClause(gcls) == false) {
-			printf("unsat when adding cls\n");
+			LOGWARN("unsat when adding cls");
 			return SatResult::UNSAT;
 		}
 	}
 
-	vec<Lit> gAssumptions;
+	Glucose::vec<Glucose::Lit> gAssumptions;
 	for (unsigned int i = 0; i < cube.size(); i++) {
-		Lit l = GLUE_LIT(cube[i]);
+		Glucose::Lit l = GLUE_LIT(cube[i]);
 		if (!solver->isEliminated(var(l))) {
 			gAssumptions.push(l);
 		}
 	}
 
-	lbool res = solver->solveLimited(gAssumptions);
+	Glucose::lbool res = solver->solveLimited(gAssumptions);
 
 	if (res == l_True)
 		return SatResult::SAT;
@@ -391,28 +415,62 @@ GlucoseSyrup::addClauses(const std::vector<ClauseExchangePtr>& clauses)
 void
 GlucoseSyrup::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars)
 {
+	while (solver->nVars() < nbVars) {
+		solver->newVar();
+	}
+
 	for (size_t ind = 0; ind < clauses.size(); ind++) {
-		vec<Lit> mcls;
+		Glucose::vec<Glucose::Lit> mcls;
 
 		for (size_t i = 0; i < clauses[ind].size(); i++) {
 			int lit = clauses[ind][i];
 			int var = abs(lit);
 
-			while (solver->nVars() < nbVars) {
-				solver->newVar();
-			}
-
 			mcls.push(GLUE_LIT(lit));
 		}
 
 		if (!solver->addClause(mcls)) {
-			printf("unsat when adding initial cls\n");
+			LOGWARN("Unsat when adding initial cls\n");
+			return;
 		}
 	}
 	LOG2("The Glucose Solver %d loaded all the %u clauses with %u variables",
 		 this->getSolverId(),
 		 clauses.size(),
 		 nbVars);
+}
+
+void
+GlucoseSyrup::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	unsigned int clausesCount = 0;
+	int lit;
+	for (unsigned int i = 0; clausesCount < clsCount; i++) {
+		Glucose::vec<Glucose::Lit> mcls;
+
+		while (solver->nVars() < nbVars) {
+			solver->newVar();
+		}
+
+		for (lit = *literals; lit; literals++, lit = *literals) {
+			if(!lit) break;
+			mcls.push(GLUE_LIT(lit));
+		}
+
+		// Jump zero
+		literals++;
+		clausesCount++;
+
+		if (!solver->addClause(mcls)) {
+			LOGWARN("unsat when adding initial cls");
+			return;
+		}
+	}
+
+	this->setInitialized(true);
+
+	LOG2(
+		"The Glucose Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
 }
 
 void

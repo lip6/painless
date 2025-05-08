@@ -11,8 +11,7 @@
 #include "solvers/CDCL/KissatMABSolver.hpp"
 #include "solvers/CDCL/MapleCOMSPSSolver.hpp"
 
-#include "containers/ClauseDatabaseBufferPerEntity.hpp"
-#include "containers/ClauseDatabasePerSize.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseFactory.hpp"
 
 #include "sharing/GlobalStrategies/GenericGlobalSharing.hpp"
 #include "sharing/LocalStrategies/HordeSatSharing.hpp"
@@ -140,10 +139,14 @@ prs_sync:
 
 	// Create Solvers & Set Diversfication
 	uint threadsPerProc = __globalParameters__.cpus;
+
+	// Init Database Factory
+	ClauseDatabaseFactory::initialize(__globalParameters__.maxClauseSize, __globalParameters__.importDBCap, 2, 1);
+
 	switch (this->nodeGroup) {
 		case PRSGroups::SAT:
 			this->solversPortfolio = portfolio[0];
-			SolverFactory::createSolvers(threadsPerProc, 'd', this->solversPortfolio, cdclSolvers, localSolvers);
+			SolverFactory::createSolvers(threadsPerProc, __globalParameters__.importDB[0],  this->solversPortfolio, cdclSolvers, localSolvers);
 			for (auto& kissat : cdclSolvers) {
 				if (kissat->getSolverType() == SolverCdclType::KISSATINC) {
 					static_cast<KissatINCSolver*>(kissat.get())->setFamily(KissatFamily::SAT_STABLE);
@@ -156,7 +159,7 @@ prs_sync:
 			break;
 		case PRSGroups::UNSAT:
 			this->solversPortfolio = portfolio[0];
-			SolverFactory::createSolvers(threadsPerProc, 'd', this->solversPortfolio, cdclSolvers, localSolvers);
+			SolverFactory::createSolvers(threadsPerProc, __globalParameters__.importDB[0],  this->solversPortfolio, cdclSolvers, localSolvers);
 			for (auto& kissat : cdclSolvers) {
 				if (kissat->getSolverType() == SolverCdclType::KISSATINC) {
 					static_cast<KissatINCSolver*>(kissat.get())->setFamily(KissatFamily::UNSAT_FOCUSED);
@@ -169,7 +172,7 @@ prs_sync:
 			break;
 		case PRSGroups::DEFAULT:
 			this->solversPortfolio = portfolio[0];
-			SolverFactory::createSolvers(threadsPerProc, 'd', this->solversPortfolio, cdclSolvers, localSolvers);
+			SolverFactory::createSolvers(threadsPerProc, __globalParameters__.importDB[0],  this->solversPortfolio, cdclSolvers, localSolvers);
 			for (auto& kissat : cdclSolvers) {
 				if (kissat->getSolverType() == SolverCdclType::KISSATINC) {
 					static_cast<KissatINCSolver*>(kissat.get())->setFamily(KissatFamily::MIXED_SWITCH);
@@ -182,11 +185,11 @@ prs_sync:
 			break;
 		case PRSGroups::MAPLE:
 			this->solversPortfolio = portfolio[1];
-			SolverFactory::createSolvers(threadsPerProc, 'd', this->solversPortfolio, cdclSolvers, localSolvers);
+			SolverFactory::createSolvers(threadsPerProc, __globalParameters__.importDB[0],  this->solversPortfolio, cdclSolvers, localSolvers);
 			break;
 		case PRSGroups::LGL:
 			this->solversPortfolio = "l";
-			SolverFactory::createSolvers(threadsPerProc, 'd', this->solversPortfolio, cdclSolvers, localSolvers);
+			SolverFactory::createSolvers(threadsPerProc, __globalParameters__.importDB[0],  this->solversPortfolio, cdclSolvers, localSolvers);
 			break;
 	}
 
@@ -210,13 +213,18 @@ prs_sync:
 
 	mpiutils::sendFormula(initClauses, &varCount, 0);
 
-	// Load Formula in Solvers
+	cdclSolvers.back()->addInitialClauses(initClauses, varCount);
 
+	// Load Formula in Solvers
 	for (auto cdcl : cdclSolvers) {
-		clausesLoad.emplace_back(&LocalSearchInterface::addInitialClauses, cdcl, std::ref(initClauses), varCount);
+		clausesLoad.emplace_back([&cdcl, &initClauses, varCount]{
+			cdcl->addInitialClauses(initClauses,varCount);
+		});
 	}
 	for (auto local : localSolvers) {
-		clausesLoad.emplace_back(&LocalSearchInterface::addInitialClauses, local, std::ref(initClauses), varCount);
+		clausesLoad.emplace_back([&local, &initClauses, varCount]{
+			local->addInitialClauses(initClauses,varCount);
+		});
 	}
 
 	// Wait for clauses init
@@ -242,23 +250,23 @@ prs_sync:
 
 	/* Sharing */
 	/* ------- */
-
-	uint maxClauseSizeLocal = 80;
-	uint maxClauseSizeGlobal = 60;
-
+	// Both strategies will use the PerSize Database
+	// Reconfigure the maxclausesize of the factory
+	ClauseDatabaseFactory::s_maxClauseSize = 80;
 	/* Local HordeSat with a database limited to clause of size 80 */
 	std::shared_ptr<SharingStrategy> localStrategy =
-		std::make_shared<HordeSatSharing>(std::make_shared<ClauseDatabaseBufferPerEntity>(maxClauseSizeLocal),
+		std::make_shared<HordeSatSharing>(ClauseDatabaseFactory::createDatabase(__globalParameters__.importDB[0]),
 										  __globalParameters__.sharedLiteralsPerProducer,
 										  __globalParameters__.hordeInitialLbdLimit,
 										  __globalParameters__.hordeInitRound);
 
 	sharingStrategies.push_back(localStrategy);
 
+	ClauseDatabaseFactory::s_maxClauseSize = 60;
 	/* Global Sharing Strategy with genericSharing */
 	/* Left neighbor is my producer, my right one is my consumer */
 	std::shared_ptr<GlobalSharingStrategy> globalStrategy =
-		std::make_shared<GenericGlobalSharing>(std::make_shared<ClauseDatabasePerSize>(maxClauseSizeGlobal),
+		std::make_shared<GenericGlobalSharing>(ClauseDatabaseFactory::createDatabase(__globalParameters__.importDB[0]),
 											   std::vector<int>{ left_neighbor },
 											   std::vector<int>{ right_neighbor },
 											   __globalParameters__.globalSharedLiterals);

@@ -227,6 +227,65 @@ StructuredBVA::addInitialClauses(const std::vector<simpleClause>& initClauses, u
 	LOG1("Loaded all clauses in SBVA %d, duplicates detected %d", this->getSolverId(), duplicatesCount);
 }
 
+void StructuredBVA::addInitialClauses(const lit_t *literals, unsigned int nbClauses, unsigned int nbVariables)
+{
+	std::unordered_set<simpleClause, ClauseUtils::ClauseHash> clausesCache;
+	unsigned int duplicatesCount = 0;
+	simpleClause tmpClause;
+	unsigned int actualIdx = 0; /* since duplicates may exists */
+
+	this->originalClauseCount = nbClauses;
+	this->clauses.reserve(nbClauses);
+	this->isClauseDeleted.reserve(nbClauses);
+	this->litToClause.resize(2 * nbVariables);
+	this->litCountAdjustement.resize(2 * nbVariables);
+
+	for (unsigned int i = 0; i < nbClauses && !this->stopPreprocessing; i++) {
+		tmpClause.clear();
+		while(*literals)
+		{
+			tmpClause.push_back(*literals);
+			literals++;
+		}
+		std::sort(tmpClause.begin(), tmpClause.end());
+		auto insertTest = clausesCache.insert(tmpClause);
+		if (!insertTest.second) {
+			duplicatesCount++;
+			continue;
+		} else {
+			for (int lit : tmpClause) {
+				this->litToClause[LIT_IDX(lit)].push_back(actualIdx);
+			}
+			this->clauses.push_back(std::move(tmpClause));
+			this->isClauseDeleted.push_back(0);
+			actualIdx++;
+		}
+	}
+
+	if (this->stopPreprocessing) {
+		LOGDEBUG1("[SBVA %d] stopped at addInitialClauses", this->getSolverId());
+		return;
+	}
+
+	this->adjacencyMatrixWidth = nbVariables * 4;
+
+	if (this->tieBreakHeuristic == SBVATieBreak::THREEHOPS) {
+		adjacencyMatrix.resize(nbVariables);
+		for (unsigned int i = 1; i < this->varCount; i++) {
+			this->updateAdjacencyMatrix(i);
+		}
+	}
+
+	if (this->stopPreprocessing) {
+		LOGDEBUG1("[SBVA %d] stopped at addInitialClauses after updateMatrices", this->getSolverId());
+		return;
+	}
+
+	this->varCount = nbVariables;
+	this->m_initialized = true;
+	LOG1("Loaded all clauses in SBVA %d, duplicates detected %d", this->getSolverId(), duplicatesCount);
+}
+
 void
 StructuredBVA::loadFormula(const char* filename)
 {
@@ -330,7 +389,6 @@ StructuredBVA::printParameters()
 void
 StructuredBVA::diversify(const SeedGenerator& getSeed)
 {
-	/* TODO deterministic div: ids are successive so modulo would suffice */
 	// Default
 	this->setTieBreakHeuristic(SBVATieBreak::THREEHOPS);
 	this->pairCompare.func = decreasingOrder;

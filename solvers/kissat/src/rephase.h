@@ -2,13 +2,10 @@
 #define _rephase_h_INCLUDED
 
 #include <stdbool.h>
-#include <stdint.h>
 
 struct kissat;
 
-bool
-kissat_rephasing(struct kissat*);
-void
-kissat_rephase(struct kissat*);
+bool kissat_rephasing (struct kissat *);
+void kissat_rephase (struct kissat *);
 
 #endif

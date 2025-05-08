@@ -6,6 +6,7 @@
 #include "assign.h"
 #include "averages.h"
 #include "check.h"
+#include "classify.h"
 #include "clause.h"
 #include "cover.h"
 #include "extend.h"
@@ -34,32 +35,30 @@
 
 typedef struct datarank datarank;
 
-struct datarank
-{
-	unsigned data;
-	unsigned rank;
+struct datarank {
+  unsigned data;
+  unsigned rank;
 };
 
 typedef struct import import;
 
-struct import
-{
-	unsigned lit;
-	bool imported;
-	bool eliminated;
+struct import {
+  unsigned lit;
+  bool extension;
+  bool imported;
+  bool eliminated;
 };
 
 typedef struct termination termination;
 
-struct termination
-{
+struct termination {
 #ifdef COVERAGE
-	volatile uint64_t flagged;
+  volatile uint64_t flagged;
 #else
-	volatile bool flagged;
+  volatile bool flagged;
 #endif
-	volatile void* state;
-	int (*volatile terminate)(void*);
+  volatile void *state;
+  int (*volatile terminate) (void *);
 };
 
 // clang-format off
@@ -74,38 +73,39 @@ typedef STACK (watch *) patches;
 
 struct kitten;
 
-struct kissat
-{
+struct kissat {
 #if !defined(NDEBUG) || defined(METRICS)
-	bool backbone_computing;
+  bool backbone_computing;
 #endif
 #ifdef LOGGING
-	bool compacting;
+  bool compacting;
 #endif
-	bool extended;
-	bool inconsistent;
-	bool iterating;
-	bool probing;
+  bool extended;
+  bool inconsistent;
+  bool iterating;
+  bool preprocessing;
+  bool probing;
 #ifndef QUIET
-	bool sectioned;
+  bool sectioned;
 #endif
-	bool stable;
+  bool stable;
 #if !defined(NDEBUG) || defined(METRICS)
-	bool transitive_reducing;
-	bool vivifying;
+  bool transitive_reducing;
+  bool vivifying;
 #endif
-	bool watching;
+  bool warming;
+  bool watching;
 
-	bool large_clauses_watched_after_binary_clauses;
+  bool large_clauses_watched_after_binary_clauses;
 
-	termination termination;
+  termination termination;
 
-	unsigned vars;
-	unsigned size;
-	unsigned active;
-	unsigned randec;
+  unsigned vars;
+  unsigned size;
+  unsigned active;
+  unsigned randec;
 
-	// Begin Painless
+  // Begin Painless
 
 	// Stats
 	unsigned nb_exported;
@@ -127,223 +127,191 @@ struct kissat
 							kissat*); // callback for clause learning
 	// End Painless
 
-	ints export;
-	ints units;
-	imports import;
-	extensions extend;
-	unsigneds witness;
+  ints export;
+  ints units;
+  imports import;
+  extensions extend;
+  unsigneds witness;
 
-	/**
-	 * An array of struct assigned, one for each iidx.
-	 * Meaning: stocks information about the assignement of a variable, without the value assigned.
-	 * struct assigned
-	  {
-		unsigned level:LD_MAX_LEVEL;
-		unsigned analyzed:2;
-		bool redundant:1;
-		bool binary:1;
-		unsigned reason; // must be a clause index or something like that
-	  };
-	*/
-	assigned* assigned;
+  assigned *assigned;
+  flags *flags;
 
-	/**
-	 * An array of struct flag, one for each iidx
-	 * Meaning: status of each variable
-	 * struct flags
-	  {
-		bool active:1;
-		bool eliminate:1;
-		bool eliminated:1;
-		bool fixed:1;
-		bool probe:1;
-		bool subsume:1;
-	  };
-	*/
-	flags* flags;
+  mark *marks;
 
-	/**
-	 * Mystery: where is it allocated ? kisst_init ?
-	 * An array of signed char, one for each ilit (size  = LITS)
-	 * Meaning: if everything is initialized to zero, in kissat_add, it marks an already seen unassigned literal by 1,
-	 * and its negation by -1 It is useful to detect tautologies, and it is reset to zero after the end of an original
-	 * clause
-	 */
-	mark* marks;
+  value *values;
+  phases phases;
 
-	/**
-	 * An array of signed char, one for each ilit
-	 * Meaning (not sure): -1 for falsified, 1 for truefied, 0 for unassigned
-	 */
-	value* values;
-	phases phases;
+  eliminated eliminated;
+  unsigneds etrail;
 
-	eliminated eliminated;
-	unsigneds etrail;
+  links *links;
+  queue queue;
 
-	/**
-	 * Array of struct link, one for each variable
-	 * Meaning: Used to have a linked list (queue) of unassigned variables ??
-	 * struct links
-	  {
-		unsigned prev, next;
-		unsigned stamp;
-	  };
-	*/
-	links* links;
+  heap scores;
+  double scinc;
 
-	/**
-	 * first and last are iidx values.
-	 * Meaning: queue of unassigned, or to be propagated ??
-	 * struct queue
-	  {
-		unsigned first, last, stamp;
-		struct
-		{
-		  unsigned idx, stamp;
-		} search;
-	  };
-	*/
-	queue queue;
+  heap schedule;
+  double scoreshift;
 
-	heap scores;
-	double scinc;
+  unsigned level;
+  frames frames;
 
-	heap schedule;
-	double scoreshift;
+  unsigned_array trail;
+  unsigned *propagate;
 
-	unsigned level;
-	frames frames;
+  unsigned best_assigned;
+  unsigned target_assigned;
+  unsigned unflushed;
+  unsigned unassigned;
 
-	unsigned_array trail;
-	unsigned* propagate;
-
-	unsigned best_assigned;
-	unsigned target_assigned;
-	unsigned unflushed;
-	unsigned unassigned;
-
-	unsigneds delayed;
+  unsigneds delayed;
 
 #if defined(LOGGING) || !defined(NDEBUG)
-	unsigneds resolvent;
+  unsigneds resolvent;
 #endif
-	unsigned resolvent_size;
-	unsigned antecedent_size;
+  unsigned resolvent_size;
+  unsigned antecedent_size;
 
-	dataranks ranks;
+  dataranks ranks;
 
-	unsigneds analyzed;
-	unsigneds levels;
-	unsigneds minimize;
-	unsigneds poisoned;
-	unsigneds promote;
-	unsigneds removable;
-	unsigneds shrinkable;
+  unsigneds analyzed;
+  unsigneds levels;
+  unsigneds minimize;
+  unsigneds poisoned;
+  unsigneds promote;
+  unsigneds removable;
+  unsigneds shrinkable;
 
-	clause conflict;
+  clause conflict;
 
-	bool clause_satisfied;
-	bool clause_shrink;
-	bool clause_trivial;
+  bool clause_satisfied;
+  bool clause_shrink;
+  bool clause_trivial;
 
-	unsigneds clause;
-	unsigneds shadow;
+  unsigneds clause;
+  unsigneds shadow;
 
-	arena arena;
-	vectors vectors;
-	reference first_reducible;
-	reference last_irredundant;
-	watches* watches;
+  arena arena;
+  vectors vectors;
+  reference first_reducible;
+  reference last_irredundant;
+  watches *watches;
 
-	sizes sorter;
+  reference last_learned[4];
 
-	generator random;
-	averages averages[2];
-	reluctant reluctant;
+  sizes sorter;
 
-	bounds bounds;
-	delays delays;
-	enabled enabled;
-	effort last;
-	limited limited;
-	limits limits;
-	waiting waiting;
-	unsigned walked;
+  generator random;
+  averages averages[2];
+  unsigned tier1[2], tier2[2];
+  reluctant reluctant;
 
-	statistics statistics;
-	mode mode;
+  bounds bounds;
+  classification classification;
+  delays delays;
+  enabled enabled;
+  limited limited;
+  limits limits;
+  remember last;
+  unsigned walked;
 
-	uint64_t ticks;
+  mode mode;
 
-	format format;
+  uint64_t ticks;
 
-	statches antecedents[2];
-	statches gates[2];
-	patches xorted[2];
-	unsigneds resolvents;
-	bool resolve_gate;
+  format format;
+  char *prefix;
 
-	struct kitten* kitten;
+  statches antecedents[2];
+  statches gates[2];
+  patches xorted[2];
+  unsigneds resolvents;
+  bool resolve_gate;
+
+  struct kitten *kitten;
 #ifdef METRICS
-	uint64_t* gate_eliminated;
+  uint64_t *gate_eliminated;
 #else
-	bool gate_eliminated;
+  bool gate_eliminated;
 #endif
-	unsigneds sweep;
+  bool sweep_incomplete;
+  unsigneds sweep_schedule;
 
 #if !defined(NDEBUG) || !defined(NPROOFS)
-	unsigneds added;
-	unsigneds removed;
+  unsigneds added;
+  unsigneds removed;
 #endif
 
 #if !defined(NDEBUG) || !defined(NPROOFS) || defined(LOGGING)
-	ints original;
-	size_t offset_of_last_original_clause;
+  ints original;
+  size_t offset_of_last_original_clause;
 #endif
 
 #ifndef QUIET
-	profiles profiles;
+  profiles profiles;
 #endif
 
 #ifndef NOPTIONS
-	options options;
+  options options;
 #endif
 
 #ifndef NDEBUG
-	checker* checker;
+  checker *checker;
 #endif
 
 #ifndef NPROOFS
-	proof* proof;
+  proof *proof;
 #endif
+
+  statistics statistics;
 };
 
 #define VARS (solver->vars)
 #define LITS (2 * solver->vars)
 
+#if 0
+#define TIEDX (GET_OPTION (focusedtiers) ? 0 : solver->stable)
+#define TIER1 (solver->tier1[TIEDX])
+#define TIER2 (solver->tier2[TIEDX])
+#else
+#define TIER1 (solver->tier1[0])
+#define TIER2 (solver->tier2[1])
+#endif
+
 #define SCORES (&solver->scores)
 
-static inline unsigned
-kissat_assigned(kissat* solver)
-{
-	assert(VARS >= solver->unassigned);
-	return VARS - solver->unassigned;
+static inline unsigned kissat_assigned (kissat *solver) {
+  assert (VARS >= solver->unassigned);
+  return VARS - solver->unassigned;
 }
 
-#define all_variables(IDX)                                                                                             \
-	unsigned IDX = 0, IDX##_END = solver->vars;                                                                        \
-	IDX != IDX##_END;                                                                                                  \
-	++IDX
+#define all_variables(IDX) \
+  unsigned IDX = 0, IDX##_END = solver->vars; \
+  IDX != IDX##_END; \
+  ++IDX
 
-#define all_literals(LIT)                                                                                              \
-	unsigned LIT = 0, LIT##_END = LITS;                                                                                \
-	LIT != LIT##_END;                                                                                                  \
-	++LIT
+#define all_literals(LIT) \
+  unsigned LIT = 0, LIT##_END = LITS; \
+  LIT != LIT##_END; \
+  ++LIT
 
-#define all_clauses(C)                                                                                                 \
-	clause *C = (clause*)BEGIN_STACK(solver->arena), *const C##_END = (clause*)END_STACK(solver->arena), *C##_NEXT;    \
-	C != C##_END && (C##_NEXT = kissat_next_clause(C), true);                                                          \
-	C = C##_NEXT
+#define all_clauses(C) \
+  clause *C = (clause *) BEGIN_STACK (solver->arena), \
+         *const C##_END = (clause *) END_STACK (solver->arena), *C##_NEXT; \
+  C != C##_END && (C##_NEXT = kissat_next_clause (C), true); \
+  C = C##_NEXT
+
+#define capacity_last_learned \
+  (sizeof solver->last_learned / sizeof *solver->last_learned)
+
+#define real_end_last_learned (solver->last_learned + capacity_last_learned)
+
+#define really_all_last_learned(REF_PTR) \
+  reference *REF_PTR = solver->last_learned, \
+            *REF_PTR##_END = real_end_last_learned; \
+  REF_PTR != REF_PTR##_END; \
+  REF_PTR++
+
+void kissat_reset_last_learned (kissat *solver);
 
 #endif

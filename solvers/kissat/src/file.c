@@ -128,6 +128,7 @@ static int gzsig[] = {0x1F, 0x8B, EOF};
 static int lzmasig[] = {0x5D, 0x00, 0x00, 0x80, 0x00, EOF};
 static int sig7z[] = {0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C, EOF};
 static int xzsig[] = {0xFD, 0x37, 0x7A, 0x58, 0x5A, 0x00, 0x00, EOF};
+static int Zsig[] = {0x1F, 0x9D, 0x90, EOF};
 
 static bool match_signature (const char *path, const int *sig) {
   assert (path);
@@ -216,6 +217,7 @@ bool kissat_looks_like_a_compressed_file (const char *path) {
   RETURN_TRUE_IF_COMPRESSED (".lzma", lzmasig);
   RETURN_TRUE_IF_COMPRESSED (".7z", sig7z);
   RETURN_TRUE_IF_COMPRESSED (".xz", xzsig);
+  RETURN_TRUE_IF_COMPRESSED (".Z", Zsig);
 
   return false;
 }
@@ -243,6 +245,7 @@ bool kissat_open_to_read_file (file *file, const char *path) {
   READ_PIPE (".lzma", "lzma -c -d %s", lzmasig);
   READ_PIPE (".7z", "7z x -so %s 2>/dev/null", sig7z);
   READ_PIPE (".xz", "xz -c -d %s", xzsig);
+  READ_PIPE (".Z", "gzip -c -d %s", Zsig);
 #endif
   file->file = fopen (path, "r");
   if (!file->file)

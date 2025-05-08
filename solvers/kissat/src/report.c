@@ -12,7 +12,7 @@
 #define MB (kissat_current_resident_set_size () / (double) (1 << 20))
 
 #define REMAINING_VARIABLES \
-  kissat_percent (solver->active, SIZE_STACK (solver->import))
+  kissat_percent (solver->active, statistics->variables_original)
 
 #define REPORTS \
   REP ("seconds", "5.2f", kissat_time (solver)) \
@@ -21,19 +21,24 @@
   REP ("switched", "1" PRIu64, statistics->switched) \
   REP ("reductions", "1" PRIu64, statistics->reductions) \
   REP ("restarts", "2" PRIu64, statistics->restarts) \
-  /*REP("rate", ".0f", AVERAGE (decision_rate)) */ \
+  REP ("rate", ".0f", AVERAGE (decision_rate)) \
   REP ("conflicts", "3" PRIu64, CONFLICTS) \
   REP ("redundant", "3" PRIu64, REDUNDANT_CLAUSES) \
+  REP ("size/glue", ".1f", \
+       kissat_average (AVERAGE (size), AVERAGE (slow_glue))) \
+  REP ("size", ".0f", AVERAGE (size)) \
+  REP ("glue", ".0f", AVERAGE (slow_glue)) \
+  REP ("tier1", "1u", solver->tier1[solver->stable]) \
+  REP ("tier2", "1u", solver->tier2[solver->stable]) \
+  REP ("trail", ".0f%%", AVERAGE (trail)) \
   REP ("binary", "3" PRIu64, BINARY_CLAUSES) \
   REP ("irredundant", "2" PRIu64, IRREDUNDANT_CLAUSES) \
-  REP ("trail", ".0f%%", AVERAGE (trail)) \
-  REP ("glue", ".0f", AVERAGE (slow_glue)) \
   REP ("variables", "2u", solver->active) \
   REP ("remaining", "1.0f%%", REMAINING_VARIABLES)
 
 void kissat_report (kissat *solver, bool verbose, char type) {
   statistics *statistics = &solver->statistics;
-  // Begin Painless
+  // Begin Painless (disable report while keeping debug logs)
   // const int verbosity = kissat_verbosity (solver); 
   const int verbosity = -1;
   return; 
@@ -91,23 +96,23 @@ void kissat_report (kissat *solver, bool verbose, char type) {
       *r[j] = 0;
     }
     if (solver->limits.reports > 1)
-      fputs ("c\n", stdout);
+      kissat_line (solver);
     for (unsigned j = 0; j < ROWS; j++) {
-      fputs ("c  ", stdout);
-      COLOR (YELLOW);
+      fputs (solver->prefix, stdout);
+      COLOR (CYAN);
       fputs (rows[j], stdout);
       COLOR (NORMAL);
       fputc ('\n', stdout);
     }
-    fputs ("c\n", stdout);
+    kissat_line (solver);
   }
-  fputc ('c', stdout);
-  fputc (' ', stdout);
+  kissat_prefix (solver);
   switch (type) {
   case '1':
   case '0':
   case '?':
   case 'i':
+  case '.':
     COLOR (BOLD);
     break;
   case 'e':
@@ -122,24 +127,31 @@ void kissat_report (kissat *solver, bool verbose, char type) {
   case 'u':
   case 'v':
   case 'w':
+  case 'x':
     COLOR (BLUE);
     break;
   case 'b':
+  case 'c':
   case 'd':
+  case '=':
     COLOR (BOLD BLUE);
     break;
   case '[':
   case ']':
     COLOR (MAGENTA);
     break;
+  case '(':
+  case ')':
+    COLOR (BOLD YELLOW);
   }
   fputc (type, stdout);
   COLOR (NORMAL);
-  if (solver->stable)
+  if (solver->preprocessing)
+    COLOR (YELLOW);
+  else if (solver->stable)
     COLOR (MAGENTA);
   fputs (line, stdout);
-  if (solver->stable)
-    COLOR (NORMAL);
+  COLOR (NORMAL);
   fputc ('\n', stdout);
   fflush (stdout);
 }

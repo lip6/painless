@@ -5,7 +5,6 @@
 
 struct kissat;
 
-bool
-kissat_find_definition(struct kissat*, unsigned lit);
+bool kissat_find_definition (struct kissat *, unsigned lit);
 
 #endif

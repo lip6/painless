@@ -643,7 +643,8 @@ void Solver::removeSatisfied(vec<CRef>& cs)
             removeClause(cs[i]);
         else{
             // Trim clause:
-            assert(value(c[0]) == l_Undef && value(c[1]) == l_Undef);
+            // Mazigh: Disabled this since the undef(2) can become a 3 for negative literals
+            // assert(value(c[0]) == l_Undef && value(c[1]) == l_Undef);
             for (int k = 2; k < c.size(); k++)
                 if (value(c[k]) == l_False){
                     c[k--] = c[c.size()-1];

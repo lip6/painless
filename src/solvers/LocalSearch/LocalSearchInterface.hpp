@@ -13,6 +13,7 @@
 enum LocalSearchType
 {
 	YALSAT = 0,
+	TASSAT = 1,
 };
 
 /// Local search statistics

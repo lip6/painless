@@ -81,36 +81,43 @@ parseNumber(FILE* f, int firstDigit)
 bool
 parseCNFParameters(FILE* f, unsigned int& varCount, unsigned int& clauseCount)
 {
-	if (skipWhitespace(f) != 'p') {
-		LOGERROR("p character not detected");
-		return false;
-	}
+	char c;
+	while ((c = skipWhitespace(f)) != EOF) {
+		if (c == 'c') {
+			skipLine(f);
+			continue;
+		}
+		if (c == 'p') {
+			// Skip "\s*c"
+			c = skipWhitespace(f);
+			// Skip "nf"
+			for (int i = 0; i < 2; i++) {
+				if (fgetc(f) == EOF) {
+					LOGERROR("EOF Detected to early");
+					return false;
+				}
+			}
 
-	char c = skipWhitespace(f);
+			c = skipWhitespace(f);
+			if (!isdigit(c)) {
+				LOGERROR("Unexpected character, %c", c);
+				return false;
+			}
+			varCount = parseNumber(f, c);
 
-	// Skip "cnf"
-	for (int i = 0; i < 2; i++) {
-		if (fgetc(f) == EOF) {
-			LOGERROR("EOF Detected to early");
-			return false;
+			c = skipWhitespace(f);
+			if (!isdigit(c)) {
+				LOGERROR("Unexpected character, %c", c);
+				return false;
+			}
+			clauseCount = parseNumber(f, c);
+
+			return true;
 		}
 	}
 
-	c = skipWhitespace(f);
-	if (!isdigit(c)) {
-		LOGERROR("Unexpected character, %c", c);
-		return false;
-	}
-	varCount = parseNumber(f, c);
-
-	c = skipWhitespace(f);
-	if (!isdigit(c)) {
-		LOGERROR("Unexpected character, %c", c);
-		return false;
-	}
-	clauseCount = parseNumber(f, c);
-
-	return true;
+	LOGERROR("p character not detected");
+	return false;
 }
 
 // Parse a single clause
@@ -153,8 +160,10 @@ bool
 parseCNF(const char* filename, Formula& parsedFormula, const std::vector<std::unique_ptr<ClauseProcessor>>& processors)
 {
 	FILE* f = fopen(filename, "r");
-	if (f == NULL)
+	if (f == NULL) {
+		LOGERROR("Couldn't open file: %s", filename);
 		return false;
+	}
 
 	unsigned int parsedClauseCount = 0, parsedVarCount = 0, filteredOutCount = 0;
 	if (!parseCNFParameters(f, parsedVarCount, parsedClauseCount)) {
@@ -210,8 +219,10 @@ parseCNF(const char* filename,
 {
 
 	FILE* f = fopen(filename, "r");
-	if (f == NULL)
+	if (f == NULL) {
+		LOGERROR("Couldn't open file: %s", filename);
 		return false;
+	}
 
 	unsigned int parsedClauseCount = 0, parsedVarCount = 0, filteredOutCount = 0;
 	if (!parseCNFParameters(f, parsedVarCount, parsedClauseCount)) {
@@ -256,4 +267,70 @@ parseCNF(const char* filename,
 
 	return true;
 }
+
+bool
+parseCNF(const char* filename,
+		 std::vector<lit_t>& literals,
+		 unsigned int* varCount,
+		 unsigned int* clsCount,
+		 const std::vector<std::unique_ptr<ClauseProcessor>>& processors)
+{
+	FILE* f = fopen(filename, "r");
+	if (f == NULL) {
+		LOGERROR("Couldn't open file: %s", filename);
+		return false;
+	}
+
+	unsigned int parsedClauseCount = 0, parsedVarCount = 0, filteredOutCount = 0, clsCount_ = 0;
+	size_t litCounts = 0;
+	if (!parseCNFParameters(f, parsedVarCount, parsedClauseCount)) {
+		fclose(f);
+		return false;
+	}
+
+	*varCount = parsedVarCount;
+
+	for (auto& processor : processors) {
+		if (!processor->initMembers(parsedVarCount, parsedClauseCount)) {
+			LOGERROR("Error at member initialization of processor %s", typeid(*processor).name());
+			exit(PERR_PARSING);
+		}
+	}
+
+	simpleClause cls;
+	while (parseClause(f, cls)) {
+		if (!cls.empty()) {
+			bool keepClause = true;
+			for (auto& processor : processors) {
+				if (!(keepClause = processor->operator()(cls))) {
+					filteredOutCount++;
+					break;
+				}
+			}
+			if (keepClause) {
+				literals.insert(literals.end(), cls.begin(), cls.end());
+				literals.push_back(0);
+				litCounts+=cls.size();
+				clsCount_++;
+			}
+		}
+
+		cls.clear();
+	}
+
+	fclose(f);
+
+	assert(parsedClauseCount - filteredOutCount == clsCount_);
+
+	*clsCount = clsCount_;
+
+	LOG0("Successfully parsed %u clauses (filtered out: %u) with %u variables in %s.",
+		 parsedClauseCount,
+		 filteredOutCount,
+		 parsedVarCount,
+		 filename);
+
+	return true;
+}
+
 } // namespace Parsers

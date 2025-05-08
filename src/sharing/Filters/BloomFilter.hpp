@@ -8,15 +8,14 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
-// #include <spot/misc/clz.hh>
+#include "containers/SimpleTypes.hpp"
 
 #include "containers/ClauseUtils.hpp"
 
 #define NUM_BITS 1048576 // 8MB
 // #define NUM_BITS 67108864 // 8MB
 
-typedef size_t hash_t;
-typedef hash_t (*hash_function_t)(const int*, unsigned int size);
+typedef hash_t (*hash_function_t)(const lit_t*, const csize_t size);
 typedef std::vector<hash_function_t> hash_functions_t;
 
 /* Lock-free concurrent Bloom Filter implementation */

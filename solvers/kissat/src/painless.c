@@ -1,3 +1,4 @@
+// Begin Painless
 #include "error.h"
 #include "internal.h"
 #include "logging.h"

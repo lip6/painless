@@ -23,5 +23,8 @@
 /** @brief Error code for command-line argument parsing failures */
 #define PERR_ARGS_ERROR -6
 
+/** @brief Error code for possible out of bounds accesses */
+#define PERR_BOUND_ERROR -7
+
 /** @brief Warning code for CPU count mismatch in load strategy */
 #define PWARN_LSTRAT_CPU_COUNT 1

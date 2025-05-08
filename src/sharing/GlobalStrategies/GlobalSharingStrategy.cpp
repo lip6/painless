@@ -90,7 +90,7 @@ GlobalSharingStrategy::joinProcess(int winnerRank, SatResult res, const std::vec
 
 	if (res != SatResult::UNKNOWN && res != SatResult::TIMEOUT)
 		LOGSTAT("The winner is mpi process %d", winnerRank);
-	/* TODO becomes a slave to working */
+	/* TODO becomes a worker to working strategy */
 	mutexGlobalEnd.lock();
 	condGlobalEnd.notify_all();
 	mutexGlobalEnd.unlock();

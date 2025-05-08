@@ -3,7 +3,6 @@
 
 struct kissat;
 
-void
-kissat_shrink_clause(struct kissat*);
+void kissat_shrink_clause (struct kissat *);
 
 #endif

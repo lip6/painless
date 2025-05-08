@@ -160,6 +160,8 @@ const char *kissat_parse_option_name (const char *arg, const char *name) {
   if (arg[0] != '-' || arg[1] != '-')
     return 0;
   char const *p = arg + 2, *q = name;
+  if (p[0] == 'n' && p[1] == 'o' && p[2] == '-')
+    return strcmp (p + 3, name) ? 0 : "0";
   while (*p && *p == *q)
     p++, q++;
   if (*q)
@@ -351,7 +353,7 @@ static bool ignore_embedded_option_for_fuzzing (const char *name) {
   return false;
 }
 
-void kissat_print_embedded_option_list (void) {
+void kissat_print_embedded_option_list () {
 #define OPTION(N, V, L, H, D) \
   if (!ignore_embedded_option_for_fuzzing (#N)) \
     printf ("c --%s=%d\n", #N, (int) (V));

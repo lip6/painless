@@ -246,6 +246,26 @@ KissatINCSolver::addInitialClauses(const std::vector<simpleClause>& clauses, uns
 }
 
 void
+KissatINCSolver::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	kissat_inc_set_maxVar(this->solver, nbVars);
+	kissat_inc_reserve(this->solver, nbVars);
+
+	unsigned int clausesCount = 0;
+
+	int lit;
+	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
+		kissat_inc_add(this->solver, lit);
+		if (!lit)
+			clausesCount++;
+	}
+
+	this->setInitialized(true);
+
+	LOG2("KissatInc %d loaded all the %d clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
+}
+
+void
 KissatINCSolver::printStatistics()
 {
 	LOGERROR("Not implemented yet !!");

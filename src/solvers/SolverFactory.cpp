@@ -15,10 +15,10 @@
 #include "solvers/CDCL/MapleCOMSPSSolver.hpp"
 #include "solvers/CDCL/MiniSat.hpp"
 #include "solvers/LocalSearch/YalSat.hpp"
+#include "solvers/LocalSearch/TaSSAT.hpp"
 
-#include "containers/ClauseDatabaseMallob.hpp"
-#include "containers/ClauseDatabasePerSize.hpp"
-#include "containers/ClauseDatabaseSingleBuffer.hpp"
+#include "containers/ClauseDatabases/ClauseDatabaseFactory.hpp"
+
 
 #include <cassert>
 #include <iomanip>
@@ -69,25 +69,10 @@ SolverFactory::createSolver(char type, char importDBType, std::shared_ptr<Solver
 		return SolverAlgorithmType::UNKNOWN;
 	}
 
-	std::shared_ptr<ClauseDatabase> importDB;
-	uint maxClauseSize = __globalParameters__.maxClauseSize;
-	uint maxPartitioningLbd = 2;
-	uint maxLiteralCapacity = __globalParameters__.importDBCap;
-	uint maxFreeSize = 1;
 
-	switch (importDBType) {
-		case 's':
-			importDB = std::make_shared<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
-			break;
-		case 'm':
-			importDB = std::make_shared<ClauseDatabaseMallob>(
-				maxClauseSize, maxPartitioningLbd, maxLiteralCapacity, maxFreeSize);
-			break;
-		case 'd':
-		default:
-			importDB = std::make_shared<ClauseDatabasePerSize>(maxClauseSize);
-			break;
-	}
+	std::shared_ptr<ClauseDatabase> importDB;
+
+	importDB = ClauseDatabaseFactory::createDatabase(importDBType);
 
 	switch (type) {
 #ifdef GLUCOSE_
@@ -149,6 +134,13 @@ SolverFactory::createSolver(char type, char importDBType, std::shared_ptr<Solver
 #ifdef YALSAT_
 		case 'y':
 			createdSolver = std::make_shared<YalSat>(id, __globalParameters__.localSearchFlips, __globalParameters__.maxDivNoise);
+			return SolverAlgorithmType::LOCAL_SEARCH;
+			// break;
+#endif
+
+#ifdef TASSAT_
+		case 't':
+			createdSolver = std::make_shared<TaSSAT>(id, __globalParameters__.localSearchFlips, __globalParameters__.maxDivNoise);
 			return SolverAlgorithmType::LOCAL_SEARCH;
 			// break;
 #endif

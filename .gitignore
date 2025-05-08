@@ -6,8 +6,11 @@ outputs
 inputs
 painless-mcomsps
 painless
+painlessd
 docs/build
+docs/source/html
 html
+.html
 .pdf
 *.uri
 get_sat22_inputs.sh
@@ -23,10 +26,10 @@ get_sat22_inputs.sh
 hostfile.*
 openMPI
 *.out
+.ignore*
+*.proof
 *.local
 
-libs/m4ri-20200125/.libs
-libs/m4ri-20200125/*/.*
 libs/m4ri-20200125/Makefile
 libs/m4ri-20200125/config.status
 libs/m4ri-20200125/libm4ri.la
@@ -80,6 +83,11 @@ libs/m4ri-20200125/test-driver
 libs/m4ri-20200125/tests/Makefile
 libs/m4ri-20200125/tests/Makefile.in
 libs/m4ri-20200125/configure~
+libs/m4ri-20200125/.libs/
+libs/m4ri-20200125/bench/.deps/
+libs/m4ri-20200125/m4ri/.deps/
+libs/m4ri-20200125/m4ri/.dirstamp
+libs/m4ri-20200125/tests/.deps/
 
 solvers/lingeling/lglcfg.h
 solvers/lingeling/lglcflags.h
@@ -97,6 +105,7 @@ solvers/cadical/src/makefile
 solvers/kissat/makefile
 solvers/kissat/src/makefile
 solvers/lingeling/ilingeling
+solvers/lingeling/makefile
 solvers/lingeling/lglddtrace
 solvers/lingeling/lglmbt
 solvers/lingeling/lgluntrace

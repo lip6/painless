@@ -121,6 +121,24 @@ parseCNF(const char* filename,
 		 const std::vector<std::unique_ptr<ClauseProcessor>>& processors = {});
 
 /**
+ * @brief Parse a CNF formula from a file into a vector of literals.
+ *
+ * @param filename The path to the file to parse.
+ * @param literals Vector to store the parsed clauses with 0 as a separator.
+ * @param varCount Pointer to store the number of variables.
+ * @param clsCount Pointer to store the number of clauses.
+ * @param processors Vector of clause processors to apply during parsing.
+ * @return true if parsing was successful, false otherwise.
+ */
+bool
+parseCNF(const char* filename,
+		 std::vector<lit_t>& literals,
+		 unsigned int* varCount,
+		 unsigned int* clsCount,
+		 const std::vector<std::unique_ptr<ClauseProcessor>>& processors = {});
+
+
+/**
  * @brief Parse a CNF formula from a file into a Formula object.
  *
  * @param filename The path to the file to parse.

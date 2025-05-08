@@ -5,9 +5,7 @@
 
 struct kissat;
 
-bool
-kissat_walking(struct kissat*);
-void
-kissat_walk(struct kissat*);
+bool kissat_walking (struct kissat *);
+void kissat_walk (struct kissat *);
 
 #endif

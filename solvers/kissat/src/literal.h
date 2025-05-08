@@ -19,16 +19,18 @@
 
 #define VALID_INTERNAL_LITERAL(LIT) ((LIT) < LITS)
 
-#define VALID_EXTERNAL_LITERAL(LIT) ((LIT) && ((LIT) != INT_MIN) && ABS(LIT) <= EXTERNAL_MAX_VAR)
+#define VALID_EXTERNAL_LITERAL(LIT) \
+  ((LIT) && ((LIT) != INT_MIN) && ABS (LIT) <= EXTERNAL_MAX_VAR)
 
-#define IDX(LIT) (assert(VALID_INTERNAL_LITERAL(LIT)), (((unsigned)(LIT)) >> 1))
+#define IDX(LIT) \
+  (assert (VALID_INTERNAL_LITERAL (LIT)), (((unsigned) (LIT)) >> 1))
 
-#define LIT(IDX) (assert(VALID_INTERNAL_INDEX(IDX)), ((IDX) << 1))
+#define LIT(IDX) (assert (VALID_INTERNAL_INDEX (IDX)), ((IDX) << 1))
 
-#define NOT(LIT) (assert(VALID_INTERNAL_LITERAL(LIT)), ((LIT) ^ 1u))
+#define NOT(LIT) (assert (VALID_INTERNAL_LITERAL (LIT)), ((LIT) ^ 1u))
 
-#define NEGATED(LIT) (assert(VALID_INTERNAL_LITERAL(LIT)), ((LIT)&1u))
+#define NEGATED(LIT) (assert (VALID_INTERNAL_LITERAL (LIT)), ((LIT) & 1u))
 
-#define STRIP(LIT) (assert(VALID_INTERNAL_LITERAL(LIT)), ((LIT) & ~1u))
+#define STRIP(LIT) (assert (VALID_INTERNAL_LITERAL (LIT)), ((LIT) & ~1u))
 
 #endif

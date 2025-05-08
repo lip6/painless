@@ -14,6 +14,7 @@ struct kissat;
 int kissat_verbosity (struct kissat *);
 
 void kissat_line (struct kissat *);
+void kissat_prefix (struct kissat*);
 void kissat_signal (struct kissat *, const char *type, int sig);
 void kissat_section (struct kissat *, const char *name);
 
@@ -50,6 +51,14 @@ ATTRIBUTE_FORMAT (4, 5);
 #define kissat_warning(...) do { } while (0)
 
 #endif
+
+#define VERY_VERBOSE_OR_LOG(ONLY_LOG, SOLVER, ...) \
+do { \
+  if (ONLY_LOG) \
+    LOG (__VA_ARGS__); \
+  else \
+    kissat_very_verbose (SOLVER, __VA_ARGS__); \
+} while (0)
 
 #endif
 

@@ -9,8 +9,28 @@ RELEASE_OUTPUT := $(PAINLESS_OUTPUT)_release
 CC := gcc
 CXX := g++
 COMMON_FLAGS := $(shell mpic++ --showme:compile) -fopenmp
-DEBUG_FLAGS := $(COMMON_FLAGS) -std=c++20 -g3 -O0 -fsanitize=address#-Wall -Wextra 
-RELEASE_FLAGS := $(COMMON_FLAGS) -std=c++20 -O3 -DNDEBUG
+
+# Check GCC version to determine proper C++ standard flag
+GCC_MAJOR := $(shell gcc -dumpversion)
+
+# Set appropriate C++20 flag based on GCC version
+ifeq ($(shell expr $(GCC_MAJOR) \< 8), 1)
+    $(error GCC version $(gcc --version) does not support C++20. Version 8 or higher required.)
+else ifeq ($(shell expr $(GCC_MAJOR) \< 10), 1)
+    # GCC 8 or 9 uses -std=c++2a
+    CPP_STD_FLAG := -std=c++2a
+else
+    # GCC 10+ uses -std=c++20
+    CPP_STD_FLAG := -std=c++20
+endif
+
+# Add standard flag to common flags
+COMMON_FLAGS += $(CPP_STD_FLAG)
+
+# Define debug and release flags 
+DEBUG_FLAGS := $(COMMON_FLAGS) -g3 -O0 #-fsanitize=thread#-Wall -Wextra
+RELEASE_FLAGS := $(COMMON_FLAGS) -O3 -DNDEBUG
+
 
 # Directories
 # ===========
@@ -28,10 +48,13 @@ GLUCOSE_BUILD := $(SOLVERS_DIR)/glucose/parallel
 MINISAT_BUILD := $(SOLVERS_DIR)/minisat/build/release/lib
 LINGELING_BUILD := $(SOLVERS_DIR)/lingeling
 YALSAT_BUILD := $(SOLVERS_DIR)/yalsat
+TASSAT_BUILD := $(SOLVERS_DIR)/tassat
 KISSAT_BUILD := $(SOLVERS_DIR)/kissat/build
 CADICAL_BUILD := $(SOLVERS_DIR)/cadical/build
 KISSATMAB_BUILD := $(SOLVERS_DIR)/kissat_mab/build
 KISSATINC_BUILD := $(SOLVERS_DIR)/kissat-inc/build
+KISSATGASPI_BUILD := $(SOLVERS_DIR)/solvers/GASPIKISSAT/build
+
 M4RI_DIR := $(LIBS_DIR)/m4ri-20200125
 
 # Define dependencies
@@ -43,6 +66,7 @@ DEPENDENCIES := $(MINISAT_BUILD)/libminisat.a \
                 $(KISSATMAB_BUILD)/libkissat_mab.a \
 				$(KISSATINC_BUILD)/libkissat_inc.a \
                 $(YALSAT_BUILD)/libyals.a \
+				$(TASSAT_BUILD)/libtas.a \
                 $(CADICAL_BUILD)/libcadical.a \
                 $(MAPLE_BUILD)/libmapleCOMSPS.a \
                 $(M4RI_DIR)/.libs/libm4ri.a
@@ -51,6 +75,7 @@ DEPENDENCIES := $(MINISAT_BUILD)/libminisat.a \
 # =============
 LIBS := -l:liblgl.a -L$(LINGELING_BUILD) \
 		-l:libyals.a -L$(YALSAT_BUILD) \
+		-l:libtas.a -L$(TASSAT_BUILD) \
 		-l:libkissat.a -L$(KISSAT_BUILD) \
 		-l:libminisat.a -L$(MINISAT_BUILD) \
 		-l:libglucose.a -L$(GLUCOSE_BUILD) \
@@ -60,6 +85,7 @@ LIBS := -l:liblgl.a -L$(LINGELING_BUILD) \
 		-l:libkissat_inc.a -L$(KISSATINC_BUILD) \
 		-l:libm4ri.a -L./libs/m4ri-20200125/.libs \
 		-lpthread -lz -lm $(shell mpic++ --showme:link)
+# -l:libgkissat.a -L$(KISSATGASPI_BUILD) \
 
 # Include directories
 # ===================
@@ -97,7 +123,10 @@ $(shell mkdir -p $(DEBUG_BUILD_DIR) $(RELEASE_BUILD_DIR))
 # Main targets
 # ============
 debug: $(DEBUG_BUILD_DIR)/$(DEBUG_OUTPUT)
+	ln -sf $(DEBUG_BUILD_DIR)/$(DEBUG_OUTPUT) painlessd
+
 release: $(RELEASE_BUILD_DIR)/$(RELEASE_OUTPUT)
+	ln -sf $(RELEASE_BUILD_DIR)/$(RELEASE_OUTPUT) painless
 
 $(DEBUG_BUILD_DIR)/$(DEBUG_OUTPUT): $(DEBUG_OBJS) $(DEPENDENCIES)
 	$(CXX) -o $@ $(DEBUG_OBJS) $(DEBUG_FLAGS) $(INCLUDES) $(LIBS)
@@ -117,9 +146,9 @@ $(RELEASE_BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 # Simplified library targets
 # ==========================
-.PHONY: minisat glucose lingeling kissat kissat_mab kissat_inc yalsat cadical maple m4ri
+.PHONY: minisat glucose lingeling kissat kissat_mab kissat_inc kissat_gaspi yalsat cadical maple m4ri tassat
 
-solvers: minisat glucose lingeling kissat kissat_mab kissat_inc yalsat cadical maple
+solvers: minisat glucose lingeling kissat kissat_mab kissat_inc kissat_gaspi yalsat cadical maple tassat
 
 libs: m4ri
 
@@ -129,7 +158,9 @@ lingeling: $(LINGELING_BUILD)/liblgl.a
 kissat: $(KISSAT_BUILD)/libkissat.a
 kissat_mab: $(KISSATMAB_BUILD)/libkissat_mab.a
 kissat_inc: $(KISSATINC_BUILD)/libkissat_inc.a
+# kissat_gaspi: $(KISSATGASPI_BUILD)/libgkissat.a
 yalsat: $(YALSAT_BUILD)/libyals.a
+tassat: $(TASSAT_BUILD)/libtas.a
 cadical: $(CADICAL_BUILD)/libcadical.a
 maple: $(MAPLE_BUILD)/libmapleCOMSPS.a
 m4ri: $(M4RI_DIR)/.libs/libm4ri.a
@@ -147,20 +178,28 @@ $(LINGELING_BUILD)/liblgl.a: $(YALSAT_BUILD)/libyals.a
 	$(MAKE) -C $(SOLVERS_DIR)/lingeling liblgl.a
 
 $(KISSAT_BUILD)/libkissat.a:
-	cd $(SOLVERS_DIR)/kissat && bash ./configure
+	cd $(SOLVERS_DIR)/kissat && bash ./configure --no-proofs
 	$(MAKE) -C $(SOLVERS_DIR)/kissat
 
 $(KISSATMAB_BUILD)/libkissat_mab.a:
-	cd $(SOLVERS_DIR)/kissat_mab && bash ./configure
+	cd $(SOLVERS_DIR)/kissat_mab && bash ./configure --no-proofs
 	$(MAKE) -C $(SOLVERS_DIR)/kissat_mab
 
 $(KISSATINC_BUILD)/libkissat_inc.a:
-	cd $(SOLVERS_DIR)/kissat-inc && bash ./configure
+	cd $(SOLVERS_DIR)/kissat-inc && bash ./configure --no-proofs
 	$(MAKE) -C $(SOLVERS_DIR)/kissat-inc
+
+# $(KISSATGASPI_BUILD)/libgkissat.a:
+# 	cd $(SOLVERS_DIR)/GASPIKISSAT && bash ./configure
+# 	$(MAKE) -C $(SOLVERS_DIR)/GASPIKISSAT
 
 $(YALSAT_BUILD)/libyals.a:
 	cd $(SOLVERS_DIR)/yalsat && bash ./configure.sh
 	$(MAKE) -C $(SOLVERS_DIR)/yalsat
+
+$(TASSAT_BUILD)/libtas.a:
+	cd $(SOLVERS_DIR)/tassat && bash ./configure.sh
+	$(MAKE) -C $(SOLVERS_DIR)/tassat
 
 $(CADICAL_BUILD)/libcadical.a:
 	cd $(SOLVERS_DIR)/cadical && bash ./configure
@@ -178,20 +217,20 @@ $(M4RI_DIR)/.libs/libm4ri.a:
 .PHONY: clean cleanpainless cleansolvers clean cleanall
 cleanpainless:
 	rm -rf $(BUILD_DIR)
+	rm -rf painless painlessd
 
 cleansolvers:
-	$(MAKE) clean -C $(SOLVERS_DIR)/kissat -f makefile.in
-	rm -rf $(SOLVERS_DIR)/kissat/build
-	$(MAKE) clean -C $(SOLVERS_DIR)/kissat_mab -f makefile.in
-	rm -rf $(SOLVERS_DIR)/kissat_mab/build
-	$(MAKE) clean -C $(SOLVERS_DIR)/kissat-inc -f makefile.in
-	rm -rf $(SOLVERS_DIR)/kissat-inc/build
-	$(MAKE) clean -C $(SOLVERS_DIR)/cadical -f makefile.in
-	rm -rf $(SOLVERS_DIR)/cadical/build
+	$(MAKE) clean -C $(SOLVERS_DIR)/kissat
+	$(MAKE) clean -C $(SOLVERS_DIR)/kissat_mab
+	$(MAKE) clean -C $(SOLVERS_DIR)/kissat-inc
+	# $(MAKE) clean -C $(SOLVERS_DIR)/GASPIKISSAT
+	$(MAKE) clean -C $(SOLVERS_DIR)/cadical
 	$(MAKE) clean -C $(SOLVERS_DIR)/mapleCOMSPS
 	$(MAKE) clean -C $(SOLVERS_DIR)/minisat
 	$(MAKE) clean -C $(SOLVERS_DIR)/glucose
-	if [ -f $(SOLVERS_DIR)/lingeling/makefile ]; then $(MAKE) -C $(SOLVERS_DIR)/lingeling clean; fi
+	$(MAKE) clean -C $(SOLVERS_DIR)/yalsat
+	$(MAKE) clean -C $(SOLVERS_DIR)/tassat
+	$(MAKE) -C $(SOLVERS_DIR)/lingeling clean
 
 clean: cleanpainless cleansolvers
 

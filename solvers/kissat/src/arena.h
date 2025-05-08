@@ -11,11 +11,11 @@ typedef word ward;
 typedef w2rd ward;
 #endif
 
-#define LD_MAX_ARENA_32 (29 - (unsigned)sizeof(ward) / 4)
+#define LD_MAX_ARENA_32 (29 - (unsigned) sizeof (ward) / 4)
 
-#define LD_MAX_ARENA ((sizeof(word) == 4) ? LD_MAX_ARENA_32 : LD_MAX_REF)
+#define LD_MAX_ARENA ((sizeof (word) == 4) ? LD_MAX_ARENA_32 : LD_MAX_REF)
 
-#define MAX_ARENA ((size_t)1 << LD_MAX_ARENA)
+#define MAX_ARENA ((size_t) 1 << LD_MAX_ARENA)
 
 // clang-format off
 
@@ -26,25 +26,20 @@ typedef STACK (ward) arena;
 struct clause;
 struct kissat;
 
-reference
-kissat_allocate_clause(struct kissat*, size_t size);
-void
-kissat_shrink_arena(struct kissat*);
+reference kissat_allocate_clause (struct kissat *, size_t size);
+void kissat_shrink_arena (struct kissat *);
 
 #if !defined(NDEBUG) || defined(LOGGING)
 
-bool
-kissat_clause_in_arena(const struct kissat*, const struct clause*);
+bool kissat_clause_in_arena (const struct kissat *, const struct clause *);
 
 #endif
 
-static inline word
-kissat_align_ward(word w)
-{
+static inline word kissat_align_ward (word w) {
 #ifdef COMPACT
-	return kissat_align_word(w);
+  return kissat_align_word (w);
 #else
-	return kissat_align_w2rd(w);
+  return kissat_align_w2rd (w);
 #endif
 }
 

@@ -9,11 +9,15 @@ from cycler import cycler
 import numpy as np
 import os
 
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
+
 import os
 import pandas as pd
 import glob
 
 # Define color schemes
+# RED, BLUE, GREEN, ORANGE, PINK, CYAN, YELLOW, TURQUOISE
 DARK_COLORS = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc', '#99ccff', '#ffff99', '#99ffcc']
 LIGHT_COLORS = ['#ff3333', '#3366ff', '#33cc33', '#ff9933', '#ff3399', '#3399ff', '#ffff33', '#33ff99']
 
@@ -38,15 +42,42 @@ colors = LIGHT_COLORS
 output_dir = ''
 output_format = 'pdf'
 
-import os
-import pandas as pd
-import glob
+# Define result mappings for normalization
+RESULT_MAPPING = {
+    'SATISFIABLE': 'SATISFIABLE',
+    'SAT': 'SATISFIABLE',
+    'UNSATISFIABLE': 'UNSATISFIABLE',
+    'UNSAT': 'UNSATISFIABLE'
+}
 
 def print_error(message):
     RED = "\033[91m"
     BOLD = "\033[1m"
     RESET = "\033[0m"
     print(f"{RED}{BOLD}{message}{RESET}")
+
+def normalize_results(df):
+    """
+    Normalizes different result formats to consistent terminology.
+    Converts 'SAT' to 'SATISFIABLE' and 'UNSAT' to 'UNSATISFIABLE' in all result columns.
+    
+    Parameters:
+        df (pandas.DataFrame): DataFrame containing solver results
+        
+    Returns:
+        pandas.DataFrame: Updated DataFrame with normalized result terminology
+    """
+    # Create a copy to avoid modifying the original dataframe
+    updated_df = df.copy()
+    
+    # Get all result columns (those ending with _result)
+    result_columns = [col for col in updated_df.columns if col.endswith('_result')]
+    
+    for result_col in result_columns:
+        # Replace values according to mapping dictionary
+        updated_df[result_col] = updated_df[result_col].map(lambda x: RESULT_MAPPING.get(x, x))
+    
+    return updated_df
 
 def enforce_timeouts(df, timeout):
     """
@@ -138,6 +169,9 @@ def generate_csv_from_dirs(base_dir):
     final_df = all_dfs[0]
     for df in all_dfs[1:]:
         final_df = pd.merge(final_df, df, on="instance", how="outer")
+    
+    # Normalize SAT/UNSAT to SATISFIABLE/UNSATISFIABLE
+    final_df = normalize_results(final_df)
     
     # Check for contradictory results
     result_columns = [col for col in final_df.columns if col.endswith("_result")]
@@ -282,10 +316,51 @@ def plot_scatter_with_timeout(df):
 
             ax.axhline(y=timeout, color=theme['fg_color'], linestyle='--', alpha=0.5)
             ax.axvline(x=timeout, color=theme['fg_color'], linestyle='--', alpha=0.5)
-            ax.plot([0, timeout], [0, timeout], color=theme['fg_color'], linestyle='--', linewidth=1, alpha=0.5)
+            
+            # Unit line (diagonal)
+            ax.plot([0, timeout], [0, timeout], color=theme['fg_color'], linestyle='--', linewidth=1.5, alpha=0.7)
 
-            ax.set_xlabel(f'{solver_name_one}', fontsize=28)
-            ax.set_ylabel(f'{solver_name_two}', fontsize=28)
+            # Area 10-20% below diagonal
+            vertices_10to20below = [
+                (0, 0.2*timeout),
+                (0, 0.1*timeout),
+                (timeout - 0.1*timeout, timeout),
+                (timeout, timeout),
+                (timeout - 0.2*timeout, timeout)
+            ]
+            codes_10to20below = [Path.MOVETO] + [Path.LINETO] * (len(vertices_10to20below) - 1)
+            path_10to20below = Path(vertices_10to20below, codes_10to20below)
+            patch_10to20below = PathPatch(path_10to20below, facecolor=colors[6], alpha=0.2, edgecolor='none')
+            ax.add_patch(patch_10to20below)
+
+            # Area ±10% around diagonal
+            vertices_balanced = [
+                (0, 0.1*timeout),
+                (0, 0),
+                (0.1*timeout, 0),
+                (timeout, timeout - 0.1*timeout),
+                (timeout, timeout),
+                (timeout - 0.1*timeout, timeout)
+            ]
+            codes_balanced = [Path.MOVETO] + [Path.LINETO] * (len(vertices_balanced) - 1)
+            path_balanced = Path(vertices_balanced, codes_balanced)
+            patch_balanced = PathPatch(path_balanced, facecolor=colors[3], alpha=0.2, edgecolor='none')
+            ax.add_patch(patch_balanced)
+
+            # Area 10-20% above diagonal
+            vertices_10to20above = [
+                (0.1*timeout, 0),
+                (0.2*timeout, 0),
+                (timeout, timeout - 0.2*timeout),
+                (timeout, timeout - 0.1*timeout)
+            ]
+            codes_10to20above = [Path.MOVETO] + [Path.LINETO] * (len(vertices_10to20above) - 1)
+            path_10to20above = Path(vertices_10to20above, codes_10to20above)
+            patch_10to20above = PathPatch(path_10to20above, facecolor=colors[6], alpha=0.2, edgecolor='none')
+            ax.add_patch(patch_10to20above)
+
+            ax.set_xlabel(f'{solver_name_one} (seconds)', fontsize=28)
+            ax.set_ylabel(f'{solver_name_two} (seconds)', fontsize=28)
             ax.tick_params(axis='both', which='major', labelsize=20)
             ax.grid(True)
 
@@ -329,8 +404,13 @@ def main(input_path, scatter_plots, is_base_dir):
         print_error(f"Error: Unable to parse '{file_path}'. Make sure it's a valid CSV file.")
         sys.exit(1)
 
-    df = enforce_timeouts(df, timeout);
+    # Normalize different result formats (SAT/UNSAT)
+    df = normalize_results(df)
+    
+    # Apply timeout enforcement
+    df = enforce_timeouts(df, timeout)
 
+    # Compute virtual best solver
     df[['vbs_par2', 'vbs_result']] = df.apply(compute_vbs, axis=1)
 
     result_table = compute_statistics(df)
@@ -354,7 +434,7 @@ if __name__ == "__main__":
     Expected CSV column format:
     - For each solver, there should be two columns:
       1. <solver_name>_par2: Contains the PAR2 score for the solver
-      2. <solver_name>_result: Contains the result (e.g., 'SATISFIABLE', 'UNSATISFIABLE')
+      2. <solver_name>_result: Contains the result (e.g., 'SATISFIABLE', 'UNSATISFIABLE', 'SAT', 'UNSAT')
     
     Example columns for a solver named 'solver1':
     solver1_par2,solver1_result

@@ -1,5 +1,6 @@
 #include "Lingeling.hpp"
 #include "utils/Parameters.hpp"
+#include "utils/ErrorCodes.hpp"
 
 #include <cassert>
 #include <iomanip>
@@ -29,7 +30,7 @@ produceUnit(void* sp, int lit)
 
 	ncls->lits[0] = lit;
 
-	LOGDEBUG2("Lingeling %u produced a unit : %s", lp->getSolverTypeId(), ncls->toString().c_str());
+	LOGDEBUG3("Lingeling %u produced a unit : %s", lp->getSolverTypeId(), ncls->toString().c_str());
 
 	/* filtering defined by a sharing strategy */
 	lp->exportClause(ncls);
@@ -56,7 +57,7 @@ produce(void* sp, int* cls, int glue)
 
 	memcpy(ncls->lits, cls, sizeof(int) * size);
 
-	LOGDEBUG2("Lingeling %u produced: %s", lp->getSolverTypeId(), ncls->toString().c_str());
+	LOGDEBUG3("Lingeling %u produced: %s", lp->getSolverTypeId(), ncls->toString().c_str());
 
 	/* filtering defined by a sharing strategy */
 	lp->exportClause(ncls);
@@ -113,7 +114,7 @@ consumeCls(void* sp, int** clause, int* glue)
 		lp->clsBuffer = (int*)realloc((void*)lp->clsBuffer, lp->clsBufferSize * sizeof(int));
 	}
 
-	LOGDEBUG2("Lingeling %u will import: %s", lp->getSolverTypeId(), cls->toString().c_str());
+	LOGDEBUG3("Lingeling %u will import: %s", lp->getSolverTypeId(), cls->toString().c_str());
 
 	*glue = cls->lbd;
 
@@ -175,7 +176,9 @@ Lingeling::loadFormula(const char* filename)
 {
 	std::vector<simpleClause> initClauses;
 	unsigned int varCount = 0;
-	Parsers::parseCNF(filename, initClauses, &varCount);
+	if (!Parsers::parseCNF(filename, initClauses, &varCount)) {
+		PABORT(PERR_PARSING, "Error at parsing!");
+	}
 
 	this->addInitialClauses(initClauses, varCount);
 
@@ -215,7 +218,7 @@ void
 Lingeling::bumpVariableActivity(const int lit, const int times)
 {
 	for (int i = times; i < times; i++) {
-		// TODO: is it good ?
+		// TODO: is it correct ?
 		lglsetimportant(solver, lit);
 	}
 }
@@ -314,6 +317,23 @@ Lingeling::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned 
 		 this->getSolverId(),
 		 clauses.size(),
 		 nbVars);
+}
+
+void
+Lingeling::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	unsigned int clausesCount = 0;
+
+	int lit;
+	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
+		lgladd(this->solver, lit);
+		if (!lit)
+			clausesCount++;
+	}
+
+	this->setInitialized(true);
+
+	LOG2("Lingeling %d loaded all the %d clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
 }
 
 // Add a learned clause to the formula

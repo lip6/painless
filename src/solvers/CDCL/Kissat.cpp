@@ -129,6 +129,10 @@ Kissat::getDivisionVariable()
 void
 Kissat::setPhase(const unsigned int var, const bool phase)
 {
+	if (!this->isInitialized()) {
+		LOGERROR("Cannot set a phase before initializing the solver!");
+		return;
+	}
 	/* set target, best and saved phases: best is used in walk */
 	kissat_set_phase(this->solver, var, (phase) ? 1 : -1);
 }
@@ -227,10 +231,27 @@ Kissat::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int
 		kissat_add(this->solver, 0);
 	}
 	this->setInitialized(true);
-	LOG2("The Kissat Solver %d loaded all the %u clauses with %u variables",
-		 this->getSolverId(),
-		 clauses.size(),
-		 nbVars);
+	LOG2("Kissat %d loaded all the %u clauses with %u variables", this->getSolverId(), clauses.size(), nbVars);
+}
+
+void
+Kissat::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+{
+	kissat_reserve(this->solver, nbVars);
+	this->originalVars = nbVars;
+
+	unsigned int clausesCount = 0;
+
+	int lit;
+	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
+		kissat_add(this->solver, lit);
+		if (!lit)
+			clausesCount++;
+	}
+
+	this->setInitialized(true);
+
+	LOG2("Kissat %d loaded all the %d clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
 }
 
 bool
@@ -305,7 +326,7 @@ Kissat::initKissatOptions()
 
 	// Not Needed in practice
 #ifndef NDEBUG
-	kissatOptions.insert({ "check", 1 }); // (only on debug) 1: check model only, 2: check redundant clauses
+	kissatOptions.insert({ "check", 1 }); // (only on debug) 1: check model only, 2: check derived clauses
 	kissatOptions.insert({ "quiet", 0 });
 #else
 	kissatOptions.insert({ "quiet", 1 });
@@ -341,36 +362,53 @@ Kissat::initKissatOptions()
 	/*----------------------------------------------------------------------------*/
 
 	// (Pre/In)processing Simplifications
-	kissatOptions.insert({ "hyper", 1 });	// on-the-fly hyper binary resolution
-	kissatOptions.insert({ "trenary", 1 }); // hyper Trenary Resolution: maybe its too expensive ??
-	kissatOptions.insert({ "failed", 1 });	// failed literal probing, many suboptions
-	kissatOptions.insert({ "reduce", 1 });	// learned clause reduction
+	kissatOptions.insert({ "otfs", 1 });   // on-the-fly strengthening when deducing learned clause
+	kissatOptions.insert({ "reduce", 1 }); // learned clause reduction
+
+	kissatOptions.insert(
+		{ "probe", 1 }); // Enable all different types of inprocessing (bva, congruence, vivification, sweeping ...)
+	kissatOptions.insert({ "vivify", 1 });	   // vivify clauses, many suboptions
+	kissatOptions.insert({ "factor", 0 });	   // bounded variable addition (inprocessing) (breaks sharing soundness)
+	kissatOptions.insert({ "congruence", 1 }); // congruence closure on extracted gates
+	kissatOptions.insert({ "sweep", 1 });	   // enable SAT sweeping
+
+	// Minimization options
+	kissatOptions.insert({ "minimize", 1 });		// learned clause minimization
+	kissatOptions.insert({ "minimizedepth", 1e3 }); // already exists: used in mallob diversification
 
 	// Subsumption options: many other suboptions
 	kissatOptions.insert({ "subsumeclslim", 1e3 }); // subsumption clause size limit,
-	kissatOptions.insert({ "eagersubsume", 20 });	// eagerly subsume recently learned clauses (max 100)
-	kissatOptions.insert({ "vivify", 1 });			// vivify clauses, many suboptions
-	kissatOptions.insert({ "otfs", 1 });			// on-the-fly strengthening when deducing learned clause
+	kissatOptions.insert({ "eagersubsume", 4 });	// eagerly subsume recently learned clauses (max 4)
 
 	/*-- Equisatisfiable Simplifications --*/
 	kissatOptions.insert({ "substitute", 1 }); // equivalent literal substitution, many subsumptions
 	kissatOptions.insert({ "autarky", 1 });	   // autarky reasoning
 	kissatOptions.insert({ "eliminate", 1 });  // bounded variable elimination (BVE), many suboptions
 
+	// Enhancements for variable elimination
+	kissatOptions.insert({ "forward", 1 });	  // forward subsumption in BVE
+	kissatOptions.insert({ "extract", 1 });	  // extract gates in variable elimination
+	kissatOptions.insert({ "fastelsub", 1 }); // forward subsuming fast variable elimination
+	kissatOptions.insert({ "fastel", 1 });	  // initial fast variable elimination
+
 	// Gates detection
-	kissatOptions.insert({ "and", 1 });			 // and gates detection
+	kissatOptions.insert({ "ands", 1 });		 // and gates detection
 	kissatOptions.insert({ "equivalences", 1 }); // extract and eliminate equivalence gates
 	kissatOptions.insert({ "ifthenelse", 1 });	 // extract and eliminate if-then-else gates
 
-	// Enhancements for variable elimination
-	kissatOptions.insert({ "backward", 1 }); // backward subsumption in BVE
-	kissatOptions.insert({ "forward", 1 });	 // forward subsumption in BVE
-	kissatOptions.insert({ "extract", 1 });	 // extract gates in variable elimination
+	// Lucky assignments
+	kissatOptions.insert({ "lucky", 1 });	   // try some lucky assignments
+	kissatOptions.insert({ "luckyearly", 1 }); // lucky assignments before preprocessing
+	kissatOptions.insert({ "luckylate", 1 });  // lucky assignments after preprocessing
 
-	// Delayed versions
-	// kissatOptions.insert({"delay", 2}); // maximum delay (autarky, failed, ...)
-	kissatOptions.insert({ "autarkydelay", 1 });
-	kissatOptions.insert({ "trenarydelay", 1 });
+	// Preprocessors
+	kissatOptions.insert({ "preprocess", 1 });			 // initial preprocessing
+	kissatOptions.insert({ "preprocessbackbone", 1 });	 // backbone preprocessing
+	kissatOptions.insert({ "preprocesscongruence", 1 }); // congruence preprocessing
+	kissatOptions.insert({ "preprocessfactor", 1 });	 // variable addition preprocessing
+	kissatOptions.insert({ "preprocessprobe", 1 });		 // probing preprocessing
+	kissatOptions.insert({ "preprocessrounds", 1 });	 // initial preprocessing rounds
+	kissatOptions.insert({ "preprocessweep", 1 });		 // sweep preprocessing
 
 	/*----------------------------------------------------------------------------*/
 
@@ -381,18 +419,23 @@ Kissat::initKissatOptions()
 		{ "chronolevels",
 		  100 }); // if conflict analysis want to jump more than this amount of levels, chronological will be used
 
+	// Random decisions
+	kissatOptions.insert({ "randec", 1 });		  // random decisions
+	kissatOptions.insert({ "randecfocused", 1 }); // random decisions in focused mode
+	kissatOptions.insert({ "randecinit", 500 });  // random decisions interval
+	kissatOptions.insert({ "randecint", 500 });	  // initial random decisions interval
+	kissatOptions.insert({ "randeclength", 10 }); // random conflicts length
+	kissatOptions.insert({ "randecstable", 0 });  // random decisions in stable mode
+
 	// Restart Management
 	kissatOptions.insert({ "restart", 1 });
 	kissatOptions.insert({ "restartint", 1 });	   // base restart interval
 	kissatOptions.insert({ "restartmargin", 10 }); // fast/slow margin in percent
 	kissatOptions.insert({ "reluctant", 1 });	   // stable reluctant doubling restarting
-	kissatOptions.insert({ "reducerestart", 0 });  // restart at reduce (1=stable , 2=always)
 
 	// Clause and Literal Related Heuristic
-	kissatOptions.insert({ "heuristic", 0 }); // 0: VSIDS, 1: CHB
-	kissatOptions.insert({ "stepchb", 4 });	  // CHB step paramater
-	kissatOptions.insert({ "tier1", 2 });	  // glue limit for tier1
-	kissatOptions.insert({ "tier2", 6 });	  // glue limit for tier2
+	kissatOptions.insert({ "tier1", 2 }); // glue limit for tier1
+	kissatOptions.insert({ "tier2", 6 }); // glue limit for tier2
 
 	// Phase
 	kissatOptions.insert({ "phase", 1 }); /* initial phase: set the macro INITIAL_PHASE */
@@ -405,11 +448,8 @@ Kissat::initKissatOptions()
 	/*----------------------------------------------------------------------------*/
 
 	// Diverse (used in mallob diversification)
-	kissatOptions.insert({ "sweep", 1 });
-	kissatOptions.insert({ "minimizedepth", 1e3 });
 	kissatOptions.insert({ "reducefraction", 75 });
 	kissatOptions.insert({ "vivifyeffort", 100 });
-	kissatOptions.insert({ "probe", 1 });
 
 	// random seed
 	kissatOptions.insert({ "seed", this->getSolverId() }); // used in walk and rephase
@@ -444,6 +484,16 @@ Kissat::diversify(const SeedGenerator& getSeed)
 
 	LOGDEBUG1("Kissat (%d,%d) is of type %u", this->getSolverId(), typeId, family);
 
+	// Attempt to have all possible combinations
+	// Number of options is 5
+	kissatOptions.at("preprocessbackbone") = typeId % (1 << 5);
+	kissatOptions.at("preprocesscongruence") = typeId % (1 << 4);
+	kissatOptions.at("preprocessfactor") = typeId % (1 << 3);
+	kissatOptions.at("preprocessprobe") = typeId % (1 << 2);
+	kissatOptions.at("preprocessweep") = typeId % (1);
+
+	// kissatOptions.at("preprocessrounds") = (typeId % 3) + 1;
+
 	switch (this->family) {
 		// 1/3 Focus on UNSAT
 		case KissatFamily::UNSAT_FOCUSED:
@@ -454,8 +504,6 @@ Kissat::diversify(const SeedGenerator& getSeed)
 			if (uniform(engine) < 25) // 1/4 chance
 			{
 				kissatOptions.at("initshuffle") = 1;
-				kissatOptions.at("heuristic") = (typeId % 2); // VSIDS vs CHB
-				kissatOptions.at("stepchb") = (typeId % 2) ? (4 + typeId) % 9 : 4;
 			}
 			break;
 
@@ -475,7 +523,6 @@ Kissat::diversify(const SeedGenerator& getSeed)
 
 				// (~25%)  more aggressive chronological backtracking
 				if (uniform(engine) < 25) {
-					kissatOptions.at("reducerestart") = 1;
 					kissatOptions.at("chronolevels") = typeId % 200;
 				}
 			}

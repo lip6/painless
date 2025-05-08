@@ -37,7 +37,9 @@ class YalSat : public LocalSearchInterface
 
 	void addClauses(const std::vector<ClauseExchangePtr>& clauses);
 
-	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars);
+	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
+
+	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) override;
 
 	void loadFormula(const char* filename);
 
