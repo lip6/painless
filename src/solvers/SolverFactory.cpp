@@ -192,12 +192,12 @@ SolverFactory::printStats(const std::vector<std::shared_ptr<SolverCdclInterface>
 {
 	lockLogger();
 	// Print header
-	std::cout << std::string(93, '-') << "\n";
-	std::cout << std::left << std::setw(15) << "| ID" << std::setw(20) << "| Conflicts" << std::setw(20)
+	std::cout << "c" << std::string(93, '-') << "\n";
+	std::cout << "c" << std::left << std::setw(15) << "| ID" << std::setw(20) << "| Conflicts" << std::setw(20)
 			  << "| Propagations" << std::setw(17) << "| Restarts" << std::setw(20) << "| Decisions"
 			  << "|\n";
 
-	std::cout << std::string(93, '-') << "\n";
+	std::cout << "c" << std::string(93, '-') << "\n";
 
 	for (auto s : cdclSolvers) {
 		s->printStatistics();

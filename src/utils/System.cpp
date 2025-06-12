@@ -147,14 +147,14 @@ printProcessResourceUsage()
 	double mem_percent = static_cast<double>(max_used_mem) / total_mem * 100;
 
 	// Print header
-	std::cout << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
-	std::cout << CYAN << BOLD << "Process Resource Usage" << RESET << std::endl;
-	std::cout << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
-	std::cout << std::setfill(' ');
+	std::cout << "c" << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
+	std::cout << "c" << CYAN << BOLD << "Process Resource Usage" << RESET << std::endl;
+	std::cout << "c" << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
+	std::cout << "c" << std::setfill(' ');
 
 	// Function to print a row
 	auto printRow = [](const std::string& label, const std::string& value, const std::string& color = WHITE) {
-		std::cout << BOLD << BLUE << std::left << std::setw(40) << label << RESET << color << std::right
+		std::cout << "c" << BOLD << BLUE << std::left << std::setw(40) << label << RESET << color << std::right
 				  << std::setw(40) << value << RESET << std::endl;
 	};
 
@@ -186,6 +186,6 @@ printProcessResourceUsage()
 	printRow("Involuntary Context Switches:", std::to_string(usage.ru_nivcsw), YELLOW);
 
 	// Print footer
-	std::cout << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
+	std::cout << "c" << CYAN << BOLD << std::setfill('=') << std::setw(80) << "" << RESET << std::endl;
 }
 }

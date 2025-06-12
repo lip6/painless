@@ -381,7 +381,7 @@ Lingeling::printStatistics()
 	stats.memPeak = lglmaxmb(solver);
 	stats.restarts = lglgetrestarts(solver);
 
-	std::cout << std::left << std::setw(15) << ("| L" + std::to_string(this->getSolverTypeId())) << std::setw(20)
+	std::cout << "c" << std::left << std::setw(15) << ("| L" + std::to_string(this->getSolverTypeId())) << std::setw(20)
 			  << ("| " + std::to_string(stats.conflicts)) << std::setw(20)
 			  << ("| " + std::to_string(stats.propagations)) << std::setw(17) << ("| " + std::to_string(stats.restarts))
 			  << std::setw(20) << ("| " + std::to_string(stats.decisions)) << std::setw(20) << "|"
