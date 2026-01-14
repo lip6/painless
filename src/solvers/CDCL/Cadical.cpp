@@ -403,7 +403,7 @@ Cadical::printStatistics()
 	/* TODO get with prefix instead of print */
 	CaDiCaL::Stats* cstats = solver->getStatistics();
 
-	std::cout << std::left << std::setw(15) << ("| C" + std::to_string(this->getSolverTypeId())) << std::setw(20)
+	std::cout << "c" << std::left << std::setw(15) << ("| C" + std::to_string(this->getSolverTypeId())) << std::setw(20)
 			  << ("| " + std::to_string(cstats->conflicts)) << std::setw(20)
 			  << ("| " + std::to_string(cstats->propagations.search)) << std::setw(17)
 			  << ("| " + std::to_string(cstats->restarts)) << std::setw(20)

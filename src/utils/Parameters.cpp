@@ -212,12 +212,12 @@ Parameters::printDetailedHelp(std::string& category)
 void
 Parameters::printParams()
 {
-	std::cout << "Parameters: ";
+	std::cout << "c Parameters: ";
 
 #define PARAM(name, type, parsed_name, default_value, description)                                                     \
 	std::cout << parsed_name << ": " << __globalParameters__.name << "; ";
 #define CATEGORY(description)
-#define SUBCATEGORY(description) std::cout << std::endl;
+#define SUBCATEGORY(description) std::cout << std::endl << "c ";
 	PARAMETERS
 #undef PARAM
 #undef CATEGORY

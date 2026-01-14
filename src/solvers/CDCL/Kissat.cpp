@@ -277,7 +277,7 @@ Kissat::printStatistics()
 
 	kissat_get_main_statistics(this->solver, &kstats);
 
-	std::cout << std::left << std::setw(15) << ("| K" + std::to_string(this->getSolverTypeId())) << std::setw(20)
+	std::cout << "c" << std::left << std::setw(15) << ("| K" + std::to_string(this->getSolverTypeId())) << std::setw(20)
 			  << ("| " + std::to_string(kstats.conflictsPerSec)) << std::setw(20)
 			  << ("| " + std::to_string(kstats.propagationsPerSec)) << std::setw(17)
 			  << ("| " + std::to_string(kstats.restarts)) << std::setw(20)

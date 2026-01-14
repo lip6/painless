@@ -385,7 +385,7 @@ MapleCOMSPSSolver::printStatistics()
 	stats.restarts = solver->starts;
 	stats.decisions = solver->decisions;
 
-	std::cout << std::left << std::setw(15) << ("| MC" + std::to_string(this->getSolverTypeId())) << std::setw(20)
+	std::cout << "c" << std::left << std::setw(15) << ("| MC" + std::to_string(this->getSolverTypeId())) << std::setw(20)
 			  << ("| " + std::to_string(stats.conflicts)) << std::setw(20)
 			  << ("| " + std::to_string(stats.propagations)) << std::setw(17) << ("| " + std::to_string(stats.restarts))
 			  << std::setw(20) << ("| " + std::to_string(stats.decisions)) << std::setw(20) << "|"
