@@ -76,6 +76,26 @@ void Internal::connect_watches (bool irredundant_only) {
   STOP (connect);
 }
 
+// This can be quite costly since lots of memory is accessed in a rather
+// random fashion, and thus we optionally profile it.
+
+void Internal::connect_binary_watches () {
+  START (connect);
+  assert (watching ());
+
+  LOG ("watching binary clauses");
+
+  // First connect binary clauses.
+  //
+  for (const auto &c : clauses) {
+    if (c->garbage || c->size > 2)
+      continue;
+    watch_clause (c);
+  }
+
+  STOP (connect);
+}
+
 void Internal::sort_watches () {
   assert (watching ());
   LOG ("sorting watches");
@@ -103,38 +123,4 @@ void Internal::sort_watches () {
   }
 }
 
-#ifndef NDEBUG
-void Internal::test_watch_invariant () {
-  // does not hold for opts.chrono of course...
-  // but with repair we should fix it
-
-  const bool repairing = opts.reimply;
-  if (opts.chrono > 0 && !repairing)
-    return;
-  for (auto lit : lits) {
-    Watches &ws = watches (lit);
-    // last literal might not be propagated to completion
-    if ((size_t) var (lit).trail >= propagated - 1)
-      continue;
-    for (auto w : ws) {
-      if (w.clause->garbage)
-        continue;
-      // if (w.clause == conflict) continue;
-      // int blit = w.blit;
-      LOG (w.clause, "watch lit %d blit %d in", lit, w.blit);
-      assert (w.clause->literals[0] == lit || w.clause->literals[1] == lit);
-      int witness = 0;
-      for (const auto &ok : *w.clause) {
-        if (val (ok) > 0) {
-          if (var (ok).level <= var (lit).level) {
-            witness = ok;
-          }
-        }
-      }
-      assert (val (lit) >= 0 || witness);
-    }
-  }
-}
-
-#endif
 } // namespace CaDiCaL

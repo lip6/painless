@@ -1,4 +1,7 @@
-/*------------------------------------------------------------------------*/
+#ifndef _random_hpp_INCLUDED
+#define _random_hpp_INCLUDED
+
+#include <cstdint>
 
 // Random number generator.
 
@@ -40,7 +43,7 @@ public:
   int generate_int () { return (int) generate (); }
   bool generate_bool () { return generate () < 2147483648u; }
 
-  // Generate 'double' value in the range '[0,1]'.
+  // Generate 'double' value in the range '[0,1]' excluding '1'.
   //
   double generate_double () { return generate () / 4294967295.0; }
 
@@ -91,3 +94,5 @@ public:
 };
 
 } // namespace CaDiCaL
+
+#endif

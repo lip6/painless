@@ -9,6 +9,18 @@ bool Internal::flip (int lit) {
   if (!active (lit) && !flags (lit).unused ())
     return false;
 
+  /*
+  if (flags (lit).unused ()) {
+    assert (lit <= max_var);
+    mark_active (lit);
+    set_val (lit, 1);
+    return true;
+  }
+  */
+
+  // TODO: Unused case is not handled yet.
+  // if (flags (lit).unused ()) return false;
+
   // Need to reestablish proper watching invariants as if there are no
   // blocking literals as flipping in principle does not work with them.
 
@@ -132,21 +144,15 @@ bool Internal::flip (int lit) {
     assert (val (lit) < 0);
 
     Var &v = var (idx);
-    if (opts.reimply) {
-      assert (v.level);
-      assert (trails[v.level - 1][v.trail] == lit);
-      trails[v.level - 1][v.trail] = -lit;
-    } else {
-      assert (trail[v.trail] == lit);
-      trail[v.trail] = -lit;
-    }
+    assert (trail[v.trail] == lit);
+    trail[v.trail] = -lit;
     if (opts.ilb) {
-      if (!tainted_literal)
-        tainted_literal = lit;
+      if (!changed_val)
+        changed_val = lit;
       else {
-        assert (val (tainted_literal));
-        if (v.level < var (tainted_literal).level) {
-          tainted_literal = lit;
+        assert (val (changed_val));
+        if (v.level < var (changed_val).level) {
+          changed_val = lit;
         }
       }
     }
@@ -162,6 +168,16 @@ bool Internal::flippable (int lit) {
 
   if (!active (lit) && !flags (lit).unused ())
     return false;
+
+  /*
+  if (flags (lit).unused ()) {
+    assert (lit <= max_var);
+    mark_active (lit);
+    return true;
+  }
+  */
+  // TODO: Unused case is not handled yet
+  // if (flags (lit).unused ()) return false;
 
   // Need to reestablish proper watching invariants as if there are no
   // blocking literals as flipping in principle does not work with them.

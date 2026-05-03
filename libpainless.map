@@ -1,0 +1,33 @@
+# Version script for libpainless.so
+# ==================================
+# Exports only the public Painless API symbols.
+# Everything else (backend solvers, internal helpers) is hidden.
+#
+# The extern "C++" block matches against *demangled* names using glob patterns,
+# so this works regardless of the compiler's specific name mangling scheme.
+
+PAINLESS_1.0 {
+  global:
+    # C factory functions (no mangling)
+    extern "C" {
+      create_painless;
+      create_empty_painless;
+      destroy_painless;
+    };
+
+    # C++ Painless class: methods, vtable, typeinfo, and typeinfo name
+    # Required for polymorphism and dynamic_cast across shared library boundaries
+    extern "C++" {
+      Painless::*;
+      typeinfo?for?Painless;
+      typeinfo?name?for?Painless;
+      vtable?for?Painless;
+    };
+
+  local:
+    # Hide everything else: all backend solver symbols (kissat, cadical,
+    # lingeling, glucose, minisat, maple, yalsat, tassat), all internal
+    # Painless implementation details, and any transitive symbols from
+    # static archives linked with --whole-archive.
+    *;
+};

@@ -46,8 +46,13 @@ void Internal::remove_falsified_literals (Clause *c) {
       num_non_false++;
   if (num_non_false < 2)
     return;
-  if (proof)
+  if (proof) {
+    // Flush changes the clause id, external forgettables need to be
+    // marked here (or the new id could be used instead of old one)
+    if (opts.check && is_external_forgettable (c->id))
+      mark_garbage_external_forgettable (c->id);
     proof->flush_clause (c);
+  }
   literal_iterator j = c->begin ();
   for (i = j; i != end; i++) {
     const int lit = *j++ = *i, tmp = fixed (lit);
@@ -119,33 +124,6 @@ void Internal::protect_reasons () {
     count++;
 #endif
   }
-  int l = 0;
-  for (auto &t : trails) {
-    l++;
-    assert (l <= level);
-    for (auto &lit : t) {
-      if (!active (lit))
-        continue;
-      assert (val (lit));
-      Var &v = var (lit);
-      if (v.level < l)
-        continue;
-      assert (v.level == l);
-      assert (v.level > 0);
-      Clause *reason = v.reason;
-      if (!reason)
-        continue;
-      if (reason == external_reason)
-        continue;
-      LOG (reason, "protecting assigned %d reason %p", lit,
-           (void *) reason);
-      assert (!reason->reason);
-      reason->reason = true;
-#ifdef LOGGING
-      count++;
-#endif
-    }
-  }
   LOG ("protected %zd reason clauses referenced on trail", count);
   protected_reasons = true;
 }
@@ -180,33 +158,6 @@ void Internal::unprotect_reasons () {
     count++;
 #endif
   }
-  int l = 0;
-  for (auto &t : trails) {
-    l++;
-    assert (l <= level);
-    for (auto &lit : t) {
-      if (!active (lit))
-        continue;
-      assert (val (lit));
-      Var &v = var (lit);
-      if (v.level < l)
-        continue;
-      assert (v.level == l);
-      assert (v.level > 0);
-      Clause *reason = v.reason;
-      if (!reason)
-        continue;
-      if (reason == external_reason)
-        continue;
-      LOG (reason, "unprotecting assigned %d reason %p", lit,
-           (void *) reason);
-      assert (reason->reason);
-      reason->reason = false;
-#ifdef LOGGING
-      count++;
-#endif
-    }
-  }
   LOG ("unprotected %zd reason clauses referenced on trail", count);
   protected_reasons = false;
 }
@@ -230,7 +181,7 @@ size_t Internal::flush_occs (int lit) {
     if (c->collect ())
       continue;
     *j++ = c->moved ? c->copy : c;
-    assert (!c->redundant);
+    // assert (!c->redundant); // -> not true in sweeping
     res++;
   }
   os.resize (j - os.begin ());
@@ -310,32 +261,6 @@ void Internal::update_reason_references () {
 #ifdef LOGGING
     count++;
 #endif
-  }
-  int l = 0;
-  for (auto &t : trails) {
-    l++;
-    assert (l <= level);
-    for (auto &lit : t) {
-      if (!active (lit))
-        continue;
-      Var &v = var (lit);
-      if (v.level < l)
-        continue;
-      assert (v.level == l);
-      Clause *c = v.reason;
-      if (!c)
-        continue;
-      if (c == external_reason)
-        continue;
-      LOG (c, "updating assigned %d reason", lit);
-      assert (c->reason);
-      assert (c->moved);
-      Clause *d = c->copy;
-      v.reason = d;
-#ifdef LOGGING
-      count++;
-#endif
-    }
   }
   LOG ("updated %zd assigned reason references", count);
 }
@@ -539,6 +464,58 @@ void Internal::check_clause_stats () {
   assert (stats.current.total == total);
   assert (stats.irrlits == irrlits);
 #endif
+}
+
+/*------------------------------------------------------------------------*/
+
+// only delete binary clauses from watch list that are already mark as
+// deleted.
+void Internal::remove_garbage_binaries () {
+  if (unsat)
+    return;
+  START (collect);
+
+  if (!protected_reasons)
+    protect_reasons ();
+  int backtrack_level = level + 1;
+  Watches saved;
+  for (auto v : vars) {
+    for (auto lit : {-v, v}) {
+      assert (saved.empty ());
+      Watches &ws = watches (lit);
+      const const_watch_iterator end = ws.end ();
+      watch_iterator j = ws.begin ();
+      const_watch_iterator i;
+      for (i = j; i != end; i++) {
+        Watch w = *i;
+        *j++ = w;
+        Clause *c = w.clause;
+        COVER (!w.binary () && c->size == 2);
+        if (!w.binary ())
+          continue;
+        if (c->reason && c->garbage) {
+          COVER (true);
+          assert (c->size == 2);
+          backtrack_level =
+              min (backtrack_level, var (c->literals[0]).level);
+          LOG ("need to backtrack to before level %d", backtrack_level);
+          --j;
+          continue;
+        }
+        if (!c->collect ())
+          continue;
+        LOG (c, "removing from watch list");
+        --j;
+      }
+      ws.resize (j - ws.begin ());
+      shrink_vector (ws);
+    }
+  }
+  delete_garbage_clauses ();
+  unprotect_reasons ();
+  if (backtrack_level - 1 < level)
+    backtrack (backtrack_level - 1);
+  STOP (collect);
 }
 
 /*------------------------------------------------------------------------*/

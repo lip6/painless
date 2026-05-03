@@ -4,8 +4,20 @@ namespace CaDiCaL {
 
 void Internal::copy_phases (vector<signed char> &dst) {
   START (copy);
-  for (auto i : vars)
-    dst[i] = phases.saved[i];
+  for (auto i : vars) {
+    const signed char tmp = phases.saved[i];
+    if (tmp)
+      dst[i] = tmp;
+  }
+  STOP (copy);
+}
+
+void Internal::save_assigned_phases (vector<signed char> &dst) {
+  START (copy);
+  for (auto i : vars) {
+    if (vals[i])
+      dst[i] = vals[i];
+  }
   STOP (copy);
 }
 
@@ -39,6 +51,20 @@ void Internal::unphase (int lit) {
   }
   LOG ("clearing old forced phase %d", old_forced_phase * idx);
   phases.forced[idx] = 0;
+}
+
+void Internal::savePhase (int lit) {
+  const int idx = vidx (lit);
+  signed char old_saved_phase = phases.saved[idx];
+  signed char new_saved_phase = sign (lit);
+  if (old_saved_phase == new_saved_phase) {
+    LOG ("saved phase remains at %d", old_saved_phase * idx);
+    return;
+  }
+  if (old_saved_phase)
+    LOG ("overwriting old saved phase %d", old_saved_phase * idx);
+  LOG ("new saved phase %d", new_saved_phase * idx);
+  phases.saved[idx] = new_saved_phase;
 }
 
 } // namespace CaDiCaL

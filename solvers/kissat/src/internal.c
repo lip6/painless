@@ -17,28 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Begin Painless
-static inline void kissat_init_shuffle (kissat *solver, int max_var) {
-  // seed is set using seed option of kissat
-  srand (GET_OPTION (seed));
-  int *id;
-  id = (int *) malloc (sizeof (int) * (max_var + 1));
-  for (int i = 1; i <= max_var; i++)
-    id[i] = i;
-  for (int i = 1; i <= max_var; i++) {
-    int j = (rand () % max_var) + 1;
-    int x = id[i];
-    id[i] = id[j];
-    id[j] = x;
-  }
-  for (int i = 1; i <= max_var; i++)
-    kissat_import_literal (solver, i);
-  for (int i = 1; i <= max_var; i++)
-    kissat_activate_literal (solver, kissat_import_literal (solver, id[i]));
-  free (id);
-}
-// End Painless
-
 void kissat_reset_last_learned (kissat *solver) {
   for (really_all_last_learned (p))
     *p = INVALID_REF;
@@ -125,13 +103,12 @@ void kissat_release (kissat *solver) {
   RELEASE_STACK (solver->witness);
   RELEASE_STACK (solver->etrail);
 
-  // Begin Painless
-  RELEASE_STACK (solver->pclause);
-  // End Painless
-
   RELEASE_STACK (solver->delayed);
 
   RELEASE_STACK (solver->clause);
+  // Begin Painless
+  RELEASE_STACK (solver->pclause);
+  // End Painless
   RELEASE_STACK (solver->shadow);
 #if defined(LOGGING) || !defined(NDEBUG)
   RELEASE_STACK (solver->resolvent);
@@ -200,10 +177,6 @@ void kissat_reserve (kissat *solver, int max_var) {
   kissat_require (max_var <= EXTERNAL_MAX_VAR,
                   "invalid maximum variable argument '%d'", max_var);
   kissat_increase_size (solver, (unsigned) max_var);
-  // Begin Painless
-  if (GET_OPTION (initshuffle))
-    kissat_init_shuffle (solver, max_var);
-  // End Painless
   if (!GET_OPTION (tumble)) {
     for (int idx = 1; idx <= max_var; idx++)
       (void) kissat_import_literal (solver, idx);
@@ -262,12 +235,27 @@ void kissat_set_conflict_limit (kissat *solver, unsigned limit) {
        limits->conflicts, limit);
 }
 
+// static void print_bucket_stats (size_t *array, const char *prefix) {
+//   for (unsigned char i = 0; i < BUCKETS - 1; i++) {
+//     printf ("%s %u,%lu\n", prefix, (unsigned) i, array[i]);
+//   }
+//   printf ("%s >=%u,%lu\n", prefix, (unsigned) BUCKETS - 1,
+//           array[BUCKETS - 1]);
+// }
+
 void kissat_print_statistics (kissat *solver) {
 #ifndef QUIET
   kissat_require_initialized (solver);
   const int verbosity = kissat_verbosity (solver);
-  if (verbosity < 0)
+  // Print profiling without report
+
+  if (verbosity < -1)
     return;
+
+  kissat_section (solver, "LBD Averages");
+  printf ("c fast:%lf, med:%lf, slow:%lf\n", AVERAGE (fast_glue),
+          CAVERAGE (med_glue), AVERAGE (slow_glue));
+
   if (GET_OPTION (profile)) {
     kissat_section (solver, "profiling");
     kissat_profiles_print (solver);
@@ -510,6 +498,9 @@ int kissat_solve (kissat *solver) {
   kissat_require (EMPTY_STACK (solver->clause),
                   "incomplete clause (terminating zero not added)");
   kissat_require (!GET (searches), "incremental solving not supported");
+  kissat_require (!GET_OPTION (factor) ||
+                      NULL == solver->cbkHasClauseToImport,
+                  "factor is not supported with clause sharing");
   return kissat_search (solver);
 }
 

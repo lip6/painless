@@ -40,7 +40,7 @@ typedef struct profiles profiles;
   PROF (propagate, 4) \
   PROF (radix, 4) \
   PROF (reduce, 2) \
-  PROF (reorder, 3) \
+  PROF (reorder, 2) \
   PROF (rephase, 3) \
   PROF (restart, 3) \
   PROF (search, 1) \

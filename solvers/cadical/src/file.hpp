@@ -2,6 +2,7 @@
 #define _file_hpp_INCLUDED
 
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -39,7 +40,7 @@ class File {
   int close_file; // need to close file (1=fclose, 2=pclose, 3=pipe)
   int child_pid;
   FILE *file;
-  const char *_name;
+  char *_name;
   uint64_t _lineno;
   uint64_t _bytes;
 
@@ -56,7 +57,7 @@ class File {
                           const char *mode);
   static FILE *read_pipe (Internal *, const char *fmt, const int *sig,
                           const char *path);
-#ifndef __WIN32
+#ifndef _WIN32
   static FILE *write_pipe (Internal *, const char *fmt, const char *path,
                            int &child_pid);
 #endif
@@ -66,6 +67,8 @@ public:
   static bool exists (const char *path);       // file exists?
   static bool writable (const char *path);     // can write to that file?
   static size_t size (const char *path);       // file size in bytes
+
+  bool piping (); // Is opened file a pipe?
 
   // Does the file match the file type signature.
   //
@@ -108,6 +111,8 @@ public:
     _bytes++;
     return true;
   }
+
+  bool endl () { return put ('\n'); }
 
   bool put (unsigned char ch) {
     assert (writing);

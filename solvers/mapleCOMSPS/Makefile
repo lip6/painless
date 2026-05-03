@@ -90,7 +90,7 @@ lsh:	$(BUILD_DIR)/dynamic/lib/$(MAPLE_DLIB).$(SOMAJOR).$(SOMINOR)$(SORELEASE)
 
 ## Build-type Compile-flags:
 $(BUILD_DIR)/release/%.o:			MAPLE_CXXFLAGS +=$(MAPLE_REL) $(MAPLE_RELSYM)
-$(BUILD_DIR)/debug/%.o:				MAPLE_CXXFLAGS +=$(MAPLE_DEB) -g
+$(BUILD_DIR)/debug/%.o:				MAPLE_CXXFLAGS +=$(MAPLE_DEB) $(MAPLE_RELSYM)
 $(BUILD_DIR)/profile/%.o:			MAPLE_CXXFLAGS +=$(MAPLE_PRF) -pg
 $(BUILD_DIR)/dynamic/%.o:			MAPLE_CXXFLAGS +=$(MAPLE_REL) $(MAPLE_FPIC)
 

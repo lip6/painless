@@ -106,25 +106,15 @@ struct kissat {
   unsigned randec;
 
   // Begin Painless
-
-	// Stats
-	unsigned nb_exported;
-	unsigned nb_exported_filtered;
-	unsigned nb_imported_units;
-	unsigned nb_imported_bin;
-	unsigned nb_imported_cls;
-
 	ints pclause;	// for export only, filled with external literals didn't use clause for independency
-	unsigned pglue; // glue value of pclause
-	char do_not_import;
+	int pglue; // glue value of pclause
 
 	int id_painless;
-	void* painless; // used as the callback parameter
 
-	char (*cbkImportUnit)(void*, kissat*);
-	char (*cbkImportClause)(void*, kissat*);
-	char (*cbkExportClause)(void*,
-							kissat*); // callback for clause learning
+	void* painless; // used as the callback parameter
+  unsigned char (*cbkHasClauseToImport)(void*);
+	unsigned char (*cbkImportClause)(void*);
+	char (*cbkExportClause)(void*); 
 	// End Painless
 
   ints export;
@@ -203,6 +193,7 @@ struct kissat {
 
   generator random;
   averages averages[2];
+  common_averages common_averages;
   unsigned tier1[2], tier2[2];
   reluctant reluctant;
 

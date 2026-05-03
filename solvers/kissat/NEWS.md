@@ -1,3 +1,20 @@
+Version 4.0.4
+-------------
+
+  - removed a quadratic ITE gate extraction issue in congruence
+  - fixes for kitten stand-alone usage
+  - disabled fast elimination `fastel` by default
+  - delayed bounded variable addition `factor` for larger formulas
+
+Version 4.0.3
+-------------
+  
+  - reversed VMTF and heap order of factored variables aka BVA
+  - properly checking and fixed VMTF stamping order after factoring
+  - added `-flto` support / test (reason for changes to `stack`)
+  - reactivated `scripts/build-and-test-all-configurations.sh`
+  - inlined through macros generic `stack` enlarging / shrinking
+
 Version 4.0.2
 -------------
   

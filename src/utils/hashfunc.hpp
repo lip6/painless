@@ -38,14 +38,14 @@
 inline size_t
 wang32_hash(size_t key)
 {
-	// We assume that size_t has at least 32bits.
-	key += ~(key << 15);
-	key ^= (key >> 10);
-	key += (key << 3);
-	key ^= (key >> 6);
-	key += ~(key << 11);
-	key ^= (key >> 16);
-	return key;
+  // We assume that size_t has at least 32bits.
+  key += ~(key << 15);
+  key ^= (key >> 10);
+  key += (key << 3);
+  key ^= (key >> 6);
+  key += ~(key << 11);
+  key ^= (key >> 16);
+  return key;
 }
 
 /// \brief Knuth's Multiplicative hash function.
@@ -57,9 +57,9 @@ wang32_hash(size_t key)
 inline size_t
 knuth32_hash(size_t key)
 {
-	// 2654435761 is the golden ratio of 2^32.  The right shift of 3
-	// bits assumes that all objects are aligned on a 8 byte boundary.
-	return (key >> 3) * 2654435761U;
+  // 2654435761 is the golden ratio of 2^32.  The right shift of 3
+  // bits assumes that all objects are aligned on a 8 byte boundary.
+  return (key >> 3) * 2654435761U;
 }
 
 /// Struct for Fowler-Noll-Vo parameters
@@ -71,20 +71,20 @@ struct fnv
 template<class T>
 struct fnv<T, typename std::enable_if<sizeof(T) == 4>::type>
 {
-	static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
-				  "Fowler-Noll-Vo hash requires an unsigned integral type");
-	static constexpr T init = 2166136261UL;
-	static constexpr T prime = 16777619UL;
+  static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
+                "Fowler-Noll-Vo hash requires an unsigned integral type");
+  static constexpr T init = 2166136261UL;
+  static constexpr T prime = 16777619UL;
 };
 
 /// Fowler-Noll-Vo hash parameters for 64 bits
 template<class T>
 struct fnv<T, typename std::enable_if<sizeof(T) == 8>::type>
 {
-	static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
-				  "Fowler-Noll-Vo hash requires an unsigned integral type");
-	static constexpr T init = 14695981039346656037ULL;
-	static constexpr T prime = 1099511628211ULL;
+  static_assert(std::is_integral<T>::value && std::is_unsigned<T>::value,
+                "Fowler-Noll-Vo hash requires an unsigned integral type");
+  static constexpr T init = 14695981039346656037ULL;
+  static constexpr T prime = 1099511628211ULL;
 };
 
 /// \brief Fowler-Noll-Vo hash function
@@ -95,11 +95,11 @@ template<class It>
 size_t
 fnv_hash(It begin, It end)
 {
-	size_t res = fnv<size_t>::init;
-	for (; begin != end; ++begin) {
-		res ^= *begin;
-		res *= fnv<size_t>::prime;
-	}
-	return res;
+  size_t res = fnv<size_t>::init;
+  for (; begin != end; ++begin) {
+    res ^= *begin;
+    res *= fnv<size_t>::prime;
+  }
+  return res;
 }
 /// @}

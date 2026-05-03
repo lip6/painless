@@ -49,17 +49,17 @@ namespace CaDiCaL {
 
 void External::restore_clause (const vector<int>::const_iterator &begin,
                                const vector<int>::const_iterator &end,
-                               const uint64_t id) {
-  LOG (begin, end, "restoring external clause[%" PRIu64 "]", id);
+                               const int64_t id) {
+  LOG (begin, end, "restoring external clause[%" PRId64 "]", id);
   assert (eclause.empty ());
-  const bool irredundant_clause = (id != 0);
+  assert (id);
   for (auto p = begin; p != end; p++) {
     eclause.push_back (*p);
     if (internal->proof && internal->lrat) {
       const auto &elit = *p;
       unsigned eidx = (elit > 0) + 2u * (unsigned) abs (elit);
       assert ((size_t) eidx < ext_units.size ());
-      const uint64_t id = ext_units[eidx];
+      const int64_t id = ext_units[eidx];
       bool added = ext_flags[abs (elit)];
       if (id && !added) {
         ext_flags[abs (elit)] = true;
@@ -67,18 +67,14 @@ void External::restore_clause (const vector<int>::const_iterator &begin,
       }
     }
     int ilit = internalize (*p);
-    if (irredundant_clause)
-      internal->add_original_lit (ilit), internal->stats.restoredlits++;
+    internal->add_original_lit (ilit), internal->stats.restoredlits++;
   }
   if (internal->proof && internal->lrat) {
     for (const auto &elit : eclause) {
       ext_flags[abs (elit)] = false;
     }
   }
-  if (irredundant_clause) // Can a restored clause be redundant?
-    internal->finish_added_clause_with_id (id, true);
-  if (!irredundant_clause)
-    LOG (eclause, "do not restore clause, because it is redundant");
+  internal->finish_added_clause_with_id (id, true);
   eclause.clear ();
   internal->stats.restored++;
 }
@@ -146,8 +142,8 @@ void External::restore_clauses () {
     }
 
     // now copy the id of the clause
-    const uint64_t id = ((uint64_t) (*p) << 32) + (uint64_t) * (p + 1);
-    LOG ("id is %" PRIu64, id);
+    const int64_t id = ((int64_t) (*p) << 32) + (int64_t) * (p + 1);
+    LOG ("id is %" PRId64, id);
     *q++ = *p++;
     *q++ = *p++;
     assert (id);
@@ -164,6 +160,7 @@ void External::restore_clauses () {
         satisfied = elit;
       end_of_clause++;
     }
+    assert (id);
 
     // Do not apply our 'FLUSH' rule to remove satisfied (implied) clauses
     // if the corresponding option is set simply by resetting 'satisfied'.

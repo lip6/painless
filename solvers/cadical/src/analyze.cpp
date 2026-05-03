@@ -23,17 +23,20 @@ void Internal::learn_empty_clause () {
   }
   unsat = true;
   conflict_id = id;
+  marked_failed = true;
   conclusion.push_back (id);
   lrat_chain.clear ();
 }
 
 void Internal::learn_unit_clause (int lit) {
   assert (!unsat);
-  LOG ("learned unit clause %d", lit);
+  LOG ("learned unit clause %d, stored at position %d", lit, vlit (lit));
   external->check_learned_unit_clause (lit);
   int64_t id = ++clause_id;
-  const unsigned uidx = vlit (lit);
-  unit_clauses[uidx] = id;
+  if (lrat || frat) {
+    const unsigned uidx = vlit (lit);
+    unit_clauses (uidx) = id;
+  }
   if (proof) {
     proof->add_derived_unit_clause (id, lit, lrat_chain);
   }
@@ -175,9 +178,6 @@ void Internal::bump_variables () {
 
   START (bump);
 
-  if (opts.bumpreason)
-    bump_also_all_reason_literals ();
-
   if (!use_scores ()) {
 
     // Variables are bumped in the order they are in the current decision
@@ -207,6 +207,7 @@ int Internal::recompute_glue (Clause *c) {
   int res = 0;
   const int64_t stamp = ++stats.recomputed;
   for (const auto &lit : *c) {
+    assert (val (lit));
     int level = var (lit).level;
     assert (gtab[level] <= stamp);
     if (gtab[level] == stamp)
@@ -223,10 +224,7 @@ int Internal::recompute_glue (Clause *c) {
 
 inline void Internal::bump_clause (Clause *c) {
   LOG (c, "bumping");
-  unsigned used = c->used;
-  c->used = 1;
-  if (c->keep)
-    return;
+  c->used = max_used;
   if (c->hyper)
     return;
   if (!c->redundant)
@@ -234,10 +232,14 @@ inline void Internal::bump_clause (Clause *c) {
   int new_glue = recompute_glue (c);
   if (new_glue < c->glue)
     promote_clause (c, new_glue);
-  else if (used && c->glue <= opts.reducetier2glue)
-    c->used = 2;
+
+  const size_t glue =
+      std::min ((size_t) c->glue, stats.used[stable].size () - 1);
+  ++stats.used[stable][glue];
+  ++stats.bump_used[stable];
 }
 
+void Internal::bump_clause2 (Clause *c) { bump_clause (c); }
 /*------------------------------------------------------------------------*/
 
 // During conflict analysis literals not seen yet either become part of the
@@ -261,20 +263,40 @@ inline void Internal::analyze_literal (int lit, int &open,
     f.seen = true;
     unit_analyzed.push_back (lit);
     assert (val (lit) < 0);
-    const unsigned uidx = vlit (-lit);
-    uint64_t id = unit_clauses[uidx];
-    assert (id);
+    int64_t id = unit_id (-lit);
     unit_chain.push_back (id);
     return;
   }
   ++antecedent_size;
   if (f.seen)
     return;
-  f.seen = true;
-  analyzed.push_back (lit);
+
+  // before marking as seen, get reason and check for missed unit
 
   assert (val (lit) < 0);
   assert (v.level <= level);
+  if (v.reason == external_reason) {
+    assert (!opts.exteagerreasons);
+    v.reason = learn_external_reason_clause (-lit, 0, true);
+    if (!v.reason) { // actually a unit
+      --antecedent_size;
+      LOG ("%d unit after explanation", -lit);
+      if (f.seen || !lrat)
+        return;
+      f.seen = true;
+      unit_analyzed.push_back (lit);
+      assert (val (lit) < 0);
+      const unsigned uidx = vlit (-lit);
+      int64_t id = unit_clauses (uidx);
+      assert (id);
+      unit_chain.push_back (id);
+      return;
+    }
+  }
+
+  f.seen = true;
+  analyzed.push_back (lit);
+
   assert (v.reason != external_reason);
   if (v.level < level)
     clause.push_back (lit);
@@ -334,9 +356,10 @@ inline bool Internal::bump_also_reason_literal (int lit) {
 
 // We experimented with deeper reason bumping without much success though.
 
-inline void Internal::bump_also_reason_literals (int lit, int limit) {
+inline void Internal::bump_also_reason_literals (int lit, int depth_limit,
+                                                 size_t analyzed_limit) {
   assert (lit);
-  assert (limit > 0);
+  assert (depth_limit > 0);
   const Var &v = var (lit);
   assert (val (lit));
   if (!v.level)
@@ -344,23 +367,60 @@ inline void Internal::bump_also_reason_literals (int lit, int limit) {
   Clause *reason = v.reason;
   if (!reason || reason == external_reason)
     return;
+  stats.ticks.search[stable]++;
   for (const auto &other : *reason) {
     if (other == lit)
       continue;
     if (!bump_also_reason_literal (other))
       continue;
-    if (limit < 2)
+    if (depth_limit < 2)
       continue;
-    bump_also_reason_literals (-other, limit - 1);
+    bump_also_reason_literals (-other, depth_limit - 1, analyzed_limit);
+    if (analyzed.size () > analyzed_limit)
+      break;
   }
 }
 
 inline void Internal::bump_also_all_reason_literals () {
-  assert (opts.bumpreason);
+  assert (opts.bump);
+  if (!opts.bumpreason)
+    return;
+  if (averages.current.decisions > opts.bumpreasonrate) {
+    LOG ("decisions per conflict rate %g > limit %d",
+         (double) averages.current.decisions, opts.bumpreasonrate);
+    return;
+  }
+  if (delay[stable].bumpreasons.limit) {
+    LOG ("delaying reason bumping %" PRId64 " more times",
+         delay[stable].bumpreasons.limit);
+    delay[stable].bumpreasons.limit--;
+    return;
+  }
   assert (opts.bumpreasondepth > 0);
-  LOG ("bumping reasons up to depth %d", opts.bumpreasondepth);
+  const int depth_limit = opts.bumpreasondepth + stable;
+  size_t saved_analyzed = analyzed.size ();
+  size_t analyzed_limit = saved_analyzed * opts.bumpreasonlimit;
   for (const auto &lit : clause)
-    bump_also_reason_literals (-lit, opts.bumpreasondepth + stable);
+    if (analyzed.size () <= analyzed_limit)
+      bump_also_reason_literals (-lit, depth_limit, analyzed_limit);
+    else
+      break;
+  if (analyzed.size () > analyzed_limit) {
+    LOG ("not bumping reason side literals as limit exhausted");
+    for (size_t i = saved_analyzed; i != analyzed.size (); i++) {
+      const int lit = analyzed[i];
+      Flags &f = flags (lit);
+      assert (f.seen);
+      f.seen = false;
+    }
+    delay[stable].bumpreasons.interval++;
+    analyzed.resize (saved_analyzed);
+  } else {
+    LOG ("bumping reasons up to depth %d", opts.bumpreasondepth);
+    delay[stable].bumpreasons.interval /= 2;
+  }
+  LOG ("delay internal %" PRId64, delay[stable].bumpreasons.interval);
+  delay[stable].bumpreasons.limit = delay[stable].bumpreasons.interval;
 }
 
 /*------------------------------------------------------------------------*/
@@ -390,6 +450,14 @@ void Internal::clear_analyzed_literals () {
     assert (!f.removable);
   }
   analyzed.clear ();
+#if 0 // to expensive, even for debugging mode
+  if (unit_analyzed.size ())
+    return;
+  for (auto idx : vars) {
+    Flags &f = flags (idx);
+    assert (!f.seen);
+  }
+#endif
 }
 
 void Internal::clear_analyzed_levels () {
@@ -464,7 +532,7 @@ Clause *Internal::new_driving_clause (const int glue, int &jump) {
 
     jump = var (clause[1]).level;
     res = new_learned_redundant_clause (glue);
-    res->used = 1 + (glue <= opts.reducetier2glue);
+    res->used = max_used;
   }
 
   LOG ("jump level %d", jump);
@@ -605,57 +673,24 @@ inline int Internal::determine_actual_backtrack_level (int jump) {
          "thus backtracking chronologically to level %d",
          level - jump, opts.chronolevelim, res);
   } else if (opts.chronoreusetrail) {
-
-    int best_idx = 0, best_pos = 0, best_lvl = 0;
+    int best_idx = 0, best_pos = 0;
 
     if (use_scores ()) {
-      if (!opts.reimply) {
-        for (size_t i = control[jump + 1].trail; i < trail.size (); i++) {
-          const int idx = abs (trail[i]);
-          if (best_idx && !score_smaller (this) (best_idx, idx))
-            continue;
-          best_idx = idx;
-          best_pos = i;
-        }
-      } else {
-        for (int l = jump + 1; l <= level; l++) {
-          const auto &t = next_trail (l);
-          for (size_t i = 0; i < t->size (); i++) {
-            const auto idx = abs ((*t)[i]);
-            if (var (idx).level < l)
-              continue;
-            if (best_idx && !score_smaller (this) (best_idx, idx))
-              continue;
-            best_idx = idx;
-            best_pos = i;
-            best_lvl = l;
-          }
-        }
+      for (size_t i = control[jump + 1].trail; i < trail.size (); i++) {
+        const int idx = abs (trail[i]);
+        if (best_idx && !score_smaller (this) (best_idx, idx))
+          continue;
+        best_idx = idx;
+        best_pos = i;
       }
       LOG ("best variable score %g", score (best_idx));
     } else {
-      if (!opts.reimply) {
-        for (size_t i = control[jump + 1].trail; i < trail.size (); i++) {
-          const int idx = abs (trail[i]);
-          if (best_idx && bumped (best_idx) >= bumped (idx))
-            continue;
-          best_idx = idx;
-          best_pos = i;
-        }
-      } else {
-        for (int l = jump + 1; l <= level; l++) {
-          const auto &t = next_trail (l);
-          for (size_t i = 0; i < t->size (); i++) {
-            const auto idx = abs ((*t)[i]);
-            if (var (idx).level < l)
-              continue;
-            if (best_idx && bumped (best_idx) >= bumped (idx))
-              continue;
-            best_idx = idx;
-            best_pos = i;
-            best_lvl = l;
-          }
-        }
+      for (size_t i = control[jump + 1].trail; i < trail.size (); i++) {
+        const int idx = abs (trail[i]);
+        if (best_idx && bumped (best_idx) >= bumped (idx))
+          continue;
+        best_idx = idx;
+        best_pos = i;
       }
       LOG ("best variable bumped %" PRId64 "", bumped (best_idx));
     }
@@ -670,15 +705,8 @@ inline int Internal::determine_actual_backtrack_level (int jump) {
     // of the control frame one higher than at the result level.
     //
     res = jump;
-    if (!opts.reimply)
-      while (res < level - 1 && control[res + 1].trail <= best_pos)
-        res++;
-    else {
-      if (best_lvl == level)
-        best_lvl = level - 1;
-      assert (0 < best_lvl && best_lvl < level);
-      res = best_lvl;
-    }
+    while (res < level - 1 && control[res + 1].trail <= best_pos)
+      res++;
 
     if (res == jump)
       LOG ("default non-chronological back-jumping to level %d", res);
@@ -788,7 +816,7 @@ Clause *Internal::on_the_fly_strengthen (Clause *new_conflict, int uip) {
       const auto id = *i;
       mini_chain.push_back (id);
     }
-    lrat_chain.clear (); // see if this is correct...
+    lrat_chain.clear ();
     clear_unit_analyzed_literals ();
     unit_chain.clear ();
   }
@@ -812,8 +840,15 @@ Clause *Internal::on_the_fly_strengthen (Clause *new_conflict, int uip) {
     if (highest_pos != 1)
       swap (lits[1], lits[highest_pos]);
     LOG ("removing %d literals", new_conflict->size - new_size);
-    otfs_strengthen_clause (new_conflict, uip, new_size, sorted);
-    assert (new_size == new_conflict->size);
+
+    if (new_size == 1) {
+      LOG (new_conflict, "new size = 1, so interrupting");
+      assert (!opts.exteagerreasons);
+      return 0;
+    } else {
+      otfs_strengthen_clause (new_conflict, uip, new_size, sorted);
+      assert (new_size == new_conflict->size);
+    }
   }
 
   if (other_init != other)
@@ -860,7 +895,7 @@ inline void Internal::otfs_subsume_clause (Clause *subsuming,
 
 /*------------------------------------------------------------------------*/
 
-// Candidate clause 'c' is strengthened by removing 'lit'.
+// Candidate clause 'c' is strengthened by removing 'lit' and units.
 //
 void Internal::otfs_strengthen_clause (Clause *c, int lit, int new_size,
                                        const std::vector<int> &old) {
@@ -874,9 +909,23 @@ void Internal::otfs_strengthen_clause (Clause *c, int lit, int new_size,
     mark_removed (lit);
   }
   mini_chain.clear ();
-  c->used = true;
+  c->used = max_used;
   LOG (c, "strengthened");
   external->check_shrunken_clause (c);
+}
+
+/*------------------------------------------------------------------------*/
+
+// If the average number of decisions per conflict (analysis actually so not
+// taking OTFS conflicts into account) is high we do not bump reasons. This
+// is the function which updates the exponential moving decision rate
+// average.
+
+void Internal::update_decision_rate_average () {
+  int64_t current = stats.decisions;
+  int64_t decisions = current - saved_decisions;
+  UPDATE_AVERAGE (averages.current.decisions, decisions);
+  saved_decisions = current;
 }
 
 /*------------------------------------------------------------------------*/
@@ -902,22 +951,12 @@ void Internal::analyze () {
   //
   UPDATE_AVERAGE (averages.current.trail.fast, num_assigned);
   UPDATE_AVERAGE (averages.current.trail.slow, num_assigned);
+  update_decision_rate_average ();
 
   /*----------------------------------------------------------------------*/
 
-  if (external_prop && !external_prop_is_lazy) {
-    int change = multitrail_dirty;
+  if (external_prop && !external_prop_is_lazy && opts.exteagerreasons) {
     explain_external_propagations ();
-    while (opts.reimply && multitrail_dirty < change) {
-      Clause *prev = conflict;
-      conflict = 0;
-      propagate_multitrail ();
-      change = multitrail_dirty;
-      if (!conflict)
-        conflict = prev;
-      else
-        explain_external_propagations ();
-    }
   }
 
   if (opts.chrono || external_prop) {
@@ -957,10 +996,10 @@ void Internal::analyze () {
 
       LOG ("forcing %d", forced);
       search_assign_driving (forced, conflict);
-      if (opts.reimply && multitrail_dirty > var (forced).level)
-        multitrail_dirty = var (forced).level;
 
       conflict = 0;
+      if (!opts.chrono)
+        did_external_prop = true;
       STOP (analyze);
       return;
     }
@@ -984,7 +1023,6 @@ void Internal::analyze () {
     learn_empty_clause ();
     if (external->learner)
       external->export_learned_empty_clause ();
-    // lrat_chain.clear (); done in learn_empty_clause
     STOP (analyze);
     return;
   }
@@ -1010,18 +1048,14 @@ void Internal::analyze () {
   assert (clause.empty ());
   assert (lrat_chain.empty ());
 
-  // for multitrail we only need to analyze the trail with the conflicting
-  // level which is also level because we backtracked earlier.
-
-  const auto &t = next_trail (level);
+  const auto &t = &trail;
   int i = t->size ();      // Start at end-of-trail.
   int open = 0;            // Seen but not processed on this level.
   int uip = 0;             // The first UIP literal.
   int resolvent_size = 0;  // without the uip
   int antecedent_size = 1; // with the uip and without unit literals
-  int conflict_size =
-      0; // size of the conflict without the uip and without unit literals
-  int resolved = 0; // number of resolution (0 = clause in CNF)
+  int conflict_size = 0;   // without the uip and without unit literals
+  int resolved = 0;        // number of resolution (0 = clause in CNF)
   const bool otfs = opts.otfs;
 
   for (;;) {
@@ -1035,63 +1069,101 @@ void Internal::analyze () {
         resolvent_size < antecedent_size) {
       assert (reason != conflict);
       LOG (analyzed, "found candidate for OTFS conflict");
+      LOG (clause, "found candidate for OTFS conflict");
       LOG (reason, "found candidate (size %d) for OTFS resolvent",
            antecedent_size);
+      const int other = reason->literals[0] ^ reason->literals[1] ^ uip;
+      assert (other != uip);
       reason = on_the_fly_strengthen (reason, uip);
-      assert (conflict_size >= 2);
       if (opts.bump)
         bump_variables ();
+
+      assert (conflict_size);
+      if (!reason) {
+        uip = -other;
+        assert (open == 1);
+        LOG ("clause is actually unit %d, stopping", -uip);
+        reverse (begin (mini_chain), end (mini_chain));
+        for (auto id : mini_chain)
+          lrat_chain.push_back (id);
+        mini_chain.clear ();
+        clear_analyzed_levels ();
+        assert (!opts.exteagerreasons);
+        clause.clear ();
+        break;
+      }
+      assert (conflict_size >= 2);
+
       if (resolved == 1 && resolvent_size < conflict_size) {
-        // in this case both clauses are part of the CNF, so one subsumes
-        // the other
+        // here both clauses are part of the CNF, so one subsumes the other
         otfs_subsume_clause (reason, conflict);
         LOG (reason, "changing conflict to");
         --conflict_size;
-        conflict = reason;
-        assert (conflict_size == conflict->size);
+        assert (conflict_size == reason->size);
         ++stats.otfs.subsumed;
         ++stats.subsumed;
-        ++stats.conflicts;
-
-        if (open == 1) {
-          int forced = 0;
-          const int conflict_level = otfs_find_backtrack_level (forced);
-          int new_level = determine_actual_backtrack_level (conflict_level);
-          UPDATE_AVERAGE (averages.current.level, new_level);
-          backtrack (new_level);
-
-          LOG ("forcing %d", forced);
-          search_assign_driving (forced, conflict);
-          if (opts.reimply && multitrail_dirty > var (forced).level)
-            multitrail_dirty = var (forced).level;
-
-          conflict = 0;
-          // Clean up.
-          //
-          clear_analyzed_literals ();
-          clear_analyzed_levels ();
-          clause.clear ();
-          STOP (analyze);
-          return;
-        }
       }
+
+      LOG (reason, "changing conflict to");
       conflict = reason;
-      resolved = 0;
+      if (open == 1) {
+        int forced = 0;
+        const int conflict_level = otfs_find_backtrack_level (forced);
+        int new_level = determine_actual_backtrack_level (conflict_level);
+        UPDATE_AVERAGE (averages.current.level, new_level);
+        backtrack (new_level);
+
+        LOG ("forcing %d", forced);
+        search_assign_driving (forced, conflict);
+
+        // Clean up.
+        //
+        conflict = 0;
+        clear_analyzed_literals ();
+        clear_analyzed_levels ();
+        clause.clear ();
+        STOP (analyze);
+        return;
+      }
+
+      stats.conflicts++;
+
       clear_analyzed_literals ();
-      // clear_analyzed_levels (); not needed because marking the exact same
-      // again
+      clear_analyzed_levels ();
       clause.clear ();
       resolvent_size = 0;
       antecedent_size = 1;
+      resolved = 0;
       open = 0;
       analyze_reason (0, reason, open, resolvent_size, antecedent_size);
       conflict_size = antecedent_size - 1;
+      assert (open > 1);
     }
 
     ++resolved;
 
     uip = 0;
     while (!uip) {
+      if (!i) {
+        lazy_external_propagator_out_of_order_clause (uip);
+        if (unsat)
+          return;
+        else if (uip) {
+          open = 1;
+          break;
+        } else {
+          LOG (reason, "restarting the analysis on the new conflict");
+          ++stats.conflicts;
+          reason = conflict;
+          resolvent_size = 0;
+          antecedent_size = 1;
+          resolved = 0;
+          open = 0;
+          analyze_reason (0, reason, open, resolvent_size, antecedent_size);
+          conflict_size = antecedent_size - 1;
+          assert (open > 1);
+        }
+      }
       assert (i > 0);
       const int lit = (*t)[--i];
       if (!flags (lit).seen)
@@ -1102,6 +1174,11 @@ void Internal::analyze () {
     if (!--open)
       break;
     reason = var (uip).reason;
+    if (reason == external_reason) {
+      assert (!opts.exteagerreasons);
+      reason = learn_external_reason_clause (-uip, 0, true);
+      var (uip).reason = reason;
+    }
     assert (reason != external_reason);
     LOG (reason, "analyzing %d reason", uip);
     assert (resolvent_size);
@@ -1124,7 +1201,7 @@ void Internal::analyze () {
   // up to this point lrat_chain contains the proof for current clause in
   // reversed order. in minimize and shrink the clause is changed and
   // therefore lrat_chain has to be extended. Unfortunately we cannot create
-  // the chain directly during minimazation (or shrinking) but afterwards we
+  // the chain directly during minimization (or shrinking) but afterwards we
   // can calculate it pretty easily and even better the same algorithm works
   // for both shrinking and minimization.
 
@@ -1141,8 +1218,10 @@ void Internal::analyze () {
 
     // Update decision heuristics.
     //
-    if (opts.bump)
+    if (opts.bump) {
+      bump_also_all_reason_literals ();
       bump_variables ();
+    }
 
     if (external->learner) {
       // Begin Painless
@@ -1191,8 +1270,6 @@ void Internal::analyze () {
   //
   if (uip) {
     search_assign_driving (-uip, driving_clause);
-    if (opts.reimply && multitrail_dirty > var (uip).level)
-      multitrail_dirty = var (uip).level;
   } else
     learn_empty_clause ();
 
@@ -1212,6 +1289,67 @@ void Internal::analyze () {
 
   if (driving_clause && opts.eagersubsume)
     eagerly_subsume_recently_learned_clauses (driving_clause);
+
+  if (lim.recompute_tier <= stats.conflicts)
+    recompute_tier ();
+}
+
+// In the special case where the external propagator is lazy, the same
+// invariants as OTFS break (but even more complicated). There are three
+// possible cases:
+//   - the clause becomes empty (unsat must be answered)
+//   - the clause is a unit (backtrack and set the clause)
+//   - the clause is a new conflict on lower level and we restart the
+//   analysis
+//
+// TODO: we do not really need to keep the clause longer than the conflict
+// analysis.
+void Internal::lazy_external_propagator_out_of_order_clause (int &uip) {
+  assert (!opts.exteagerreasons);
+  assert (external_prop);
+  LOG (clause, "out-of-order conflict");
+  if (clause.empty ()) {
+    LOG (lrat_chain, "lrat_chain:");
+    LOG (clause, "clause:");
+    LOG (unit_chain, "units:");
+    if (lrat) {
+      LOG (unit_chain, "unit chain: ");
+      for (auto id : unit_chain)
+        lrat_chain.push_back (id);
+      unit_chain.clear ();
+      reverse (lrat_chain.begin (), lrat_chain.end ());
+    }
+    LOG (lrat_chain, "lrat_chain:");
+    learn_empty_clause ();
+    if (external->learner)
+      external->export_learned_empty_clause ();
+    conflict = 0;
+  } else if (clause.size () == 1) {
+    LOG ("found out-of-order unit");
+    uip = -clause[0];
+    assert (uip);
+    backtrack (var (uip).level);
+    assert (val (uip) > 0);
+    clause.clear ();
+  } else {
+    int jump;
+    const int glue = clause.size () - 1;
+    conflict = new_driving_clause (glue, jump);
+    UPDATE_AVERAGE (averages.current.level, jump);
+    backtrack (jump);
+    LOG (conflict, "new conflict");
+  }
+  // Clean up.
+  //
+  clear_analyzed_literals ();
+  clear_unit_analyzed_literals ();
+  clear_analyzed_levels ();
+  clause.clear ();
+
+  if (unsat) {
+    lrat_chain.clear ();
+    STOP (analyze);
+  }
 }
 
 // We wait reporting a learned unit until propagation of that unit is

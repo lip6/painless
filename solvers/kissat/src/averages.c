@@ -15,3 +15,15 @@ void kissat_init_averages (kissat *solver, averages *averages) {
   INIT_EMA (decision_rate, GET_OPTION (emaslow));
   averages->initialized = true;
 }
+
+void
+kissat_init_caverages(kissat* solver, common_averages* caverages)
+{
+	if (caverages->initialized)
+		return;
+#define INIT_CEMA(EMA, WINDOW) kissat_init_smooth(solver, &caverages->EMA, WINDOW, #EMA)
+	INIT_CEMA(units, GET_OPTION(emafast));
+	INIT_CEMA(learned_units, GET_OPTION(emafast));
+	INIT_CEMA(med_glue, GET_OPTION(emamed));
+	caverages->initialized = true;
+}

@@ -9,10 +9,10 @@
 
 extern "C" {
 
-#ifdef __WIN32
+#ifdef _WIN32
 
-#ifndef __WIN32_WINNT
-#define __WIN32_WINNT 0x0600
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
 #endif
 
 // Clang-format would reorder the includes which breaks the Windows code
@@ -41,7 +41,7 @@ namespace CaDiCaL {
 
 /*------------------------------------------------------------------------*/
 
-#ifdef __WIN32
+#ifdef _WIN32
 
 double absolute_real_time () {
   FILETIME f;
@@ -94,17 +94,17 @@ double absolute_process_time () {
 
 #endif
 
-double Internal::real_time () {
+double Internal::real_time () const {
   return absolute_real_time () - stats.time.real;
 }
 
-double Internal::process_time () {
+double Internal::process_time () const {
   return absolute_process_time () - stats.time.process;
 }
 
 /*------------------------------------------------------------------------*/
 
-#ifdef __WIN32
+#ifdef _WIN32
 
 uint64_t current_resident_set_size () {
   PROCESS_MEMORY_COUNTERS pmc;

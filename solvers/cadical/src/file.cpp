@@ -18,7 +18,18 @@ extern "C" {
 
 extern "C" {
 #include <sys/wait.h>
-};
+}
+
+#endif
+
+#if defined(__APPLE__) || defined(__MACH__)
+
+extern "C" {
+#include <libproc.h>
+#include <sys/proc_info.h>
+}
+
+#include <mutex>
 
 #endif
 
@@ -35,8 +46,8 @@ File::File (Internal *i, bool w, int c, int p, FILE *f, const char *n)
 #if !defined(QUIET) || !defined(NDEBUG)
       writing (w),
 #endif
-      close_file (c), child_pid (p), file (f), _name (n), _lineno (1),
-      _bytes (0) {
+      close_file (c), child_pid (p), file (f), _name (strdup (n)),
+      _lineno (1), _bytes (0) {
   (void) w;
   assert (f), assert (n);
 }
@@ -93,6 +104,14 @@ bool File::writable (const char *path) {
     }
   }
   return !res;
+}
+
+bool File::piping () {
+  struct stat stat;
+  int fd = fileno (file);
+  if (fstat (fd, &stat))
+    return true;
+  return S_ISFIFO (stat.st_mode);
 }
 
 // These are signatures for supported compressed file types.  In 2018 the
@@ -176,7 +195,7 @@ FILE *File::read_file (Internal *internal, const char *path) {
 
 FILE *File::write_file (Internal *internal, const char *path) {
   MSG ("opening file to write '%s'", path);
-  return open_file (internal, path, "w");
+  return open_file (internal, path, "wb");
 }
 
 /*------------------------------------------------------------------------*/
@@ -249,6 +268,10 @@ FILE *File::read_pipe (Internal *internal, const char *fmt, const int *sig,
 
 #ifndef _WIN32
 
+#if defined(__APPLE__) || defined(__MACH__)
+static std::mutex compressed_file_writing_mutex;
+#endif
+
 FILE *File::write_pipe (Internal *internal, const char *command,
                         const char *path, int &child_pid) {
   assert (command[0] && command[0] != ' ');
@@ -264,28 +287,54 @@ FILE *File::write_pipe (Internal *internal, const char *command,
   char *absolute_command_path = find_program (argv[0]);
   int pipe_fds[2], out;
   FILE *res = 0;
+#if defined(__APPLE__) || defined(__MACH__)
+  compressed_file_writing_mutex.lock ();
+#endif
   if (!absolute_command_path)
     MSG ("could not find '%s' in 'PATH' environment variable", argv[0]);
-  else if (pipe (pipe_fds) < 0)
+  else if (::pipe (pipe_fds) < 0)
     MSG ("could not generate pipe to '%s' command", command);
   else if ((out = ::open (path, O_CREAT | O_TRUNC | O_WRONLY, 0644)) < 0)
     MSG ("could not open '%s' for writing", path);
-  else if ((child_pid = fork ()) < 0) {
+  else if ((child_pid = ::fork ()) < 0) {
     MSG ("could not fork process to execute '%s' command", command);
     ::close (out);
   } else if (child_pid) {
     ::close (pipe_fds[0]);
-    res = ::fdopen (pipe_fds[1], "w");
+    res = ::fdopen (pipe_fds[1], "wb");
   } else {
-    ::close (pipe_fds[1]);
-    ::close (0);
-    ::close (1);
-    if (command[0] == '7') // Surpress '7z' verbose output on 'stderr'.
+
+    // Connect stdin and stdout in child
+
+    ::dup2 (pipe_fds[0], 0);
+    ::dup2 (out, 1);
+
+    // Make sure to close all non-required fds to not cause hangs.
+    // This is handled now by closefrom and remains for documentation
+    // purposes:
+    //
+    //   ::close (pipe_fds[0]);
+    //   ::close (pipe_fds[1]);
+    //   ::close (out);
+
+    // Surpress '7z' verbose output on 'stderr'.
+
+    if (command[0] == '7') {
       ::close (2);
-    int in = dup (pipe_fds[0]);
-    assert (in == 0), (void) in;
-    int tmp = dup2 (out, 1);
-    assert (tmp == 1), (void) tmp;
+    }
+
+    // Before the fork another thread could have created more fds.  These
+    // fds are cloned into the child process.  As this inhibits pipes to
+    // be closed by the parent process we have to close all of the
+    // erroneously cloned fds here.
+
+#ifndef NCLOSEFROM
+    ::closefrom (3);
+#else
+    // Simplistic replacement on Unix without 'closefrom'.
+    for (int fd = 3; fd != FD_SETSIZE; fd++)
+      ::close (fd);
+#endif
     execv (absolute_command_path, argv);
     _exit (1);
   }
@@ -294,6 +343,10 @@ FILE *File::write_pipe (Internal *internal, const char *command,
   delete_str_vector (args);
 #ifdef QUIET
   (void) internal;
+#endif
+#if defined(__APPLE__) || defined(__MACH__)
+  if (!res)
+    compressed_file_writing_mutex.unlock ();
 #endif
   return res;
 }
@@ -395,6 +448,9 @@ void File::close (bool print) {
       MSG ("closing output pipe to write '%s'", name ());
     fclose (file);
     waitpid (child_pid, 0, 0);
+#if defined(__APPLE__) || defined(__MACH__)
+    compressed_file_writing_mutex.unlock ();
+#endif
   }
 #endif
   file = 0; // mark as closed
@@ -444,6 +500,7 @@ void File::flush () {
 File::~File () {
   if (file)
     close ();
+  free (_name);
 }
 
 } // namespace CaDiCaL

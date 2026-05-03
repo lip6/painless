@@ -170,6 +170,12 @@ kissat_statistics_print (kissat * solver, bool verbose)
 #define PCNT_CLS_FACTORED(NAME) \
   PERCENT (NAME, clauses_factored)
 
+#define PCNT_CLS_EXPORTED(NAME) \
+  PERCENT (NAME, clauses_exported)
+
+#define PCNT_CLS_IMPORTED(NAME) \
+  PERCENT (NAME, clauses_imported)
+
 #define PCNT_CLS_LEARNED(NAME) \
   PERCENT (NAME, clauses_learned)
 

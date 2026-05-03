@@ -650,7 +650,7 @@ static void invalid_api_usage (const char *fun, const char *fmt, ...) {
 
 #ifdef STAND_ALONE_KITTEN
 
-kitten *kitten_init (void) {
+KITTEN_VISIBILITY kitten *kitten_init (void) {
   kitten *kitten;
   CALLOC (kitten, 1);
   initialize_kitten (kitten);
@@ -659,7 +659,7 @@ kitten *kitten_init (void) {
 
 #else
 
-kitten *kitten_embedded (struct kissat *kissat) {
+KITTEN_VISIBILITY kitten *kitten_embedded (struct kissat *kissat) {
   if (!kissat)
     INVALID_API_USAGE ("'kissat' argument zero");
 
@@ -675,7 +675,7 @@ kitten *kitten_embedded (struct kissat *kissat) {
 
 #endif
 
-void kitten_track_antecedents (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_track_antecedents (kitten *kitten) {
   REQUIRE_STATUS (0);
 
   if (kitten->learned)
@@ -685,7 +685,7 @@ void kitten_track_antecedents (kitten *kitten) {
   kitten->antecedents = true;
 }
 
-void kitten_randomize_phases (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_randomize_phases (kitten *kitten) {
   REQUIRE_INITIALIZED ();
 
   LOG ("randomizing phases");
@@ -717,7 +717,7 @@ void kitten_randomize_phases (kitten *kitten) {
     phases[i++] = (random >> shift++) & 1;
 }
 
-void kitten_flip_phases (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_flip_phases (kitten *kitten) {
   REQUIRE_INITIALIZED ();
 
   LOG ("flipping phases");
@@ -738,13 +738,13 @@ void kitten_flip_phases (kitten *kitten) {
     phases[i++] ^= 1;
 }
 
-void kitten_no_ticks_limit (kitten *kitten) {
+KITTEN_VISIBILITY  void kitten_no_ticks_limit (kitten *kitten) {
   REQUIRE_INITIALIZED ();
   LOG ("forcing no ticks limit");
   kitten->limits.ticks = UINT64_MAX;
 }
 
-void kitten_set_ticks_limit (kitten *kitten, uint64_t delta) {
+KITTEN_VISIBILITY void kitten_set_ticks_limit (kitten *kitten, uint64_t delta) {
   REQUIRE_INITIALIZED ();
   const uint64_t current = KITTEN_TICKS;
   uint64_t limit;
@@ -820,7 +820,7 @@ static void shuffle_units (kitten *kitten) {
   shuffle_unsigned_stack (kitten, &kitten->units);
 }
 
-void kitten_shuffle_clauses (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_shuffle_clauses (kitten *kitten) {
   REQUIRE_STATUS (0);
   shuffle_queue (kitten);
   shuffle_katches (kitten);
@@ -957,7 +957,7 @@ static unsigned export_literal (kitten *kitten, unsigned ilit) {
   return elit;
 }
 
-unsigned new_learned_klause (kitten *kitten) {
+KITTEN_VISIBILITY unsigned new_learned_klause (kitten *kitten) {
   unsigned res = new_reference (kitten);
   unsigneds *klauses = &kitten->klauses;
   const size_t size = SIZE_STACK (kitten->klause);
@@ -981,7 +981,7 @@ unsigned new_learned_klause (kitten *kitten) {
   return res;
 }
 
-void kitten_clear (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_clear (kitten *kitten) {
   LOG ("clear kitten of size %zu", kitten->size);
 
   assert (EMPTY_STACK (kitten->analyzed));
@@ -1023,7 +1023,7 @@ void kitten_clear (kitten *kitten) {
   clear_kitten (kitten);
 }
 
-void kitten_release (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_release (kitten *kitten) {
   RELEASE_STACK (kitten->analyzed);
   RELEASE_STACK (kitten->assumptions);
   RELEASE_STACK (kitten->core);
@@ -1255,11 +1255,12 @@ static void backtrack (kitten *kitten, unsigned jump) {
   check_queue (kitten);
 }
 
-void completely_backtrack_to_root_level (kitten *kitten) {
+KITTEN_VISIBILITY void completely_backtrack_to_root_level (kitten *kitten) {
   check_queue (kitten);
   LOG ("completely backtracking to level 0");
   value *values = kitten->values;
   unsigneds *trail = &kitten->trail;
+  unsigneds *units = &kitten->units;
 #ifndef NDEBUG
   kar *vars = kitten->vars;
 #endif
@@ -1268,6 +1269,15 @@ void completely_backtrack_to_root_level (kitten *kitten) {
     unassign (kitten, values, lit);
   }
   CLEAR_STACK (*trail);
+  for (all_stack (unsigned, ref, *units)) {
+    klause *c = dereference_klause (kitten, ref);
+    assert (c->size == 1);
+    const unsigned unit = c->lits[0];
+    const value value = values[unit];
+    if (value <= 0)
+      continue;
+    unassign (kitten, values, unit);
+  }
   kitten->propagated = 0;
   kitten->level = 0;
   check_queue (kitten);
@@ -1400,6 +1410,75 @@ static void failing (kitten *kitten) {
   PUSH_STACK (kitten->analyzed, failed_idx);
   PUSH_STACK (kitten->klause, not_failed);
 
+  unsigneds work;
+  INIT_STACK (work);
+
+  assert (SIZE_STACK (kitten->trail));
+  unsigned const *p = END_STACK (kitten->trail);
+  unsigned open = 1;
+  for (;;) {
+    if (!open)
+      break;
+    open--;
+    unsigned idx, uip;
+    do {
+      assert (BEGIN_STACK (kitten->trail) < p);
+      uip = *--p;
+    } while (!marks[idx = uip / 2]);
+
+    const kar *var = vars + idx;
+    const unsigned reason = var->reason;
+    if (reason == INVALID) {
+      unsigned lit = 2 * idx;
+      if (values[lit] < 0)
+        lit ^= 1;
+      LOG ("failed assumption %u", lit);
+      assert (!kitten->failed[lit]);
+      kitten->failed[lit] = true;
+      const unsigned not_lit = lit ^ 1;
+      PUSH_STACK (kitten->klause, not_lit);
+    } else {
+      ROG (reason, "analyzing");
+      PUSH_STACK (kitten->resolved, reason);
+      klause *c = dereference_klause (kitten, reason);
+      for (all_literals_in_klause (other, c)) {
+        const unsigned other_idx = other / 2;
+        if (marks[other_idx])
+          continue;
+        assert (other_idx != idx);
+        marks[other_idx] = true;
+        assert (values[other]);
+        if (vars[other_idx].level)
+          open++;
+        else
+          PUSH_STACK (work, other_idx);
+        PUSH_STACK (kitten->analyzed, other_idx);
+
+        LOG ("analyzing final literal %u", other ^ 1);
+      }
+    }
+  }
+  for (size_t next = 0; next < SIZE_STACK (work); next++) {
+    const unsigned idx = PEEK_STACK (work, next);
+    const kar *var = vars + idx;
+    const unsigned reason = var->reason;
+    if (reason == INVALID) {
+      unsigned lit = 2 * idx;
+      if (values[lit] < 0)
+        lit ^= 1;
+      LOG ("failed assumption %u", lit);
+      assert (!kitten->failed[lit]);
+      kitten->failed[lit] = true;
+      const unsigned not_lit = lit ^ 1;
+      PUSH_STACK (kitten->klause, not_lit);
+    } else {
+      ROG (reason, "analyzing unit");
+      PUSH_STACK (kitten->resolved, reason);
+    }
+  }
+
+  // this is bfs not dfs so it does not work for lrat :/
+  /*
   for (size_t next = 0; next < SIZE_STACK (kitten->analyzed); next++) {
     const unsigned idx = PEEK_STACK (kitten->analyzed, next);
     assert (marks[idx]);
@@ -1430,10 +1509,13 @@ static void failing (kitten *kitten) {
       }
     }
   }
+  */
 
   for (all_stack (unsigned, idx, kitten->analyzed))
     assert (marks[idx]), marks[idx] = 0;
   CLEAR_STACK (kitten->analyzed);
+
+  RELEASE_STACK (work);
 
   const size_t resolved = SIZE_STACK (kitten->resolved);
   assert (resolved);
@@ -1603,13 +1685,12 @@ static int propagate_units (kitten *kitten) {
       return 20;
     }
     assign (kitten, unit, ref);
-    const unsigned conflict = propagate (kitten);
-    if (conflict == INVALID)
-      continue;
-    inconsistent (kitten, conflict);
-    return 20;
   }
-  return 0;
+  const unsigned conflict = propagate (kitten);
+  if (conflict == INVALID)
+    return 0;
+  inconsistent (kitten, conflict);
+  return 20;
 }
 
 /*------------------------------------------------------------------------*/
@@ -1666,8 +1747,8 @@ static void reset_assumptions (kitten *kitten) {
 }
 
 static void reset_incremental (kitten *kitten) {
-  if (kitten->level)
-    completely_backtrack_to_root_level (kitten);
+  // if (kitten->level)
+  completely_backtrack_to_root_level (kitten);
   if (!EMPTY_STACK (kitten->assumptions))
     reset_assumptions (kitten);
   else
@@ -1758,7 +1839,7 @@ static bool flip_literal (kitten *kitten, unsigned lit) {
 
 /*------------------------------------------------------------------------*/
 
-void kitten_assume (kitten *kitten, unsigned elit) {
+KITTEN_VISIBILITY void kitten_assume (kitten *kitten, unsigned elit) {
   REQUIRE_INITIALIZED ();
   if (kitten->status)
     reset_incremental (kitten);
@@ -1767,7 +1848,7 @@ void kitten_assume (kitten *kitten, unsigned elit) {
   PUSH_STACK (kitten->assumptions, ilit);
 }
 
-void kitten_clause_with_id_and_exception (kitten *kitten, unsigned id,
+KITTEN_VISIBILITY void kitten_clause_with_id_and_exception (kitten *kitten, unsigned id,
                                           size_t size,
                                           const unsigned *elits,
                                           unsigned except) {
@@ -1795,16 +1876,16 @@ void kitten_clause_with_id_and_exception (kitten *kitten, unsigned id,
   CLEAR_STACK (kitten->klause);
 }
 
-void kitten_clause (kitten *kitten, size_t size, unsigned *elits) {
+KITTEN_VISIBILITY void kitten_clause (kitten *kitten, size_t size, unsigned *elits) {
   kitten_clause_with_id_and_exception (kitten, INVALID, size, elits,
                                        INVALID);
 }
 
-void kitten_unit (kitten *kitten, unsigned lit) {
+KITTEN_VISIBILITY void kitten_unit (kitten *kitten, unsigned lit) {
   kitten_clause (kitten, 1, &lit);
 }
 
-void kitten_binary (kitten *kitten, unsigned a, unsigned b) {
+KITTEN_VISIBILITY void kitten_binary (kitten *kitten, unsigned a, unsigned b) {
   unsigned clause[2] = {a, b};
   kitten_clause (kitten, 2, clause);
 }
@@ -1813,11 +1894,11 @@ void kitten_binary (kitten *kitten, unsigned a, unsigned b) {
 static volatile bool time_limit_hit;
 #endif
 
-int kitten_solve (kitten *kitten) {
+KITTEN_VISIBILITY int kitten_solve (kitten *kitten) {
   REQUIRE_INITIALIZED ();
   if (kitten->status)
     reset_incremental (kitten);
-  else if (kitten->level)
+  else // if (kitten->level)
     completely_backtrack_to_root_level (kitten);
 
   LOG ("starting solving under %zu assumptions",
@@ -1865,9 +1946,9 @@ int kitten_solve (kitten *kitten) {
   return res;
 }
 
-int kitten_status (kitten *kitten) { return kitten->status; }
+KITTEN_VISIBILITY int kitten_status (kitten *kitten) { return kitten->status; }
 
-unsigned kitten_compute_clausal_core (kitten *kitten,
+KITTEN_VISIBILITY unsigned kitten_compute_clausal_core (kitten *kitten,
                                       uint64_t *learned_ptr) {
   REQUIRE_STATUS (20);
 
@@ -1943,7 +2024,7 @@ DONE:
   return original;
 }
 
-void kitten_traverse_core_ids (kitten *kitten, void *state,
+KITTEN_VISIBILITY void kitten_traverse_core_ids (kitten *kitten, void *state,
                                void (*traverse) (void *, unsigned)) {
   REQUIRE_STATUS (21);
 
@@ -1968,7 +2049,7 @@ void kitten_traverse_core_ids (kitten *kitten, void *state,
   assert (kitten->status == 21);
 }
 
-void kitten_traverse_core_clauses (kitten *kitten, void *state,
+KITTEN_VISIBILITY void kitten_traverse_core_clauses (kitten *kitten, void *state,
                                    void (*traverse) (void *, bool, size_t,
                                                      const unsigned *)) {
   REQUIRE_STATUS (21);
@@ -2001,7 +2082,7 @@ void kitten_traverse_core_clauses (kitten *kitten, void *state,
   assert (kitten->status == 21);
 }
 
-void kitten_shrink_to_clausal_core (kitten *kitten) {
+KITTEN_VISIBILITY void kitten_shrink_to_clausal_core (kitten *kitten) {
   REQUIRE_STATUS (21);
 
   LOG ("shrinking formula to core of original clauses");
@@ -2074,7 +2155,7 @@ void kitten_shrink_to_clausal_core (kitten *kitten) {
   UPDATE_STATUS (0);
 }
 
-signed char kitten_value (kitten *kitten, unsigned elit) {
+KITTEN_VISIBILITY signed char kitten_value (kitten *kitten, unsigned elit) {
   REQUIRE_STATUS (10);
   const unsigned eidx = elit / 2;
   if (eidx >= kitten->evars)
@@ -2086,7 +2167,7 @@ signed char kitten_value (kitten *kitten, unsigned elit) {
   return kitten->values[ilit];
 }
 
-signed char kitten_fixed (kitten *kitten, unsigned elit) {
+KITTEN_VISIBILITY signed char kitten_fixed (kitten *kitten, unsigned elit) {
   const unsigned eidx = elit / 2;
   if (eidx >= kitten->evars)
     return 0;
@@ -2104,7 +2185,7 @@ signed char kitten_fixed (kitten *kitten, unsigned elit) {
   return res;
 }
 
-bool kitten_flip_literal (kitten *kitten, unsigned elit) {
+KITTEN_VISIBILITY bool kitten_flip_literal (kitten *kitten, unsigned elit) {
   REQUIRE_STATUS (10);
   const unsigned eidx = elit / 2;
   if (eidx >= kitten->evars)
@@ -2113,10 +2194,12 @@ bool kitten_flip_literal (kitten *kitten, unsigned elit) {
   if (!iidx)
     return false;
   const unsigned ilit = 2 * (iidx - 1) + (elit & 1);
+  if (kitten_fixed (kitten, elit))
+    return false;
   return flip_literal (kitten, ilit);
 }
 
-bool kitten_failed (kitten *kitten, unsigned elit) {
+KITTEN_VISIBILITY bool kitten_failed (kitten *kitten, unsigned elit) {
   REQUIRE_STATUS (20);
   const unsigned eidx = elit / 2;
   if (eidx >= kitten->evars)

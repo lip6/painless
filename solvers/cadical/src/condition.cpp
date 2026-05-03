@@ -435,17 +435,6 @@ long Internal::condition_round (long delta) {
     if (fixed (lit))
       condition_unassign (lit);
 
-  // with reimply we might have more trails (which do not contain
-  // root assigned literals but might contain fixed literals anyways)
-  int l = 0;
-  for (auto &t : trails) {
-    l++;
-    for (const auto &lit : t) {
-      if (fixed (lit) && var (lit).level == l)
-        condition_unassign (lit);
-    }
-  }
-
   // Stack to save temporarily unassigned (conditional) literals.
   //
   vector<int> unassigned;
@@ -700,7 +689,7 @@ long Internal::condition_round (long delta) {
               watched_autarky_literal = 0; // Breaks out of 4 loops!!!!!
             }
           } // End of loop of turning autarky literals into conditionals.
-        }   // End of loop of all watched clauses of an unassigned literal.
+        } // End of loop of all watched clauses of an unassigned literal.
         //
         // We might abort the occurrence traversal early but already
         // removed some watches, thus have to just copy the rest.
@@ -713,7 +702,7 @@ long Internal::condition_round (long delta) {
           os.resize (i - os.begin ());
         }
       } // End of loop which goes over all unprocessed unassigned literals.
-    }   // End of loop which goes over all unprocessed conditional literals.
+    } // End of loop which goes over all unprocessed conditional literals.
 
     // We are still processing the candidate 'c' and now have reached a
     // final fix-point assignment partitioned into a conditional and an
@@ -753,31 +742,6 @@ long Internal::condition_round (long delta) {
       } else {
         assert (!is_autarky_literal (lit));
         assert (!is_conditional_literal (lit));
-      }
-    }
-    l = 0;
-    for (auto &t : trails) {
-      l++;
-      for (size_t i = 0; i < t.size (); i++) {
-        const int lit = (t)[i];
-        if (var (lit).level < l)
-          continue;
-        assert (var (lit).level == l);
-        if (val (lit)) {
-          check.assigned++;
-          if (is_conditional_literal (lit)) {
-            LOG ("remaining conditional %d", lit);
-            assert (!is_autarky_literal (lit));
-            check.conditional++;
-          } else {
-            assert (is_autarky_literal (lit));
-            LOG ("remaining autarky %d", lit);
-            check.autarky++;
-          }
-        } else {
-          assert (!is_autarky_literal (lit));
-          assert (!is_conditional_literal (lit));
-        }
       }
     }
     assert (remain.assigned == check.assigned);
@@ -824,15 +788,6 @@ long Internal::condition_round (long delta) {
       for (const auto &lit : trail)
         if (is_autarky_literal (lit))
           external->push_witness_literal_on_extension_stack (lit);
-      l = 0;
-      for (auto &t : trails) {
-        l++;
-        for (const auto &lit : t) {
-          if (is_autarky_literal (lit) && var (lit).level == l) {
-            external->push_witness_literal_on_extension_stack (lit);
-          }
-        }
-      }
       if (proof)
         proof->weaken_minus (c);
       external->push_clause_on_extension_stack (c);
@@ -914,6 +869,7 @@ long Internal::condition_round (long delta) {
   }
 
   reset_occs ();
+  delete_garbage_clauses ();
 
   // Reassign previously assigned variables again.
   //
@@ -925,27 +881,10 @@ long Internal::condition_round (long delta) {
     if (!tmp)
       condition_assign (lit);
   }
-  l = 0;
-  for (auto &t : trails) {
-    l++;
-    for (size_t i = 0; i < t.size (); i++) {
-      const int lit = (t)[i];
-      if (var (lit).level < l)
-        continue;
-      assert (var (lit).level == l);
-      const signed char tmp = val (lit);
-      assert (tmp >= 0);
-      if (!tmp)
-        condition_assign (lit);
-    }
-  }
 
 #ifndef NDEBUG
   for (const auto &lit : trail)
     assert (!marked (lit));
-  for (auto &t : trails)
-    for (const auto &lit : t)
-      assert (!marked (lit));
 #endif
 
   unprotect_reasons ();
@@ -968,7 +907,7 @@ void Internal::condition (bool update_limits) {
   // 'condition' we can try them.
   //
   long limit = stats.propagations.search;
-  limit *= opts.conditionreleff;
+  limit *= opts.conditioneffort;
   limit /= 1000;
   if (limit < opts.conditionmineff)
     limit = opts.conditionmineff;

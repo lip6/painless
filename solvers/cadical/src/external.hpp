@@ -4,6 +4,9 @@
 /*------------------------------------------------------------------------*/
 
 #include "range.hpp"
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
 
 /*------------------------------------------------------------------------*/
 
@@ -63,8 +66,8 @@ struct External {
   vector<int> assumptions; // External assumptions.
   vector<int> constraint;  // External constraint. Terminated by zero.
 
-  vector<uint64_t>
-      ext_units; // External units. Needed to compute lrat for eclause
+  vector<int64_t>
+      ext_units; // External units. Needed to compute LRAT for eclause
   vector<bool> ext_flags; // to avoid duplicate units
   vector<int> eclause;    // External version of original input clause.
   // The extension stack for reconstructing complete satisfying assignments
@@ -81,6 +84,8 @@ struct External {
   vector<bool> witness; // Literal witness on extension stack.
   vector<bool> tainted; // Literal tainted in adding literals.
 
+  vector<bool> ervars; // Variables added through Extended Resolution.
+
   vector<unsigned> frozentab; // Reference counts for frozen variables.
 
   // Regularly checked terminator if non-zero.  The terminator is set from
@@ -96,11 +101,21 @@ struct External {
   void export_learned_unit_clause (int ilit);
   void export_learned_large_clause (const vector<int> &);
 
+  // If there is a listener for fixed assignments.
+
+  FixedAssignmentListener *fixed_listener;
+
   // If there is an external propagator.
 
   ExternalPropagator *propagator;
 
   vector<bool> is_observed; // Quick flag for each external variable
+
+  // Saved 'forgettable' original clauses coming from the external
+  // propagator. The value of the map starts with a Boolean flag indicating
+  // if the clause is still present or got already deleted, and then
+  // followed by the literals of the clause.
+  unordered_map<uint64_t, vector<int>> forgettable_original;
 
   void add_observed_var (int elit);
   void remove_observed_var (int elit);
@@ -110,9 +125,12 @@ struct External {
   bool is_witness (int elit);
   bool is_decision (int elit);
 
+  void force_backtrack (int new_level);
+
   //----------------------------------------------------------------------//
 
   signed char *solution; // Given solution checking for debugging.
+  int solution_size;     // Given solution checking for debugging.
   vector<int> original;  // Saved original formula for checking.
 
   // If 'opts.checkfrozen' is set make sure that only literals are added
@@ -146,6 +164,13 @@ struct External {
     return elit;
   }
 
+  inline bool is_valid_input (int elit) {
+    assert (elit);
+    assert (elit != INT_MIN);
+    int eidx = abs (elit);
+    return eidx > max_var || !ervars[eidx];
+  }
+
   /*----------------------------------------------------------------------*/
 
   // The following five functions push individual literals or clauses on the
@@ -164,7 +189,7 @@ struct External {
 
   void push_clause_on_extension_stack (Clause *);
   void push_clause_on_extension_stack (Clause *, int witness);
-  void push_binary_clause_on_extension_stack (uint64_t id, int witness,
+  void push_binary_clause_on_extension_stack (int64_t id, int witness,
                                               int other);
 
   // The main 'extend' function which extends an internal assignment to an
@@ -206,14 +231,14 @@ struct External {
   /*----------------------------------------------------------------------*/
 
   void push_external_clause_and_witness_on_extension_stack (
-      const vector<int> &clause, const vector<int> &witness);
+      const vector<int> &clause, const vector<int> &witness, int64_t id);
 
-  void push_id_on_extension_stack (uint64_t id);
+  void push_id_on_extension_stack (int64_t id);
 
   // Restore a clause, which was pushed on the extension stack.
   void restore_clause (const vector<int>::const_iterator &begin,
                        const vector<int>::const_iterator &end,
-                       const uint64_t id);
+                       const int64_t id);
 
   void restore_clauses ();
 
@@ -243,9 +268,12 @@ struct External {
   ~External ();
 
   void enlarge (int new_max_var); // Enlarge allocated 'vsize'.
-  void init (int new_max_var);    // Initialize up-to 'new_max_var'.
+  void init (int new_max_var,
+             bool extension = false); // Initialize up-to 'new_max_var'.
 
-  int internalize (int); // Translate external to internal literal.
+  int internalize (
+      int,
+      bool extension = false); // Translate external to internal literal.
 
   /*----------------------------------------------------------------------*/
 
@@ -260,7 +288,7 @@ struct External {
 
   void reset_assumptions ();
 
-  // similarily to 'failed', 'conclude' needs to know about failing
+  // Similarly to 'failed', 'conclude' needs to know about failing
   // assumptions and therefore needs to be reset when leaving the
   // 'UNSATISFIED' state.
   //
@@ -290,19 +318,41 @@ struct External {
   // We call it 'ival' as abbreviation for 'val' with 'int' return type to
   // avoid bugs due to using 'signed char tmp = val (lit)', which might turn
   // a negative value into a positive one (happened in 'extend').
+
+  // This is due to the IPASIR semantics which returns 'elit' if it is
+  // 'true' and '-elit' if it is 'false'.  This is a bit confusing but has
+  // been standardized in IPASIR:
   //
+  // Consiert 'eidx = 13' and 'vals[13] == false' then '13' is 'false' in
+  // this terminology of the IPASIR interface.  Accordingly we get
+  //
+  //   ival (13) = -13
+  //
+  // However and this is the confusing thing, as '-13' is true the 'ival'
+  // function should also return '-13':
+  //
+  //   ival (-13) = -13
+  //
+  // Now with '13' assumed 'true' so 'vals[13] = true' we similarly have
+  //
+  //   ival (13) = 13         as '13' is true'
+  //
+  //   ival (-13) = 13        as '-13' is false
+  //
+  // To summarize we can think of the IPASIR 'ipasir_val' function, which
+  // 'CaDiCaL' follows as returning the phase of the literal which is true
+  // under the current assignment no matter whether you give the positive
+  // literal or its negation and thus 'ival (lit) == ival (-lit))"
+
   inline int ival (int elit) const {
     assert (elit != INT_MIN);
-    int eidx = abs (elit), res;
-    if (eidx > max_var)
-      res = -eidx;
-    else if ((size_t) eidx >= vals.size ())
-      res = -eidx;
-    else
-      res = vals[eidx] ? eidx : -eidx;
+    int eidx = abs (elit);
+    bool val = false;
+    if (eidx <= max_var && (size_t) eidx < vals.size ())
+      val = vals[eidx];
     if (elit < 0)
-      res = -res;
-    return res;
+      val = !val;
+    return val ? elit : -elit;
   }
 
   bool flip (int elit);
@@ -332,6 +382,11 @@ struct External {
 
   /*----------------------------------------------------------------------*/
 
+  int propagate_assumptions ();
+  void implied (std::vector<int> &entrailed);
+  void conclude_unknown ();
+
+  /*----------------------------------------------------------------------*/
   int lookahead ();
   CaDiCaL::CubesWithStatus generate_cubes (int, int);
 
@@ -341,6 +396,9 @@ struct External {
 
   void phase (int elit);
   void unphase (int elit);
+  // Begin Painless
+  void savePhase (int elit);
+  // End Painless
 
   /*----------------------------------------------------------------------*/
 
@@ -403,6 +461,12 @@ struct External {
   /*----------------------------------------------------------------------*/
 
   // For debugging and testing only.  See 'solution.hpp' for more details.
+  // TODO: if elit > solution_size, elit is an extension variable. For now
+  // the clause will count as satisfied regardless. For the future one
+  // should check that actually there is one consistent extension for the
+  // solution that satisfies the clauses with this extension variable (by
+  // setting it to a value once a clause is learned which is not satisfied
+  // already).
   //
   inline int sol (int elit) const {
     assert (solution);
@@ -410,10 +474,14 @@ struct External {
     int eidx = abs (elit);
     if (eidx > max_var)
       return 0;
-    int res = solution[eidx];
+    else if (eidx > solution_size)
+      return elit;
+    signed char value = solution[eidx];
+    if (!value)
+      return 0;
     if (elit < 0)
-      res = -res;
-    return res;
+      value = -value;
+    return value > 0 ? elit : -elit;
   }
 };
 

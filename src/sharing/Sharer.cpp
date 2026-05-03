@@ -1,13 +1,14 @@
 #include "sharing/Sharer.hpp"
-#include "painless.hpp"
 #include "utils/Logger.hpp"
-#include "utils/Parameters.hpp"
+#include "utils/NumericConstants.hpp"
 #include "utils/System.hpp"
 
 #include <algorithm>
 #include <chrono>
 #include <thread>
 #include <unistd.h>
+
+#include "core/painless.hpp"
 
 /// Function exectuted by each sharer.
 /// This is main of sharer threads.
@@ -16,97 +17,107 @@
 void*
 mainThrSharing(void* arg)
 {
-	Sharer* shr = static_cast<Sharer*>(arg);
-	shr->round = 0;
-	int nbStrats = shr->sharingStrategies.size();
-	int lastStrategy = -1;
+  Sharer* shr = static_cast<Sharer*>(arg);
+  shr->m_round = 0;
+  int nbStrats = shr->m_sharingStrategies.size();
+  int lastStrategy = -1;
 
-	// Convert microseconds to std::chrono::microseconds
-	std::chrono::microseconds sleepTime;
+  std::chrono::microseconds sleepTime, sharingTime(0);
 
-	double sharingTime = 0;
+  // To be notified when solver starts solving
+  shr->m_manager.waitOnSolving();
 
-	// Initial sleep to desynchronize multiple sharers
-	std::this_thread::sleep_for(std::chrono::microseconds(__globalParameters__.initSleep));
-	LOG1("Sharer %d will start now", shr->getId());
+  while (!shr->shouldTerminate) {
 
-	bool can_break = false;
+    if (shr->m_manager.shouldEndSolving()) {
+      LOGD1("Sharer %d shouldTerminate = %d will wait on solving",
+            shr->getId(),
+            static_cast<int>(shr->shouldTerminate));
+      shr->m_manager.waitOnSolving();
+    }
 
-	while (!can_break) {
+    lastStrategy = shr->m_round % nbStrats;
 
-		lastStrategy = shr->round % nbStrats;
+    // Sharing phase
+    sharingTime = SystemResourceMonitor::Timer::getAbsoluteTimeMicro();
+    shr->m_sharingStrategies[lastStrategy]->doSharing();
+    sharingTime =
+      SystemResourceMonitor::Timer::getAbsoluteTimeMicro() - sharingTime;
 
-		// Sharing phase
-		sharingTime = SystemResourceMonitor::getAbsoluteTimeSeconds();
-		can_break = shr->sharingStrategies[lastStrategy]->doSharing();
-		sharingTime = SystemResourceMonitor::getAbsoluteTimeSeconds() - sharingTime;
+    shr->m_totalSharingTime += sharingTime;
 
-		sleepTime = shr->sharingStrategies[lastStrategy]->getSleepingTime();
-		LOG2("[Sharer %d] Sharing round %d done in %f s. Will sleep for %llu us",
-			 shr->getId(),
-			 shr->round,
-			 sharingTime,
-			 sleepTime.count());
+    sleepTime = shr->m_sharingStrategies[lastStrategy]->getSleepingTime();
+    LOG2("[Sharer %d] Sharing round %u done in %lu us. Will sleep for %llu us",
+         shr->getId(),
+         shr->m_round,
+         sharingTime.count(),
+         sleepTime.count());
 
-		// Sleep phase, woken up if need to end
-		if (!globalEnding) {
-			std::unique_lock<std::mutex> lock(mutexGlobalEnd);
-			auto wakeupStatus = condGlobalEnd.wait_for(lock, sleepTime);
-			LOGDEBUG2("Sharer %d wakeupStatus = %s, globalEnding = %d",
-					  shr->getId(),
-					  (wakeupStatus == std::cv_status::timeout ? "timeout" : "no_timeout"),
-					  globalEnding.load());
-		}
+    if (!shr->m_manager.shouldEndSolving()) {
+      UNIQUE_LOCK(std::mutex, shr->m_sharerMX, sleep);
+      shr->m_sharerCV.wait_for(lsleep, sleepTime);
+      LOGD1("Sharer %d shouldTerminate = %d",
+            shr->getId(),
+            static_cast<int>(shr->shouldTerminate));
+    }
 
-		shr->round++; // New round
-		shr->totalSharingTime += sharingTime;
-	}
+    shr->m_round++; // New round
+  }
 
-	// Handle ending of strategies
-	LOG3("Sharer %d strategy %d ended", shr->getId(), lastStrategy);
-	nbStrats--;
-	LOG3("Sharer %d has %d remaining strategies.", shr->getId(), nbStrats);
-
-	// Final sharing for remaining strategies
-	for (unsigned int i = 0; i < shr->sharingStrategies.size(); i++) {
-		if (i == lastStrategy)
-			continue;
-		LOG3("Sharer %d will end strategy %d", shr->getId(), i);
-		while (!shr->sharingStrategies[i]->doSharing()) {
-			LOGWARN("Strategy %d didn't detect ending!", i);
-		}
-	}
-
-	shr->printStats();
-	return NULL;
+  shr->printStats();
+  return NULL;
 }
 
-Sharer::Sharer(int _id, std::vector<std::shared_ptr<SharingStrategy>>& _sharingStrategies)
-	: m_sharerId(_id)
-	, sharingStrategies(_sharingStrategies)
+Sharer::Sharer(
+  PainlessImpl& manager,
+  int _id,
+  std::vector<std::shared_ptr<SharingStrategy>>& _sharingStrategies)
+  : m_manager(manager)
+  , m_sharerId(_id)
+  , m_sharingStrategies(_sharingStrategies)
+  , m_totalSharingTime(0)
 {
-	sharer = new Thread(mainThrSharing, this);
+  m_thread = std::thread(mainThrSharing, this);
 }
 
-Sharer::Sharer(int _id, std::shared_ptr<SharingStrategy> _sharingStrategy)
-	: m_sharerId(_id)
+Sharer::Sharer(PainlessImpl& manager,
+               int _id,
+               std::shared_ptr<SharingStrategy> _sharingStrategy)
+  : m_manager(manager)
+  , m_sharerId(_id)
+  , shouldTerminate(false)
 {
-	sharingStrategies.push_back(_sharingStrategy);
-	sharer = new Thread(mainThrSharing, this);
+  m_sharingStrategies.push_back(_sharingStrategy);
+  m_thread = std::thread(mainThrSharing, this);
 }
 
 Sharer::~Sharer() {}
 
 void
+Sharer::join()
+{
+  UNIQUE_LOCK(std::mutex, m_sharerMX, wake);
+  m_sharerCV.notify_one();
+  lwake.unlock();
+  if (m_thread.joinable()) {
+    m_thread.join();
+    LOGD1("Sharer %d joined", this->getId());
+  }
+}
+
+void
 Sharer::printStats()
 {
-	LOGSTAT("Sharer %d: executionTime: %f, rounds: %d, average: %f",
-			this->getId(),
-			this->totalSharingTime,
-			this->round,
-			this->totalSharingTime / this->round);
-	for (unsigned int i = 0; i < sharingStrategies.size(); i++) {
-		LOGSTAT("Strategy '%s': ", typeid(*sharingStrategies[i]).name());
-		sharingStrategies[i]->printStats();
-	}
+  double sharingTimeSec =
+    static_cast<double>(this->m_totalSharingTime.count()) / MILLION;
+  LOGSTAT("Sharer %d: executionTime: %lf s, rounds: %u, average: %lf s/round",
+          this->getId(),
+          sharingTimeSec,
+          this->m_round,
+          sharingTimeSec / this->m_round);
+  for (unsigned int i = 0; i < m_sharingStrategies.size(); i++) {
+    LOGSTAT("Strategy '%s': %s",
+            typeid(*m_sharingStrategies[i]).name(),
+            m_sharingStrategies[i]->getStatistics().toString().c_str());
+  }
 }

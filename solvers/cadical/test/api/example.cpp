@@ -9,6 +9,7 @@
 int main () {
 
   CaDiCaL::Solver *solver = new CaDiCaL::Solver;
+  solver->set ("factor", 0);
 
   // ------------------------------------------------------------------
   // Encode Problem and check without assumptions.
@@ -23,10 +24,16 @@ int main () {
   assert (res == 10);         // Check it is 'SATISFIABLE'.
 
   res = solver->val (TIE); // Obtain assignment of 'TIE'.
-  assert (res < 0);        // Check 'TIE' assigned to 'false'.
+  assert (res == -TIE);    // Check 'TIE' assigned to 'false'.
 
   res = solver->val (SHIRT); // Obtain assignment of 'SHIRT'.
-  assert (res > 0);          // Check 'SHIRT' assigned to 'true'.
+  assert (res == SHIRT);     // Check 'SHIRT' assigned to 'true'.
+
+  res = solver->val (-TIE);
+  assert (res == -TIE);
+
+  res = solver->val (-SHIRT);
+  assert (res == SHIRT);
 
   // ------------------------------------------------------------------
   // Incrementally solve again under one assumption.

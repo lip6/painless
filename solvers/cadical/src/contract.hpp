@@ -93,6 +93,17 @@ void require_solver_pointer_to_be_non_zero (const void *ptr,
   do { \
     REQUIRE ((int) (LIT) && ((int) (LIT)) != INT_MIN, \
              "invalid literal '%d'", (int) (LIT)); \
+    REQUIRE (external->is_valid_input ((int) (LIT)), \
+             "extension variable '%d' defined by the solver internally " \
+             "(all user variables have to be declared explicitly " \
+             "if 'factor' is enabled)", /* TODO only reason? */ \
+             (int) abs (LIT)); \
+  } while (0)
+
+#define REQUIRE_STEADY_STATE() \
+  do { \
+    REQUIRE_INITIALIZED (); \
+    REQUIRE (this->state () & STEADY, "solver is not in steady state"); \
   } while (0)
 
 /*------------------------------------------------------------------------*/
@@ -115,6 +126,9 @@ void require_solver_pointer_to_be_non_zero (const void *ptr,
   do { \
   } while (0)
 #define REQUIRE_VALID_LIT(...) \
+  do { \
+  } while (0)
+#define REQUIRE_STEADY_STATE() \
   do { \
   } while (0)
 

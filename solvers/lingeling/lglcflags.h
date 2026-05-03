@@ -1,2 +1,2 @@
-#define LGL_CC "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
-#define LGL_CFLAGS "-W -Wall -O3 -I../yalsat -DNLGLOG -DNDEBUG -DNCHKSOL -DNLGLDRUPLIG -DNLGLFILES -DNLGLDEMA"
+#define LGL_CC "gcc (Ubuntu 12.3.0-1ubuntu1~22.04.3) 12.3.0"
+#define LGL_CFLAGS "-W -Wall -O3 -fPIC -fvisibility=hidden -DNLGLOG -DNDEBUG -DNCHKSOL -DNLGLDRUPLIG -DNLGLYALSAT -DNLGLFILES -DNLGLDEMA"

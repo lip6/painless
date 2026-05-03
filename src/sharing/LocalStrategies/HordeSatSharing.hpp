@@ -10,125 +10,133 @@
 /**
  * @defgroup local_sharing Intra-Process Sharing Strategies
  * @ingroup sharing
- * @brief Different Classes for Sharing clauses between different threads in the same process
+ * @brief Different Classes for Sharing clauses between different threads in the
+ * same process
  * @{
  */
 
 /**
  * @brief This strategy is a HordeSat-like sharing strategy.
+ * @details This implementation needs to maintain statistics per producer, thus
+ * the list in the constructor and the addProducer method. Only the maps are
+ * initialized. In general, the strategy tries to maintain a certain literal
+ * exportation rate.
+ * @warning This strategy needs to initialize the producers related data before
+ * adding this SharingEntity as client to the producers.
  * @todo Strengthening strategy + keep units for future ones in derived classes?
  */
 class HordeSatSharing : public SharingStrategy
 {
-  public:
-	/**
-	 * @brief Constructor for HordeSatSharing.
-	 * @param clauseDB Shared pointer to the clause database.
-	 * @param producers Vector of shared pointers to producer entities.
-	 * @param consumers Vector of shared pointers to consumer entities.
-	 * @param literalsPerProducerPerRound Number of literals a producer should export to this strategy per round
-	 * @param initialLbdLimit The initial value of the maximum allowed lbd value for a given producer
-	 * @param roundsBeforeLbdIncrease The number of rounds to wait before updating the lbd limit of the producers
-	 */
-	HordeSatSharing(const std::shared_ptr<ClauseDatabase>& clauseDB,
-					unsigned long literalsPerProducerPerRound,
-					unsigned int  initialLbdLimit,
-					unsigned int  roundsBeforeLbdIncrease,
-					const std::vector<std::shared_ptr<SharingEntity>>& producers = {},
-					const std::vector<std::shared_ptr<SharingEntity>>& consumers = {});
+public:
+  /**
+   * @brief Constructor for HordeSatSharing.
+   * @param literalsPerProducerPerRound Number of literals a producer should
+   * export to this strategy per round.
+   * @param initialLbdLimit The initial value of the maximum allowed lbd value
+   * for a given producer.
+   * @param roundsBeforeLbdIncrease The number of rounds to wait before updating
+   * the lbd limit of the producers.
+   * @param sleepTime The number of microseconds to sleep between two
+   * doSharing()'s.
+   * @param clauseDB Shared pointer to the clause database.
+   * @param clients Vector of shared pointers to client entities.
+   */
+  HordeSatSharing(
+    const uint producerCount,
+    const ulong literalsPerProducerPerRound,
+    const lbd_t initialLbdLimit,
+    const uint roundsBeforeLbdIncrease,
+    const std::chrono::microseconds sleepTime,
+    const std::shared_ptr<ClauseDatabase>& clauseDB,
+    const std::vector<std::shared_ptr<SharingEntity>>& clients = {});
 
-	/**
-	 * @brief Destructor for HordeSatSharing.
-	 */
-	~HordeSatSharing();
+  HordeSatSharing(
+    const std::shared_ptr<ClauseDatabase>& clauseDB,
+    const std::vector<std::shared_ptr<SharingEntity>>& clients = {});
 
-	// SharingEntity Interface
-	// =======================
-	/**
-	 * @brief Imports a single clause if the lbd limit is respected. And updates the amount of literals exprted by the
-	 * producer for the coming round.
-	 * @param clause Pointer to the clause to be imported.
-	 * @return True if the clause was successfully imported, false otherwise.
-	 */
-	bool importClause(const ClauseExchangePtr& clause) override;
+  /**
+   * @brief Destructor for HordeSatSharing.
+   */
+  ~HordeSatSharing();
 
-	/**
-	 * @brief Imports multiple clauses.
-	 * @param v_clauses Vector of clause pointers to be imported.
-	 */
-	void importClauses(const std::vector<ClauseExchangePtr>& v_clauses) override
-	{
-		for (auto clause : v_clauses)
-			importClause(clause);
-	}
+  // SharingEntity Interface
+  // =======================
+  /**
+   * @brief Imports a single clause if the lbd limit is respected. And updates
+   * the amount of literals exprted by the producer for the coming round.
+   * @param clause Pointer to the clause to be imported.
+   * @return True if the clause was successfully imported, false otherwise.
+   */
+  bool importClause(const ClauseExchangePtr& clause) override;
 
-	// SharingStrategy Interface
-	// =========================
+  // SharingStrategy Interface
+  // =========================
 
-	/**
-	 * @brief Performs the sharing operation. It checks the literal production to decide if the lbd limit should be
-	 * increased, decreased or unchanged. The selection of clauses from the database is exported to all consumers
-	 * @return True if sharing is complete or should be terminated, false otherwise.
-	 */
-	bool doSharing() override;
+  /**
+   * @brief Performs the sharing operation. It checks the literal production to
+   * decide if the lbd limit should be increased, decreased or unchanged. The
+   * selection of clauses from the database is exported to all clients
+   * @return True if the sharing didn't encounter an error, false otherwise.
+   */
+  bool doSharing() override;
 
-  protected:
-	/**
-	 * @brief Adds a producer to the sharing strategy. It initializes the lbd limit and the per round literal production
-	 * for the producer.
-	 * @param producer Shared pointer to the producer entity to be added.
-	 */
-	void addProducer(std::shared_ptr<SharingEntity> producer) override
-	{
-		SharingStrategy::addProducer(producer);
-		/* lock m_producerMutex is released */
+  /**
+   * @brief Return the sleepTime attribute of this sharing strategy
+   */
+  std::chrono::microseconds getSleepingTime() override { return m_sleepTime; }
 
-		this->lbdLimitPerProducer.emplace(producer->getSharingId(), initialLbdLimit);
-		this->literalsPerProducer.emplace(producer->getSharingId(), 0);
-	}
+  const Statistics& getStatistics() const { return *m_stats; }
 
-	/**
-	 * @brief Removes a producer from the sharing strategy.
-	 * @param producer Shared pointer to the producer entity to be removed.
-	 */
-	void removeProducer(std::shared_ptr<SharingEntity> producer) override
-	{
-		SharingStrategy::removeProducer(producer);
-		/* lock m_producer is released */
-		this->lbdLimitPerProducer.erase(producer->getSharingId());
-		this->literalsPerProducer.erase(producer->getSharingId());
-	}
+protected:
+  void setOption(const std::string& key, int value) override;
+  void setOption(const std::string& key, double value) override;
+  void setOption(const std::string& key, const std::string& value) override;
+  bool onConfigured() override;
 
-  protected:
-	/// Number of shared literals per round.
-	unsigned long literalPerRound;
+  /// Time in microseconds to wait between two consicutive doSharing calls
+  std::chrono::microseconds m_sleepTime;
 
-	/// @brief Initial lbd value for per producer filter
-	unsigned int initialLbdLimit;
+  /// Clause database where imported clauses are stored.
+  std::shared_ptr<ClauseDatabase> m_clauseDB;
 
-	/// Number of rounds before forcing an increase in production
-	unsigned int roundBeforeIncrease;
+  /// Used to manipulate clauses (as a member to reduce number of allocations).
+  std::vector<ClauseExchangePtr> m_selection;
 
-	/// @brief Round Number
-	int round;
+  /// Number of shared literals per producer per round.
+  ulong m_literalsPerProducerPerRound;
 
-	/// Used to manipulate clauses (as a member to reduce number of allocations).
-	std::vector<ClauseExchangePtr> selection;
+  /// Sharing statistics.
+  std::unique_ptr<Statistics> m_stats;
 
-	// Static Constants
-	// ----------------
+  /// Initial lbd value for per producer filter
+  lbd_t m_initialLbdLimit;
 
-	static constexpr int UNDER_UTILIZATION_THRESHOLD = 75;
-	static constexpr int OVER_UTILIZATION_THRESHOLD = 98;
+  /// Number of rounds before forcing an increase in production
+  uint m_roundsBeforeIncrease;
 
-	// Data accessible from other threads via importClause
-	// ---------------------------------------------------
+  /// Round Number
+  uint m_round;
 
-	/// SharingEntity id to lbdLimit
-	std::unordered_map<unsigned int, std::atomic<unsigned int>> lbdLimitPerProducer;
+  std::vector<double> m_producerMeanLbd;
 
-	/// Metadata for clause database
-	std::unordered_map<unsigned int, std::atomic<unsigned long>> literalsPerProducer;
+  // Static Constants
+  // ----------------
+
+  static constexpr int UNDER_UTILIZATION_THRESHOLD = 75;
+  static constexpr int OVER_UTILIZATION_THRESHOLD = 98;
+
+  uint m_producerCount;
+
+  std::string m_producersList;
+
+  // Data accessible from other threads via importClause
+  // ---------------------------------------------------
+
+  /// Producers' lbdLimit
+  std::unique_ptr<std::atomic<uint>[]> m_lbdLimitPerProducer;
+
+  /// Producers' production
+  std::unique_ptr<std::atomic<ulong>[]> m_literalsPerProducer;
 };
 
 /**

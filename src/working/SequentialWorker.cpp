@@ -1,146 +1,173 @@
 #include "working/SequentialWorker.hpp"
-#include "painless.hpp"
+#include "core/painless.hpp"
 #include "utils/Logger.hpp"
-#include "utils/Parameters.hpp"
 #include "utils/Parsers.hpp"
 
 #include <unistd.h>
-
-;
 
 // Main executed by worker threads
 void*
 mainWorker(void* arg)
 {
-	SequentialWorker* sq = (SequentialWorker*)arg;
+  SequentialWorker* sq = (SequentialWorker*)arg;
 
-	SatResult res = SatResult::UNKNOWN;
+  SatAnswer res = SatAnswer::UNKNOWN;
 
-	std::vector<int> model;
+  std::vector<int> model;
 
-	while (globalEnding == false && sq->force == false) {
-		pthread_mutex_lock(&sq->mutexStart);
+  while (sq->shouldTerminate == false) {
 
-		while (sq->waitJob == true) {
-			pthread_cond_wait(&sq->mutexCondStart, &sq->mutexStart);
-		}
+    LOGD2("Sequential Worker for solver of %s %d loops",
+          typeid(*(sq->solver)).name(),
+          sq->solver->getSolverId());
+    pthread_mutex_lock(&sq->mutexStart);
 
-		pthread_mutex_unlock(&sq->mutexStart);
+    LOGD2("Sequential Worker for solver of %s %d will wait for a job",
+          typeid(*(sq->solver)).name(),
+          sq->solver->getSolverId());
+    while ((sq->waitJob == true && sq->shouldTerminate == false)) {
+      pthread_cond_wait(&sq->mutexCondStart, &sq->mutexStart);
+    }
 
-		LOGDEBUG1("Sequential Worker for solver of %s %d before solve",
-				  typeid(*(sq->solver)).name(),
-				  sq->solver->getSolverId());
+    pthread_mutex_unlock(&sq->mutexStart);
 
-		sq->waitInterruptLock.lock();
+    if (sq->shouldTerminate == false) {
+      LOGD1("Sequential Worker for solver of %s %d before solve with cube of "
+            "size %u",
+            typeid(*(sq->solver)).name(),
+            sq->solver->getSolverId(),
+            sq->actualCube.size());
 
-		res = sq->solver->solve(sq->actualCube); // why pass by param what the solver already has ?
+      sq->waitInterruptLock.lock();
 
-		sq->waitInterruptLock.unlock();
+      res = sq->solver->solve(sq->actualCube);
 
-		LOGDEBUG3("Sequential Worker for solver of %s %d after solve",
-				  typeid(*(sq->solver)).name(),
-				  sq->solver->getSolverId());
+      sq->waitInterruptLock.unlock();
 
-		if (res == SatResult::SAT) {
-			model = sq->solver->getModel();
-		}
+      LOGD2("Sequential Worker for solver of %s %d after solve",
+            typeid(*(sq->solver)).name(),
+            sq->solver->getSolverId());
 
-		sq->join(NULL,
-				 res,
-				 model); // assign true to force ! No need for sq->force==false in while loop (see original painless)
+      if (res == SatAnswer::SAT) {
+        model = sq->solver->getModel();
+      }
 
-		model.clear();
+      sq->join(NULL, res, model);
 
-		sq->waitJob = true;
-	}
+      model.clear();
+    } else {
+      LOGD2("Sequential Worker for solver of %s %d woke up to end",
+            typeid(*(sq->solver)).name(),
+            sq->solver->getSolverId());
+    }
+  }
 
-	return NULL;
+  return NULL;
 }
 
 // Constructor
-SequentialWorker::SequentialWorker(std::shared_ptr<SolverInterface> solver_)
+SequentialWorker::SequentialWorker(PainlessImpl& manager,
+                                   std::shared_ptr<SolverInterface> solver_)
+  : WorkingStrategy(manager)
 {
-	solver = solver_;
-	force = false;
-	waitJob = true;
+  solver = solver_;
+  shouldTerminate = false;
+  waitJob = true;
 
-	pthread_mutex_init(&mutexStart, NULL);
-	pthread_cond_init(&mutexCondStart, NULL);
+  pthread_mutex_init(&mutexStart, NULL);
+  pthread_cond_init(&mutexCondStart, NULL);
 
-	worker = new Thread(mainWorker, this);
+  worker = new Thread(mainWorker, this);
 }
 
 // Destructor
 SequentialWorker::~SequentialWorker()
 {
-	if (!force)
-		setSolverInterrupt();
+  if (!shouldTerminate)
+    terminate();
 
-	worker->join();
-	delete worker;
+  worker->join();
+  delete worker;
 
-	pthread_mutex_destroy(&mutexStart);
-	pthread_cond_destroy(&mutexCondStart);
+  pthread_mutex_destroy(&mutexStart);
+  pthread_cond_destroy(&mutexCondStart);
 }
 
 void
-SequentialWorker::solve(const std::vector<int>& cube)
+SequentialWorker::solve(cube_view_t cube)
 {
-	actualCube = cube;
+  actualCube.clear();
+  for (auto lit : cube)
+    actualCube.push_back(lit);
 
-	unsetSolverInterrupt();
+  LOGD1("Solve with %u assumptions", actualCube.size());
 
-	waitJob = false;
+  waitJob = false;
 
-	pthread_mutex_lock(&mutexStart);
-	pthread_cond_signal(&mutexCondStart);
-	pthread_mutex_unlock(&mutexStart);
+  pthread_mutex_lock(&mutexStart);
+  pthread_cond_signal(&mutexCondStart);
+  pthread_mutex_unlock(&mutexStart);
 }
 
 void
-SequentialWorker::join(WorkingStrategy* winner, SatResult res, const std::vector<int>& model)
+SequentialWorker::join(WorkingStrategy* winner,
+                       SatAnswer res,
+                       const std::vector<int>& model)
 {
-	force = true;
-	LOGDEBUG1("SequentialWorker %p of solver %s is joining with res = %d.", this, typeid(*solver).name(), res);
+  LOGD1("SequentialWorker %p of solver %s is joining with res = %d.",
+        this,
+        typeid(*solver).name(),
+        res);
 
-	if (globalEnding)
-		return;
+  if (!waitJob) {
+    waitJob = true;
+    solver->setSolverInterrupt();
+  }
 
-	if (parent == NULL) {
-		worker->join();
-
-		globalEnding = true;
-		finalResult = res;
-
-		if (res == SatResult::SAT) {
-			finalModel = model;
-		}
-		mutexGlobalEnd.lock();
-		condGlobalEnd.notify_all();
-		mutexGlobalEnd.unlock();
-	} else {
-		LOGDEBUG1("SequentialWorker %p calls its parent", this);
-		parent->join(this, res, model);
-	}
+  if (parent == NULL) {
+    if (m_manager.pushResult(res, model))
+      this->terminate();
+  } else {
+    LOGD1("SequentialWorker %p calls its parent", this);
+    parent->join(this, res, model);
+  }
 }
 
 void
 SequentialWorker::waitInterrupt()
 {
-	waitInterruptLock.lock();
-	waitInterruptLock.unlock();
+  waitInterruptLock.lock();
+  waitInterruptLock.unlock();
+}
+
+void
+SequentialWorker::terminate()
+{
+  shouldTerminate = true;
+  pthread_mutex_lock(&mutexStart);
+  pthread_cond_signal(&mutexCondStart);
+  pthread_mutex_unlock(&mutexStart);
+
+  // worker->join();
 }
 
 void
 SequentialWorker::setSolverInterrupt()
 {
-	force = true;
-	solver->setSolverInterrupt();
+  LOGD1("Interrupting worker %u", solver->getSolverId());
+  if (waitJob || shouldTerminate)
+    return;
+  waitJob = true;
+  solver->setSolverInterrupt();
+  // pthread_mutex_lock(&mutexStart);
+  // pthread_cond_signal(&mutexCondStart);
+  // pthread_mutex_unlock(&mutexStart);
 }
 
 void
 SequentialWorker::unsetSolverInterrupt()
 {
-	force = false;
-	solver->unsetSolverInterrupt();
+  LOGD1("De-Interrupting worker %u", solver->getSolverId());
+  waitJob = false;
+  solver->unsetSolverInterrupt();
 }

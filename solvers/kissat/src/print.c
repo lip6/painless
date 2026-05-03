@@ -18,7 +18,7 @@ static inline int verbosity (kissat *solver) {
 #endif
 #ifndef QUIET
   if (GET_OPTION (quiet))
-    return -1;
+    return -2;
   return GET_OPTION (verbose);
 #else
   return 0;
@@ -79,7 +79,7 @@ static void print_line (kissat *solver) {
 int kissat_verbosity (kissat *solver) { return verbosity (solver); }
 
 void kissat_message (kissat *solver, const char *fmt, ...) {
-  if (verbosity (solver) < 0)
+  if (verbosity (solver) < -1)
     return;
   va_list ap;
   va_start (ap, fmt);
@@ -122,7 +122,7 @@ void kissat_extremely_verbose (kissat *solver, const char *fmt, ...) {
 }
 
 void kissat_section (kissat *solver, const char *name) {
-  if (verbosity (solver) < 0)
+  if (verbosity (solver) < -1)
     return;
   TERMINAL (stdout, 1);
   if (solver->sectioned)

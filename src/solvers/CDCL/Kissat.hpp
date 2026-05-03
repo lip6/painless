@@ -5,11 +5,9 @@
 #include "containers/ClauseUtils.hpp"
 #include "utils/Threading.hpp"
 #include <fstream>
-#include <iostream>
 #include <unordered_map>
 
-#include "KissatFamily.hpp"
-#include "SolverCdclInterface.hpp"
+#include "SolverCDCLInterface.hpp"
 
 #define KISSAT_
 
@@ -21,115 +19,136 @@ extern "C"
 
 /// Instance of a Kissat solver
 /// @ingroup solving_cdcl
-class Kissat : public SolverCdclInterface
+class Kissat : public SolverCDCLInterface
 {
-  public:
-	/// Constructor.
-	Kissat(int id, const std::shared_ptr<ClauseDatabase>& clauseDB);
+public:
+  Kissat(int id,
+         const std::shared_ptr<ClauseDatabase>& clauseDB,
+         FullClauseReader fullReader);
+  ~Kissat();
 
-	/// Destructor.
-	virtual ~Kissat();
+  /* Execution */
+  SatAnswer solve(cube_view_t cube) override;
+  void setSolverInterrupt() override;
+  void unsetSolverInterrupt() override;
+  void diversify(const SeedGenerator& getSeed) override;
 
-	/* Execution */
+  /* Clause Management */
+  void loadFormula(const char* filename) override;
+  /**
+   * @brief Add an irredundant clause to the solver (not thread-safe!).
+   * @details The clause is directly added to the backend solver.
+   * @param clause The clause to add
+   * @warning This method is not thread safe, i.e. multiple threads cannot add
+   * clauses concurrently to this solver
+   */
+  bool addClause(clause_view_t clause) override;
+  /**
+   * @brief Load clauses into CaDiCaL using the FullReaderCallback function
+   * @return The number of clauses loaded during this call
+   */
+  uint loadClauses() override;
 
-	/// Solve the formula with a given cube.
-	SatResult solve(const std::vector<int>& cube) override;
+  /* Sharing */
+  bool importClause(const ClauseExchangePtr& clause) override;
 
-	/// Interrupt resolution, solving cannot continue until interrupt is unset.
-	void setSolverInterrupt() override;
+  /* Variable Management */
+  uint getVariableCount() override;
+  var_t getDivisionVariable() override;
+  void setPhase(const var_t var, const bool phase) override;
+  void bumpVariableActivity(const var_t var, const int times) override;
 
-	/// Remove the SAT solving interrupt request.
-	void unsetSolverInterrupt() override;
+  /* Result & Solution */
+  clause_t getFinalAnalysis() override;
+  cube_t getSatAssumptions() override;
+  model_t getModel() override;
 
-	/// @brief Initializes the map @ref KissatOptions with the default configuration.
-	void initKissatOptions();
+  /* Statistics And More */
+  std::string statisticsToString() override;
 
-	/// Native diversification.
-	void diversify(const SeedGenerator& getSeed) override;
+protected:
+  void setOption(const std::string& key, int value) override;
 
-	/* Clause Management */
+  /// @brief Code for the Family of a CDCL solver at diversification
+  enum class Family
+  {
+    SAT_STABLE = 0,
+    MIXED_SWITCH,
+    UNSAT_FOCUSED,
+    COUNT
+  };
 
-	/// Load formula from a given dimacs file, return false if failed.
-	void loadFormula(const char* filename) override;
+  /// @brief Initializes the map @ref kissatOptions with the default
+  /// configuration.
+  void initKissatOptions();
 
-	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) override;
+  /**
+   * @brief Send an imported clause in @ref m_clausesToImport to the backend
+   * solver
+   * @return True if the clause was accepted by the backend, false otherwise
+   */
+  bool backendImportClause();
 
-	/// Add a list of initial clauses to the formula.
-	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
+  bool backendHasClauseToImport();
 
-	/// Add a permanent clause to the formula.
-	void addClause(ClauseExchangePtr clause) override;
+  /**
+   * @brief Export a learned clause by the backend solver using @ref
+   * exportClause from @ref SharingEntity
+   * @return True if the clause was exported, false otherwise
+   */
+  bool backendExplortClause();
 
-	/// Add a list of permanent clauses to the formula.
-	void addClauses(const std::vector<ClauseExchangePtr>& clauses) override;
+protected:
+  /// Pointer to the backend Kissat solver.
+  kissat* m_solver;
 
-	/* Sharing */
+  /// Used to stop or continue the resolution.
+  std::atomic<bool> m_stopSolver;
 
-	/// Add a learned clause to the formula.
-	bool importClause(const ClauseExchangePtr& clause) override;
+  /// Number of variables before solving
+  unsigned int m_originalVars;
 
-	/// Add a list of learned clauses to the formula.
-	void importClauses(const std::vector<ClauseExchangePtr>& clauses) override;
+  /// @brief Database used to import clauses. Can be common with other solvers
+  std::shared_ptr<ClauseDatabase> m_clausesToImport;
 
-	/* Variable Management */
+  /// @brief FullReader callback that has access to all the clauses
+  FullClauseReader mcbk_fullReader;
 
-	/// Get the number of variables of the current resolution.
-	unsigned int getVariablesCount() override;
+  /// @brief From which clause the solver will start reading
+  uint m_fullReaderIndex;
 
-	/// Get a variable suitable for search splitting.
-	int getDivisionVariable() override;
+  std::unordered_map<std::string, int> m_kissatParameters;
 
-	/// Set initial phase for a given variable.
-	void setPhase(const unsigned int var, const bool phase) override;
+  std::vector<lit_t> m_assumptions;
 
-	/// Bump activity of a given variable.
-	void bumpVariableActivity(const int var, const int times) override;
+  std::vector<lit_t> m_clauseToExport;
 
-	/* Statistics And More */
+  /// A pointer pointing to the next clause to be exported
+  ClauseExchangePtr m_clauseToImport;
 
-	/// Get solver statistics.
-	void printStatistics() override;
+  // Kissat Backend Callbacks
+  // ========================
 
-	void printWinningLog() override;
+  /**
+   * @brief C Callback termination check
+   * @param vpkissat pointer to the painless Kissat object
+   * @return 0 if to continue, !0 if to terminate
+   */
+  friend int kissatTerminate(void* vpkissat);
 
-	std::vector<int> getFinalAnalysis() override;
+  friend unsigned char kissatHasClauseToImport(void* vpkissat);
 
-	std::vector<int> getSatAssumptions() override;
+  /**
+   * @brief C Callback to get a clause to import into Kissat Backend
+   * @param vpkissat pointer to the painless Kissat object
+   * @return 0 if the clause was not imported, !0 otherwise
+   */
+  friend unsigned char kissatImportClause(void* vpkissat);
 
-	/// Return the model in case of SAT result.
-	std::vector<int> getModel() override;
-
-	/// @brief A map mapping a kissat option name to its value.
-	std::unordered_map<std::string, int> kissatOptions;
-
-	/// Set family from working strategy
-	void setFamily(KissatFamily family) { this->family = family; };
-
-
-  protected:
-	/// Compute kissat family for diversification
-	void computeFamily();
-	
-  protected:
-	/// Pointer to a Kissat solver.
-	kissat* solver;
-
-	/// Buffer used to add permanent clauses.
-	ClauseBuffer clausesToAdd;
-
-	/// Used to stop or continue the resolution.
-	std::atomic<bool> stopSolver;
-
-	KissatFamily family;
-
-	unsigned int originalVars;
-
-	/// Termination callback.
-	friend int kissatTerminate(void* solverPtr);
-
-	/// Callback to export/import clauses used by real kissat.
-	/* Decided to not use pointers to move because of c++ stl (cannot move an array into a vector, sharedPtr
-	 * destruction) */
-	friend char kissatImportClause(void*, kissat*);
-	friend char kissatExportClause(void*, kissat*);
+  /**
+   * @brief C Callback to export a clause from Kissat Backend
+   * @param vpkissat pointer to the painless Kissat object
+   * @return 0 if the clause was not exported, !0 otherwise
+   */
+  friend char kissatExportClause(void* vpkissat);
 };

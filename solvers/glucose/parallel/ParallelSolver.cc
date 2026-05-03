@@ -314,6 +314,13 @@ bool ParallelSolver::parallelImportClauses() {
     int importedFromThread;
     int lbd;
     while (importClause(issuer, &importedFromThread, &lbd, importedClause)) {
+        // If LBD == 0, add it as irredundant
+        if(lbd == 0)
+        {
+            this->addClause(importedClause);
+            continue;
+        }
+
         assert(importedFromThread >= 0);
 
         assert(importedFromThread != thn);

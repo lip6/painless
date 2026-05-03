@@ -29,8 +29,14 @@
   COUNTER (clauses_added, 2, PCNT_CLS_ADDED, "%", "added") \
   COUNTER (clauses_binary, 2, PCNT_CLS_ADDED, "%", "added") \
   STATISTIC (clauses_deleted, 1, PCNT_CLS_ADDED, "%", "added") \
+  COUNTER (clauses_exported, 1, PCNT_CLS_LEARNED, "%", "learned") \
+  COUNTER (clauses_exported_filtered, 1, PCNT_CLS_EXPORTED, "%", "exported") \
   STATISTIC (clauses_factored, 1, PCNT_CLS_ADDED, "%", "added") \
   STATISTIC (clauses_improved, 1, PCNT_CLS_LEARNED, "%", "learned") \
+  COUNTER (clauses_imported, 1, PCNT_RESTARTS, "%", "restarts") \
+  COUNTER (clauses_imported_s1, 1, PCNT_CLS_IMPORTED, "%", "imported") \
+  COUNTER (clauses_imported_s2, 1, PCNT_CLS_IMPORTED, "%", "imported") \
+  COUNTER (clauses_imported_sL, 1, PCNT_CLS_IMPORTED, "%", "imported") \
   COUNTER (clauses_irredundant, 2, PCNT_CLS_ADDED, "%", "added") \
   STATISTIC (clauses_kept1, 1, PCNT_CLS_IMPROVED, "%", "improved") \
   STATISTIC (clauses_kept2, 1, PCNT_CLS_IMPROVED, "%", "improved") \

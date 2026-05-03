@@ -14,6 +14,7 @@
 
 #define RADIX_SORT_BUMP_LIMIT 32
 
+// Order the ranks by the .rank value
 static void sort_bump (kissat *solver) {
   const size_t size = SIZE_STACK (solver->analyzed);
   if (size < RADIX_SORT_BUMP_LIMIT) {
@@ -81,6 +82,8 @@ static void bump_analyzed_variable_scores (kissat *solver) {
 static void move_analyzed_variables_to_front_of_queue (kissat *solver) {
   assert (EMPTY_STACK (solver->ranks));
   const links *const links = solver->links;
+  // The rank is the timestamp given for the variables when they are
+  // enqueued into solver->queue
   for (all_stack (unsigned, idx, solver->analyzed)) {
     // clang-format off
     const datarank rank = { .data = idx, .rank = links[idx].stamp };
@@ -88,11 +91,13 @@ static void move_analyzed_variables_to_front_of_queue (kissat *solver) {
     PUSH_STACK (solver->ranks, rank);
   }
 
+  // Sort the solver->ranks by the variables timestamp in queue
   sort_bump (solver);
 
   flags *flags = solver->flags;
   unsigned idx;
 
+  // Resort the solver->queue by moving to front active analyzed variables
   for (all_stack (datarank, rank, solver->ranks))
     if (flags[idx = rank.data].active)
       kissat_move_to_front (solver, idx);

@@ -4,7 +4,7 @@
 #include <minisat/simp/SimpSolver.h>
 #include <minisat/utils/System.h>
 
-#include "utils/Parameters.hpp"
+#include "utils/ErrorCodes.hpp"
 
 #include "containers/ClauseDatabases/ClauseDatabaseSingleBuffer.hpp"
 
@@ -12,366 +12,367 @@
 #include <iomanip>
 
 // Macros for minisat literal representation conversion
-#define MINI_LIT(lit) lit > 0 ? Minisat::mkLit(lit - 1, false) : Minisat::mkLit((-lit) - 1, true)
+#define MINI_LIT(lit)                                                          \
+  lit > 0 ? Minisat::mkLit(lit - 1, false) : Minisat::mkLit((-lit) - 1, true)
 
-#define INT_LIT(lit) Minisat::sign(lit) ? -(Minisat::var(lit) + 1) : (Minisat::var(lit) + 1)
+#define INT_LIT(lit)                                                           \
+  Minisat::sign(lit) ? -(Minisat::var(lit) + 1) : (Minisat::var(lit) + 1)
 
 static bool
 checkLiteral(const Minisat::Lit& l, Minisat::Solver* minisat)
 {
-	// Assert if not negative (error)
-	assert(l.x >= 0);
-	// Check if the literal is not out of bound
-	if (minisat->nVars() <= var(l)) {
-		LOGDEBUG2("Literal %d is out of bound for Minisat", l.x);
-		return false;
-	}
-	return true;
+  // Assert if not negative (error)
+  assert(l.x >= 0);
+  // Check if the literal is not out of bound
+  if (minisat->nVars() <= var(l)) {
+    LOGWARN("Literal %d is out of bound for Minisat", l.x);
+    return false;
+  }
+  return true;
 }
 
 static bool
-makeMiniVec(ClauseExchangePtr cls, Minisat::vec<Minisat::Lit>& mcls, Minisat::Solver* minisat)
+makeMiniVec(ClauseExchangePtr cls,
+            Minisat::vec<Minisat::Lit>& mcls,
+            Minisat::Solver* minisat)
 {
-	for (size_t i = 0; i < cls->size; i++) {
-		Minisat::Lit internalLit = MINI_LIT(cls->lits[i]);
-		mcls.push(internalLit);
-		// Checks
-		if (!checkLiteral(internalLit, minisat))
-			return false;
-	}
-	return true;
+  for (size_t i = 0; i < cls->size; i++) {
+    Minisat::Lit internalLit = MINI_LIT(cls->lits[i]);
+    mcls.push(internalLit);
+    // Checks
+    if (!checkLiteral(internalLit, minisat))
+      return false;
+  }
+  return true;
 }
 
 void
 minisatExportClause(void* issuer, Minisat::vec<Minisat::Lit>& cls)
 {
-	/* TODO: a better fake glue management ?*/
-	MiniSat* ms = (MiniSat*)issuer;
+  /* TODO: a better fake glue management ?*/
+  MiniSat* ms = (MiniSat*)issuer;
 
-	// Fake glue value
-	ClauseExchangePtr ncls = ClauseExchange::create(cls.size(), cls.size(), ms->getSharingId());
+  // Fake glue value
+  ClauseExchangePtr ncls =
+    ClauseExchange::create(cls.size(), cls.size(), ms->getSharingId());
 
-	for (int i = 0; i < cls.size(); i++) {
-		ncls->lits[i] = INT_LIT(cls[i]);
-	}
+  for (int i = 0; i < cls.size(); i++) {
+    ncls->lits[i] = INT_LIT(cls[i]);
+  }
 
-	ncls->from = ms->getSharingId();
+  ncls->from = ms->getSharingId();
 
-	ms->exportClause(ncls);
+  ms->exportClause(ncls);
 }
 
 Minisat::Lit
 minisatImportUnit(void* issuer)
 {
-	MiniSat* ms = (MiniSat*)issuer;
+  MiniSat* ms = (MiniSat*)issuer;
 
-	Minisat::Lit l;
+  Minisat::Lit l;
 
-	ClauseExchangePtr cls;
+  std::vector<int> units;
 
-	while (ms->unitsToImport->getOneClause(cls)) {
-		assert(cls->size == 1);
-		l = MINI_LIT(cls->lits[0]);
+  ms->m_unitsToImport.consume_all(
+    [&units](int unit) { units.push_back(unit); });
 
-		if (checkLiteral(l, ms->solver) == true) {
-			assert(l.x >= 0);
-			LOGDEBUG2("Importing to Minisat %u unit literal %d", ms->getSharingId(), l.x);
-			return l;
-		}
-	}
-	return Minisat::lit_Undef;
+  for (lit_t lit : units) {
+    l = MINI_LIT(lit);
+
+    if (checkLiteral(l, ms->solver) == true) {
+      assert(l.x >= 0);
+      LOGD2("Importing to Minisat#%u unit literal %d", ms->getSharingId(), l.x);
+      return l;
+    }
+  }
+  return Minisat::lit_Undef;
 }
 
 bool
 minisatImportClause(void* issuer, Minisat::vec<Minisat::Lit>& mcls)
 {
-	MiniSat* ms = (MiniSat*)issuer;
+  MiniSat* ms = (MiniSat*)issuer;
 
-	ClauseExchangePtr cls;
+  ClauseExchangePtr cls;
 
-	while (ms->m_clausesToImport->getOneClause(cls)) {
-		if (makeMiniVec(cls, mcls, ms->solver)) {
-			LOGCLAUSE1(cls->lits, cls->size, "Importing to Minisat %u clause: ", ms->getSharingId());
-			assert(mcls.size() > 1 && mcls[0].x >= 0);
+  while (ms->m_clausesToImport->getOneClause(cls)) {
+    if (makeMiniVec(cls, mcls, ms->solver)) {
+      if (cls->lbd)
+        LOGD4("MiniSat %u will import redundant clause %s",
+              ms->getSharingId(),
+              cls->toString().c_str());
+      else
+        LOG2("MiniSat %u will import irredundant clause %s",
+             ms->getSharingId(),
+             cls->toString().c_str());
 
-			return true;
-		}
-		mcls.clear();
-	}
+      assert(mcls.size() > 1 && mcls[0].x >= 0);
 
-	ms->m_clausesToImport->shrinkDatabase();
-	return false;
+      return true;
+    }
+    mcls.clear();
+  }
+
+  ms->m_clausesToImport->shrinkDatabase();
+  return false;
 }
 
-MiniSat::MiniSat(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
-	: SolverCdclInterface(id, clauseDB, SolverCdclType::MINISAT)
-	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
+MiniSat::MiniSat(int id,
+                 const std::shared_ptr<ClauseDatabase>& clauseDB,
+                 FullClauseReader fullReader)
+  : SolverCDCLInterface(id, SolverCDCLType::MINISAT)
+  , m_clausesToImport(clauseDB)
+  , m_unitsToImport(256)
+  , mcbk_fullReader(fullReader)
+  , m_fullReaderIndex(0)
+  , mcls(std::make_unique<Minisat::vec<Minisat::Lit>>())
 {
-	this->unitsToImport = std::make_unique<ClauseDatabaseSingleBuffer>(__globalParameters__.defaultClauseBufferSize);
+  solver = new Minisat::SimpSolver();
+  solver->remove_satisfied = false;
 
-	solver = new Minisat::SimpSolver();
-	solver->remove_satisfied = false;
+  solver->exportClauseCallback = minisatExportClause;
+  solver->importUnitCallback = minisatImportUnit;
+  solver->importClauseCallback = minisatImportClause;
+  solver->issuer = this;
 
-	solver->exportClauseCallback = minisatExportClause;
-	solver->importUnitCallback = minisatImportUnit;
-	solver->importClauseCallback = minisatImportClause;
-	solver->issuer = this;
-
-	initializeTypeId<MiniSat>();
+  initializeTypeId<MiniSat>();
 }
 
 MiniSat::~MiniSat()
 {
-	delete solver;
+  delete solver;
 }
 
 void
 MiniSat::loadFormula(const char* filename)
 {
-	gzFile in = gzopen(filename, "rb");
+  gzFile in = gzopen(filename, "rb");
 
-	parse_DIMACS(in, *solver);
+  parse_DIMACS(in, *solver);
 
-	gzclose(in);
+  gzclose(in);
+}
+
+bool
+MiniSat::addClause(clause_view_t clause)
+{
+  assert(clause.size() > 0);
+  mcls->clear();
+  for (lit_t lit : clause) {
+    // From Minisat Parser
+    uint var = abs(lit) - 1;
+    while (var >= solver->nVars())
+      solver->newVar();
+    mcls->push(MINI_LIT(lit));
+  }
+
+  if (solver->addClause(*mcls) == false) {
+    LOGWARN("UNSAT when adding cls");
+    return false;
+  }
+
+  return true;
+}
+
+uint
+MiniSat::loadClauses()
+{
+  uint oldIndex = m_fullReaderIndex;
+  m_fullReaderIndex = mcbk_fullReader(
+    [this](clause_view_t clause) -> bool { return this->addClause(clause); },
+    m_fullReaderIndex);
+  // m_fullReaderIndex is now equal to the number of clauses read in total
+
+  return m_fullReaderIndex - oldIndex;
 }
 
 // Get the number of variables of the formula
-unsigned int
-MiniSat::getVariablesCount()
+uint
+MiniSat::getVariableCount()
 {
-	return solver->nVars();
+  return solver->nVars();
 }
 
 // Get a variable suitable for search splitting
-int
+var_t
 MiniSat::getDivisionVariable()
 {
-	return (rand() % getVariablesCount()) + 1;
+  return (rand() % getVariableCount()) + 1;
 }
 
 // Set initial phase for a given variable
 void
-MiniSat::setPhase(const unsigned int var, const bool phase)
+MiniSat::setPhase(const var_t var, const bool phase)
 {
-	solver->setPolarity(var - 1, phase ? Minisat::l_True : Minisat::l_False);
+  solver->setPolarity(var - 1, phase ? Minisat::l_True : Minisat::l_False);
 }
 
 // Bump activity for a given variable
 void
-MiniSat::bumpVariableActivity(const int var, const int times)
+MiniSat::bumpVariableActivity(const var_t var, const int times)
 {
-	for (int i = 0; i < times; i++) {
-		solver->varBumpActivity(var - 1);
-	}
+  for (int i = 0; i < times; i++) {
+    solver->varBumpActivity(var - 1);
+  }
 }
 
 // Interrupt the SAT solving, so it can be started again with new assumptions
 void
 MiniSat::setSolverInterrupt()
 {
-	LOGDEBUG1("Asking Minisat (%d, %u) to end", this->getSolverId(), this->getSolverTypeId());
+  LOGD1("Asking Minisat (%d, %u) to end",
+        this->getSolverId(),
+        this->getSolverTypeId());
 
-	solver->interrupt();
+  solver->interrupt();
 }
 
 void
 MiniSat::unsetSolverInterrupt()
 {
-	solver->clearInterrupt();
+  solver->clearInterrupt();
 }
 
 // Diversify the solver
 void
 MiniSat::diversify(const SeedGenerator& getSeed)
 {
-	solver->random_seed = (double)getSeed(this);
+  solver->random_seed = (double)getSeed(this);
+}
+
+void
+MiniSat::setOption(const std::string& key, int value)
+{
+  if (key == "var-decay")
+    solver->var_decay = static_cast<double>(value) / 1'000;
+  else if (key == "clause-decay")
+    solver->clause_decay = static_cast<double>(value) / 1'000;
+  else if (key == "random-var-freq")
+    solver->random_var_freq = static_cast<double>(value) / 1'000;
+  else if (key == "seed")
+    solver->random_seed = value;
+  else if (key == "verbosity")
+    solver->verbosity = value;
+  else if (key == "luby-restart")
+    solver->luby_restart = static_cast<bool>(value);
+  else if (key == "ccmin-mode")
+    solver->ccmin_mode = value;
+  else if (key == "phase-saving")
+    solver->phase_saving = value;
+  else if (key == "rnd-pol")
+    solver->rnd_pol = static_cast<bool>(value);
+  else if (key == "rnd-init-act")
+    solver->rnd_init_act = static_cast<bool>(value);
+  else if (key == "garbage-frac")
+    solver->garbage_frac = static_cast<double>(value) / 1'000;
+  else if (key == "min-learnts-lim")
+    solver->min_learnts_lim = value;
+  else if (key == "restart-first")
+    solver->restart_first = value;
+  else if (key == "restart-inc")
+    solver->restart_inc = static_cast<double>(value) / 1'000;
+  else if (key == "learntsize-factor")
+    solver->learntsize_factor = static_cast<double>(value) / 1'000;
+  else if (key == "learntsize-inc")
+    solver->learntsize_inc = static_cast<double>(value) / 1'000;
+  else if (key == "learntsize-adjust-start-confl")
+    solver->learntsize_adjust_start_confl = value;
+  else if (key == "learntsize-adjust-inc")
+    solver->learntsize_adjust_inc = static_cast<double>(value) / 1'000;
+  else
+    PABORT(PERR_ARGS,"Option %s is not recognized by Minisat!", key.c_str());
 }
 
 // Solve the formula with a given set of assumptions
 // return 10 for SAT, 20 for UNSAT, 0 for UNKNOWN
-SatResult
-MiniSat::solve(const std::vector<int>& cube)
+SatAnswer
+MiniSat::solve(cube_view_t cube)
 {
-	std::vector<ClauseExchangePtr> tmp;
-	clausesToAdd.getClauses(tmp);
+  uint readClauses = loadClauses();
 
-	for (size_t ind = 0; ind < tmp.size(); ind++) {
-		Minisat::vec<Minisat::Lit> mcls;
-		makeMiniVec(tmp[ind], mcls, this->solver);
+  Minisat::vec<Minisat::Lit> miniAssumptions;
+  for (size_t ind = 0; ind < cube.size(); ind++) {
+    miniAssumptions.push(MINI_LIT(cube[ind]));
+  }
 
-		if (solver->addClause(mcls) == false) {
-			LOGWARN("unsat when adding cls");
-			return SatResult::UNSAT;
-		}
-	}
+  this->m_initialized = true;
 
-	Minisat::vec<Minisat::Lit> miniAssumptions;
-	for (size_t ind = 0; ind < cube.size(); ind++) {
-		miniAssumptions.push(MINI_LIT(cube[ind]));
-	}
+  LOG2("Launching MiniSat %u with %u clauses (%u added this round), and %u "
+       "assumptions",
+       getSolverTypeId(),
+       m_fullReaderIndex,
+       readClauses,
+       cube.size());
 
-	Minisat::lbool res = solver->solveLimited(miniAssumptions);
+  Minisat::lbool res = solver->solveLimited(miniAssumptions);
 
-	if (res == Minisat::l_True)
-		return SatResult::SAT;
+  if (res == Minisat::l_True)
+    return SatAnswer::SAT;
 
-	if (res == Minisat::l_False)
-		return SatResult::UNSAT;
+  if (res == Minisat::l_False)
+    return SatAnswer::UNSAT;
 
-	return SatResult::UNKNOWN;
-}
-
-void
-MiniSat::addClause(ClauseExchangePtr clause)
-{
-	clausesToAdd.addClause(clause);
-
-	setSolverInterrupt();
+  return SatAnswer::UNKNOWN;
 }
 
 bool
 MiniSat::importClause(const ClauseExchangePtr& clause)
 {
-	assert(clause->size > 0);
+  assert(clause->size > 0);
 
-	if (clause->size == 1) {
-		unitsToImport->addClause(clause);
-	} else {
-		m_clausesToImport->addClause(clause);
-	}
+  if (clause->size == 1) {
+    m_unitsToImport.push(clause->lits[0]);
+  } else {
+    m_clausesToImport->addClause(clause);
+  }
 
-	return true;
+  return true;
 }
 
-void
-MiniSat::addClauses(const std::vector<ClauseExchangePtr>& clauses)
+std::string
+MiniSat::statisticsToString()
 {
-	clausesToAdd.addClauses(clauses);
+  std::ostringstream oss;
+  SolverCDCLInterface::Statistics stats;
 
-	setSolverInterrupt();
+  stats.conflicts = solver->conflicts;
+  stats.propagations = solver->propagations;
+  stats.restarts = solver->starts;
+  stats.decisions = solver->decisions;
+
+  oss << stats.toString(getSolverId(), "MiniSat");
+
+  return oss.str();
 }
 
-void
-MiniSat::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars)
-{
-	while (solver->nVars() < nbVars) {
-		solver->newVar();
-	}
-
-	for (size_t ind = 0; ind < clauses.size(); ind++) {
-		Minisat::vec<Minisat::Lit> mcls;
-
-		for (size_t i = 0; i < clauses[ind].size(); i++) {
-			int lit = clauses[ind][i];
-			mcls.push(MINI_LIT(lit));
-		}
-
-		if (solver->addClause(mcls) == false) {
-			LOGWARN("unsat when adding initial cls");
-			return;
-		}
-	}
-	LOG2("The Minisat Solver %d loaded all the %u clauses with %u variables",
-		 this->getSolverId(),
-		 clauses.size(),
-		 nbVars);
-}
-
-void
-MiniSat::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
-{
-	unsigned int clausesCount = 0;
-	int lit;
-
-	while (solver->nVars() < nbVars) {
-		solver->newVar();
-	}
-
-	for (unsigned int i = 0; clausesCount < clsCount; i++) {
-
-		Minisat::vec<Minisat::Lit> mcls;
-
-		for (lit = *literals; lit; literals++, lit = *literals) {
-			if (!lit)
-				break;
-			mcls.push(MINI_LIT(lit));
-		}
-
-		// Jump zero
-		literals++;
-		clausesCount++;
-
-		if (!solver->addClause(mcls)) {
-			LOGWARN("unsat when adding initial cls");
-			return;
-		}
-	}
-
-	this->setInitialized(true);
-
-	LOG2(
-		"The MiniSat Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clausesCount, nbVars);
-}
-
-void
-MiniSat::importClauses(const std::vector<ClauseExchangePtr>& clauses)
-{
-	for (size_t i = 0; i < clauses.size(); i++) {
-		importClause(clauses[i]);
-	}
-}
-
-void
-MiniSat::printStatistics()
-{
-	SolvingCdclStatistics stats;
-
-	stats.conflicts = solver->conflicts;
-	stats.propagations = solver->propagations;
-	stats.restarts = solver->starts;
-	stats.decisions = solver->decisions;
-
-	std::cout << "c" << std::left << std::setw(15) << ("| M" + std::to_string(this->getSolverTypeId())) << std::setw(20)
-			  << ("| " + std::to_string(stats.conflicts)) << std::setw(20)
-			  << ("| " + std::to_string(stats.propagations)) << std::setw(17) << ("| " + std::to_string(stats.restarts))
-			  << std::setw(20) << ("| " + std::to_string(stats.decisions)) << std::setw(20) << "|"
-			  << "\n";
-}
-
-void
-MiniSat::printWinningLog()
-{
-	this->SolverCdclInterface::printWinningLog();
-	LOGSTAT("The winner is MiniSat(%d, %u) ", this->getSolverId(), this->getSolverTypeId());
-}
-
-std::vector<int>
+model_t
 MiniSat::getModel()
 {
-	std::vector<int> model;
+  std::vector<int> model;
 
-	for (int i = 0; i < solver->nVars(); i++) {
-		if (solver->model[i] != Minisat::l_Undef) {
-			int lit = solver->model[i] == Minisat::l_True ? i + 1 : -(i + 1);
-			model.push_back(lit);
-		}
-	}
+  for (int i = 0; i < solver->nVars(); i++) {
+    if (solver->model[i] != Minisat::l_Undef) {
+      int lit = solver->model[i] == Minisat::l_True ? i + 1 : -(i + 1);
+      model.push_back(lit);
+    }
+  }
 
-	return model;
+  return model;
 }
 
-std::vector<int>
+clause_t
 MiniSat::getFinalAnalysis()
 {
-	std::vector<int> outCls;
-	LOGERROR("NOT IMPLEMENTED");
-	return outCls;
+  std::vector<int> outCls;
+  LOGERROR("NOT IMPLEMENTED");
+  return outCls;
 }
 
-std::vector<int>
+cube_t
 MiniSat::getSatAssumptions()
 {
-	std::vector<int> outCls;
-	LOGERROR("NOT IMPLEMENTED");
-	return outCls;
+  std::vector<int> outCls;
+  LOGERROR("NOT IMPLEMENTED");
+  return outCls;
 };

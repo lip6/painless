@@ -1,6 +1,11 @@
 #ifndef _clause_hpp_INCLUDED
 #define _clause_hpp_INCLUDED
 
+#include "util.hpp"
+#include <climits>
+#include <cstdint>
+#include <cstdlib>
+
 namespace CaDiCaL {
 
 /*------------------------------------------------------------------------*/
@@ -22,8 +27,19 @@ typedef const int *const_literal_iterator;
 // memory but more importantly also requires another memory access and thus
 // is very costly.
 
+#define USED_SIZE 5
 struct Clause {
-  uint64_t id;          // Used to create LRAT-style proofs
+  union {
+    int64_t id;   // Used to create LRAT-style proofs
+    Clause *copy; // Only valid if 'moved', then that's where to.
+    //
+    // The 'copy' field is only valid for 'moved' clauses in the moving
+    // garbage collector 'copy_non_garbage_clauses' for keeping clauses
+    // compactly in a contiguous memory arena.  Otherwise, so almost all of
+    // the time, 'id' is valid.  See 'collect.cpp' for details.
+  };
+  unsigned used
+      : USED_SIZE;      // resolved in conflict analysis since last 'reduce'
   bool conditioned : 1; // Tried for globally blocked clause elimination.
   bool covered : 1;  // Already considered for covered clause elimination.
   bool enqueued : 1; // Enqueued on backward queue.
@@ -32,15 +48,15 @@ struct Clause {
   bool gate : 1;     // Clause part of a gate (function definition).
   bool hyper : 1;    // redundant hyper binary or ternary resolved
   bool instantiated : 1; // tried to instantiate
-  bool keep : 1;         // always keep this clause (if redundant)
   bool moved : 1;        // moved during garbage collector ('copy' valid)
   bool reason : 1;       // reason / antecedent clause can not be collected
   bool redundant : 1;    // aka 'learned' so not 'irredundant' (original)
   bool transred : 1;     // already checked for transitive reduction
   bool subsume : 1;      // not checked in last subsumption round
-  unsigned used : 2; // resolved in conflict analysis since last 'reduce'
-  bool vivified : 1; // clause already vivified
-  bool vivify : 1;   // clause scheduled to be vivified
+  bool swept : 1;        // clause used to sweep equivalences
+  bool flushed : 1;      // garbage in proof deleted binaries
+  bool vivified : 1;     // clause already vivified
+  bool vivify : 1;       // clause scheduled to be vivified
 
   // The glucose level ('LBD' or short 'glue') is a heuristic value for the
   // expected usefulness of a learned clause, where smaller glue is consider
@@ -81,17 +97,34 @@ struct Clause {
   int size; // Actual size of 'literals' (at least 2).
   int pos;  // Position of last watch replacement [Gent'13].
 
-  union {
+  // This 'flexible array member' is of variadic 'size' (and actually
+  // shrunken if strengthened) and keeps the literals close to the header of
+  // the clause to avoid another pointer dereference, which would be costly.
 
-    int literals[2]; // Of variadic 'size' (shrunken if strengthened).
+  // In earlier versions we used 'literals[2]' to fake it (in order to
+  // support older Microsoft compilers even though this feature is in C99)
+  // and at the same time being able to overlay the first two literals with
+  // the 'copy' field above, as having a flexible array member inside a
+  // union is not allowed.  Now compilers start to figure out that those
+  // literals can be accessed with indices larger than 1 and produce
+  // warnings.  After having the 'id' field mandatory we now overlay that
+  // one with the copy field.
 
-    Clause *copy; // Only valid if 'moved', then that's where to.
-    //
-    // The 'copy' field is only valid for 'moved' clauses in the moving
-    // garbage collector 'copy_non_garbage_clauses' for keeping clauses
-    // compactly in a contiguous memory arena.  Otherwise, most of
-    // the time, 'literals' is valid.  See 'collect.cpp' for details.
-  };
+  // However, it turns out that even though flexible array members are in
+  // C99 they are not in C11++, and therefore pedantic compilation with
+  // '--pedantic' fails completely. Therefore we still support as
+  // alternative faked flexible array members, which unfortunately need
+  // then again more care when accessing the literals outside the faked
+  // virtual sizes and the compiler can somehow figure that out, because
+  // that would in turn produce a warning.
+
+#ifndef NFLEXIBLE
+  int literals[];
+#else
+  int literals[2];
+#endif
+
+  // Supports simple range based for loops over clauses.
 
   literal_iterator begin () { return literals; }
   literal_iterator end () { return literals + size; }
@@ -108,7 +141,15 @@ struct Clause {
     // all the time (even if allocated outside of the arena).
     //
     assert (size > 1);
-    return align ((size - 2) * sizeof (int) + sizeof (Clause), 8);
+    const size_t header_bytes = sizeof (Clause);
+    const size_t actual_literal_bytes = size * sizeof (int);
+    size_t combined_bytes = header_bytes + actual_literal_bytes;
+#ifdef NFLEXIBLE
+    const size_t faked_literals_bytes = sizeof ((Clause *) 0)->literals;
+    combined_bytes -= faked_literals_bytes;
+#endif
+    size_t aligned_bytes = align (combined_bytes, alignof (Clause *));
+    return aligned_bytes;
   }
 
   size_t bytes () const { return bytes (size); }
@@ -138,6 +179,7 @@ struct clause_smaller_size {
 
 struct clause_lit_less_than {
   bool operator() (int a, int b) const {
+    using namespace std;
     int s = abs (a), t = abs (b);
     return s < t || (s == t && a < b);
   }

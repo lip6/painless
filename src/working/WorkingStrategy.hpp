@@ -1,9 +1,12 @@
 
 #pragma once
 
-#include "solvers/SolverInterface.hpp"
+#include "config/Configurable.hpp"
 
 #include <vector>
+
+// Forward declaration since WorkingStrategy is included in painless.hpp
+class PainlessImpl;
 
 /**
  * @defgroup working  Working Strategies
@@ -14,33 +17,44 @@
 /**
  * @brief Base Interface for Working Strategies
  */
-class WorkingStrategy
+class WorkingStrategy : public Configurable
 {
-  public:
-	WorkingStrategy() { parent = NULL; }
+public:
+  WorkingStrategy() = delete;
+  WorkingStrategy(PainlessImpl& manager)
+    : m_manager(manager)
+  {
+    parent = NULL;
+  }
 
-	virtual void solve(const std::vector<int>& cube) = 0;
+  virtual void solve(cube_view_t cube) = 0;
 
-	virtual void join(WorkingStrategy* winner, SatResult res, const std::vector<int>& model) = 0;
+  virtual void join(WorkingStrategy* winner,
+                    SatAnswer res,
+                    const std::vector<int>& model) = 0;
 
-	virtual void setSolverInterrupt() = 0;
+  virtual void setSolverInterrupt() = 0;
 
-	virtual void unsetSolverInterrupt() = 0;
+  virtual void unsetSolverInterrupt() = 0;
 
-	virtual void waitInterrupt() = 0;
+  virtual void waitInterrupt() = 0;
 
-	virtual void addSlave(WorkingStrategy* slave)
-	{
-		slaves.push_back(slave);
-		slave->parent = this;
-	}
+  virtual void terminate() = 0;
 
-	virtual ~WorkingStrategy() {}
+  virtual void addWorker(WorkingStrategy* worker)
+  {
+    workers.push_back(worker);
+    worker->parent = this;
+  }
 
-  protected:
-	WorkingStrategy* parent;
+  virtual ~WorkingStrategy() {}
 
-	std::vector<WorkingStrategy*> slaves;
+protected:
+  WorkingStrategy* parent;
+
+  PainlessImpl& m_manager;
+
+  std::vector<WorkingStrategy*> workers;
 };
 
 /**

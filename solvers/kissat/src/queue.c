@@ -10,6 +10,7 @@ void kissat_init_queue (kissat *solver) {
   assert (!queue->search.stamp);
 }
 
+/* last variable(front) in queue is cached as search */
 void kissat_reset_search_of_queue (kissat *solver) {
   LOG ("reset last search cache of queue");
   queue *queue = &solver->queue;
@@ -19,6 +20,7 @@ void kissat_reset_search_of_queue (kissat *solver) {
   kissat_update_queue (solver, links, last);
 }
 
+/* reset the stamps in the queue from 0, variables will receive 1 to N */
 void kissat_reassign_queue_stamps (kissat *solver) {
   kissat_very_verbose (solver, "need to reassign enqueue stamps on queue");
 
@@ -41,7 +43,7 @@ void kissat_check_queue (kissat *solver) {
   bool passed_search_idx = false;
   const bool focused = !solver->stable;
   for (unsigned idx = queue->first, prev = DISCONNECT; !DISCONNECTED (idx);
-       idx = links[idx].next) {
+       idx = links[prev = idx].next) {
     if (!DISCONNECTED (prev))
       assert (links[prev].stamp < links[idx].stamp);
     if (focused && passed_search_idx)

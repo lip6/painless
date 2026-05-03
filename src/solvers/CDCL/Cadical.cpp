@@ -1,9 +1,7 @@
-#include "painless.hpp"
 #include "sharing/Filters/BloomFilter.hpp"
 #include "utils/ErrorCodes.hpp"
 #include "utils/Logger.hpp"
 #include "utils/MpiUtils.hpp"
-#include "utils/Parameters.hpp"
 #include "utils/Parsers.hpp"
 #include "utils/System.hpp"
 
@@ -11,444 +9,480 @@
 #include <iomanip>
 
 #include "Cadical.hpp"
-
-/*------------------------Learner-------------------------*/
-
-bool
-Cadical::learning(int size, int glue)
-{
-	if (size > 0) {
-		LOGDEBUG3("Cadical %d will export clause of size %d, glue %d", this->getSolverId(), size, glue);
-		tempClause.reserve(size);
-		this->lbd = glue;
-		return true;
-	} else {
-		return false;
-	}
-}
-
-void
-Cadical::learn(int lit)
-{
-	if (lit)
-		tempClause.push_back(lit);
-	else {
-		assert(tempClause.size() > 0 && this->lbd >= 0);
-		auto exportedClause = ClauseExchange::create(tempClause, this->lbd, this->getSharingId());
-
-		assert(tempClause.size() == exportedClause->size);
-		assert((exportedClause->size > 1 && exportedClause->lbd > 0) ||
-			   (exportedClause->size == 1 && exportedClause->lbd >= 0));
-
-		/* filtering defined by a sharing strategy, done here in case it checks its literals */
-		if (this->exportClause(exportedClause)) {
-			LOGCLAUSE2(exportedClause->lits,
-					   exportedClause->size,
-					   "Cadical %d exported Clause %p for sharing",
-					   this->getSolverId(),
-					   exportedClause.get());
-		}
-		tempClause.clear();
-	}
-}
-
-bool
-Cadical::hasClauseToImport()
-{
-	if (this->m_clausesToImport->getOneClause(tempClauseToImport)) {
-		LOGDEBUG3("Cadical %u will import clause %s", this->getSharingId(), tempClauseToImport->toString().c_str());
-		return true;
-	} else {
-		m_clausesToImport->shrinkDatabase();
-		return false;
-	}
-}
-
-void
-Cadical::getClauseToImport(std::vector<int>& clause, int& glue)
-{
-	assert((tempClauseToImport->size > 1 && tempClauseToImport->lbd > 0) ||
-		   (tempClauseToImport->size == 1 && tempClauseToImport->lbd >= 0));
-
-	assert(clause.empty());
-	clause.insert(clause.end(), tempClauseToImport->begin(), tempClauseToImport->end());
-	assert(clause.size() && clause.size() == tempClauseToImport->size && clause[0] == tempClauseToImport->lits[0]);
-
-	glue = tempClauseToImport->lbd;
-	LOGCLAUSE2(clause.data(), clause.size(), "Cadical %d will import Clause (lbd:%u)", this->getSolverId(), glue);
-}
+#include "cadical/src/stats.hpp"
 
 /*----------------------Main Class------------------------*/
 
-Cadical::Cadical(int id, const std::shared_ptr<ClauseDatabase>& clauseDB)
-	: SolverCdclInterface(id, clauseDB, SolverCdclType::CADICAL)
-	, clausesToAdd(__globalParameters__.defaultClauseBufferSize)
+Cadical::Cadical(int id,
+                 const std::shared_ptr<ClauseDatabase>& clauseDB,
+                 FullClauseReader fullReader)
+  : SolverCDCLInterface(id, SolverCDCLType::CADICAL)
+  , m_clausesToImport(clauseDB)
+  , mcbk_fullReader(fullReader)
+  , m_fullReaderIndex(0)
 {
-	solver = std::make_unique<CaDiCaL::Solver>();
-	solver->connect_learner(this);
-	solver->connect_terminator(this);
-	this->initCadicalOptions();
+  solver = std::make_unique<CaDiCaL::Solver>();
+  solver->connect_learner(this);
+  solver->connect_terminator(this);
+  this->initCadicalOptions();
 
-	initializeTypeId<Cadical>();
+  initializeTypeId<Cadical>();
 }
 
 Cadical::~Cadical()
 {
-	solver->terminate(); /* just in case */
-	solver->disconnect_learner();
-	solver->disconnect_terminator();
+  solver->terminate(); /* just in case */
+  solver->disconnect_learner();
+  solver->disconnect_terminator();
 }
 
-/* Execution */
+// ==================================================================
+// Execution
+// ==================================================================
 
-SatResult
-Cadical::solve(const std::vector<int>& cube)
+SatAnswer
+Cadical::solve(cube_view_t cube)
 {
-	if (!this->isInitialized()) {
-		LOGWARN("Cadical %d was not initialized to be launched!", this->getSolverId());
-		return SatResult::UNKNOWN;
-	}
-	unsetSolverInterrupt();
+  uint readClauses = loadClauses();
 
-	/* use add to add unit clauses for permanent assumption */
-	for (int lit : cube)
-		solver->assume(lit);
+  /* use add to add unit clauses for permanent assumption */
+  for (int lit : cube)
+    solver->assume(lit);
 
-	int res = solver->solve();
+  // If solver was called previously -> No saved phase diversfication
+  if (!this->m_initialized) {
+    std::mt19937 engine;
+    std::bernoulli_distribution dist;
+    for (uint i = 1; i <= this->getVariableCount(); i++) {
+      bool val = dist(engine);
+      // LOGD1("Variable %u is set to %u", i, static_cast<uint>(val));
+      this->setPhase(i, val);
+    }
+  }
 
-	if (res == 10) {
-		LOG2("Cadical %d responded with SAT", this->getSolverId());
-		return SatResult::SAT;
-	}
-	if (res == 20) {
-		LOG2("Cadical %d responded with UNSAT", this->getSolverId());
-		return SatResult::UNSAT;
-	}
-	LOGDEBUG2("Cadical %d responded with %d (UNKNOWN)", this->getSolverId(), res);
-	return SatResult::UNKNOWN;
+  this->m_initialized = true;
+
+  LOG2("Launching CaDiCaL %u with %u clauses (%u added this round), and %u "
+       "assumptions",
+       getSolverTypeId(),
+       m_fullReaderIndex,
+       readClauses,
+       cube.size());
+
+  int res = solver->solve();
+
+  if (res == 10) {
+    LOG2("Cadical %d responded with SAT", this->getSolverId());
+    return SatAnswer::SAT;
+  }
+  if (res == 20) {
+    LOG2("Cadical %d responded with UNSAT", this->getSolverId());
+    return SatAnswer::UNSAT;
+  }
+  LOGD2("Cadical %d responded with %d (UNKNOWN)", this->getSolverId(), res);
+  return SatAnswer::UNKNOWN;
 }
 
 void
 Cadical::setSolverInterrupt()
 {
-	this->stopSolver = true;
-	LOGDEBUG1("Asking Cadical (%d, %u) to end", this->getSolverId(), this->getSolverTypeId());
+  this->stopSolver = true;
+  LOGD1("Asking Cadical (%d, %u) to end",
+        this->getSolverId(),
+        this->getSolverTypeId());
 }
 
 void
 Cadical::unsetSolverInterrupt()
 {
-	this->stopSolver = false;
+  LOGD1("Making Cadical (%d, %u) able to resume",
+        this->getSolverId(),
+        this->getSolverTypeId());
+  this->stopSolver = false;
 }
 
 void
 Cadical::initCadicalOptions()
 {
 #ifndef NDEBUG
-	cadicalOptions.insert({ "quiet", 0 });
+  this->setOption("quiet", 0);
 #else
-	cadicalOptions.insert({ "quiet", 1 });
+  this->setOption("quiet", 1);
 #endif
-	cadicalOptions.insert({ "stabilize", 1 });
-	cadicalOptions.insert({ "stabilizeonly", 0 });
-	/*
-	 * target = 1: in stable phase only
-	 * target = 2: always choose target
-	 */
-	cadicalOptions.insert({ "target", 1 });
+  this->setOption("stabilize", 1);
+  this->setOption("stabilizeonly", 0);
+  /*
+   * target = 1: in stable phase only
+   * target = 2: always choose target
+   */
+  this->setOption("target", 1);
 
-	cadicalOptions.insert({ "elimreleff", 1e3 });
-	cadicalOptions.insert({ "subsumereleff", 1e3 });
+  // Shuffling
+  this->setOption("shuffle", 0);       /* shuffle variables */
+  this->setOption("shufflequeue", 0);  /* shuffle variable queue */
+  this->setOption("shufflescores", 0); /* shuffle variable queue */
+  this->setOption("shufflerandom", 0);
 
-	// Shuffling
-	cadicalOptions.insert({ "shuffle", 0 });	   /* shuffle variables */
-	cadicalOptions.insert({ "shufflequeue", 0 });  /* shuffle variable queue */
-	cadicalOptions.insert({ "shufflescores", 0 }); /* shuffle variable queue */
-	cadicalOptions.emplace("shufflerandom", 0);
+  // Random Walks
+  this->setOption("walkredundant", 0);
+  this->setOption("walknonstable", 1);
+  this->setOption("walk", 1);
 
-	// Random Walks
-	cadicalOptions.insert({ "walkredundant", 0 });
-	cadicalOptions.insert({ "walknonstable", 1 });
-	cadicalOptions.insert({ "walk", 1 });
+  // Search Configuration
+  this->setOption("chrono", 1);
+  this->setOption("chronoalways", 0);
+  this->setOption("chronolevelim", 100);
 
-	// Search Configuration
-	cadicalOptions.insert({ "chrono", 1 });
-	cadicalOptions.insert({ "chronoalways", 0 });
-	cadicalOptions.insert({ "chronolevelim", 100 });
+  // Restart Management
+  this->setOption("restart", 1);
+  this->setOption("restartint", 1);
 
-	// Restart Management
-	cadicalOptions.insert({ "restart", 1 });
-	cadicalOptions.insert({ "restartint", 1 });
+  // Decision
+  this->setOption("score", 1); // 1: VSIDS, 0: no score computing
 
-	// Decision
-	cadicalOptions.insert({ "score", 1 }); // 1: VSIDS, 0: no score computing
+  // Phase
+  this->setOption("phase", 1);
+  this->setOption("rephase", 1);
+  this->setOption("rephaseint", 1e3);
+  this->setOption("forcephase", 0);
 
-	// Phase
-	cadicalOptions.insert({ "phase", 1 });
-	cadicalOptions.insert({ "rephase", 1 });
-	cadicalOptions.insert({ "rephaseint", 1e3 });
-	cadicalOptions.insert({ "forcephase", 0 });
+  // Simplification Techniques
+  this->setOption("block", 0);      /* Blocked clause elimination */
+  this->setOption("elim", 0);       /* Bounded Variable elimination */
+  this->setOption("factor", 0);     /* Bounded Variable Addition */
+  this->setOption("congruence", 0); /* Congruence Closure (LE or E ?) */
+  this->setOption("sweep", 0);      /* SAT Sweeping (LE or E ?) */
+  this->setOption("otfs", 1);       /* On the fly subsumption */
+  this->setOption("condition", 0);  /* Globally blocked clause elimination */
+  this->setOption("cover", 0);      /* Covered clause elimination */
+  this->setOption(
+    "inprocessing",
+    1); /* Enable inprocessing (search is stopped, simplification is resumed)*/
 
-	// Simplification Techniques
-	cadicalOptions.insert({ "block", 0 });	   /* Blocked clause elimination */
-	cadicalOptions.insert({ "elim", 1 });	   /* Bounded Variable elimination */
-	cadicalOptions.insert({ "otfs", 1 });	   /* on the fly subsumption */
-	cadicalOptions.emplace("condition", 0);	   /* globally blocked clause elimination */
-	cadicalOptions.emplace("cover", 0);		   /* covered clause elimination */
-	cadicalOptions.emplace("inprocessing", 1); /* enable inprocessing (search is stopped, simplification is resumed)*/
+  // Learnt Clauses
+  this->setOption("reducetier1glue", 2);
+  this->setOption("reducetier2glue", 6);
 
-	// Learnt Clauses
-	cadicalOptions.insert({ "reducetier1glue", 2 });
-	cadicalOptions.insert({ "reducetier2glue", 6 });
-
-	// random seed
-	cadicalOptions.insert({ "seed", 0 });
-
-	// Setting the options
-	for (auto& opt : cadicalOptions) {
-		solver->set(opt.first.c_str(), opt.second);
-	}
+  // Random seed
+  this->setOption("seed", this->getSolverTypeId());
 }
-
-static std::mt19937 engine;
-static std::uniform_int_distribution<unsigned> uniform(0, 100);
 
 void
 Cadical::diversify(const SeedGenerator& getSeed)
 {
-	unsigned int typeId = this->getSolverTypeId();
-	unsigned int generalSeed = getSeed(this);
+  unsigned int typeId = this->getSolverTypeId();
+  unsigned int generalSeed = getSeed(this);
 
-	unsigned int cadicalCount = this->getSolverTypeCount();
+  unsigned int cadicalCount = this->getSolverTypeCount();
 
-	cadicalOptions.at("seed") = generalSeed;
-	cadicalOptions.at("phase") = generalSeed % 2;
+  this->setOption("seed", generalSeed);
 
-	LOGDEBUG1("Diversification of Cadical (%d,%d)", this->getSolverId(), typeId);
-	// From Mallob Native Diversification
-	switch (typeId % 10) {
-		case 0:
-			cadicalOptions.at("phase") = 0;
-			break;
-		case 1:
-			solver->configure("sat");
-			// 25% chances
-			if (uniform(engine) < 25) {
-				cadicalOptions.at("walk") = 1;
-				cadicalOptions.at("target") = 2;
-				cadicalOptions.at("chrono") = 1;
-				cadicalOptions.at("chronoalways") = 1;
-				cadicalOptions.at("walkredundant") = 1;
-				cadicalOptions.at("reducetier1glue") = 2;
-				cadicalOptions.at("reducetier2glue") = 3 + generalSeed % 2;
-				cadicalOptions.at("restartint") = 90 + (1 + typeId % 10);
-			}
-			break;
-		case 2:
-			cadicalOptions.at("elim") = 0;
-			break;
-		case 3:
-			solver->configure("unsat");
-			cadicalOptions.at("restartint") = 1;
-			if (uniform(engine) < 25) {
-				cadicalOptions.at("target") = 0;
-				cadicalOptions.at("chrono") = 0;
-			}
-			break;
-		case 4:
-			cadicalOptions.at("condition") = 1;
-			break;
-		case 5:
-			cadicalOptions.at("walk") = 0;
-			break;
-		case 6:
-			cadicalOptions.at("restartint") = 100;
-			break;
-		case 7:
-			cadicalOptions.at("cover") = 1;
-			break;
-		case 8:
-			cadicalOptions.at("shuffle") = 1;
-			cadicalOptions.at("shufflerandom") = 1;
-			break;
-		case 9:
-			cadicalOptions.at("inprocessing") = 0;
-			break;
-	}
+  this->setOption("elim", 0);
+  this->setOption("factor", 0);
+  this->setOption("congruence", 1);
+  this->setOption("sweep", 1);
+  this->setOption("condition", 0);
 
-	// Setting the options
-	for (auto& opt : cadicalOptions) {
-		assert(solver->set(opt.first.c_str(), opt.second));
-	}
+  // if (typeId == 0)
+  // 	solver->configure("unsat");
+  // else
+  // 	solver->configure("sat");
+
+  this->setOption("phase", generalSeed % 2);
+
+  // From Mallob Native Diversification
+  switch (typeId % 10) {
+    case 0:
+      this->setOption("phase", 0);
+      break;
+    case 1:
+      solver->configure("sat");
+      // ~1/4
+      if (typeId % 4 == 0) {
+        this->setOption("target", 2);
+        this->setOption("chrono", 1);
+        this->setOption("chronoalways", 1);
+        this->setOption("walkredundant", 1);
+        this->setOption("reducetier1glue", 2);
+        this->setOption("reducetier2glue", 3 + generalSeed % 2);
+        this->setOption("restartint", 90 + (1 + typeId % 10));
+      }
+      break;
+    case 2:
+      this->setOption("elim", 0);
+      break;
+    case 3:
+      solver->configure("unsat");
+      this->setOption("restartint", 1);
+      if (typeId % 4 == 0) {
+        this->setOption("walk", 0);
+        this->setOption("target", 0);
+        this->setOption("chrono", 0);
+      }
+      break;
+    case 4:
+      this->setOption("condition", 1);
+      break;
+    case 5:
+      this->setOption("walk", 0);
+      break;
+    case 6:
+      this->setOption("restartint", 100);
+      break;
+    case 7:
+      this->setOption("cover", 1);
+      break;
+    case 8:
+      this->setOption("shuffle", 1);
+      this->setOption("shufflerandom", 1);
+      break;
+    case 9:
+      this->setOption("inprocessing", 0);
+      break;
+  }
 }
 
-/* Clause Management */
+void
+Cadical::setOption(const std::string& key, int value)
+{
+  PABORTIF(!solver->set(key.c_str(), value),
+           PERR_ARGS,
+           "Option %s is not recognized by CaDiCaL!",
+           key.c_str());
+}
+
+// ==================================================================
+// Clause Management
+// ==================================================================
 
 void
 Cadical::loadFormula(const char* filename)
 {
-	int nbVars;
-	int strict = 2;
-	solver->read_dimacs(filename, nbVars, strict);
-	this->setInitialized(true);
+  int nbVars;
+  int strict = 2;
+  solver->read_dimacs(filename, nbVars, strict);
+  m_initialized = true;
 }
 
-void
-Cadical::addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars)
+bool
+Cadical::addClause(clause_view_t clause)
 {
-	solver->reserve(nbVars);
+  LOGDVECTOR4(clause.data(),
+              clause.size(),
+              "Adding to CaDiCaL %u:",
+              this->getSolverTypeId());
+  solver->clause(clause.data(), clause.size());
 
-	for (auto& clause : clauses) {
-		solver->clause(clause);
-		// for (int lit : clause)
-		//     solver->add(lit);
-		// solver->add(0);
-	}
-	this->setInitialized(true);
-	LOG2("The Cadical Solver %d loaded all the %u clauses with %u variables",
-		 this->getSolverId(),
-		 clauses.size(),
-		 nbVars);
+  return true;
 }
 
-void
-Cadical::addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars)
+uint
+Cadical::loadClauses()
 {
-	solver->reserve(nbVars);
+  uint oldIndex = m_fullReaderIndex;
+  m_fullReaderIndex = mcbk_fullReader(
+    [this](clause_view_t clause) -> bool { return this->addClause(clause); },
+    m_fullReaderIndex);
+  // m_fullReaderIndex is now equal to the number of clauses read in total
 
-	unsigned int clausesCount = 0;
-	int lit;
-	for (lit = *literals; clausesCount < clsCount; literals++, lit = *literals) {
-		solver->add(lit);
-		if (!lit)
-			clausesCount++;
-	}
-	this->setInitialized(true);
-	LOG2("The Cadical Solver %d loaded all the %u clauses with %u variables", this->getSolverId(), clsCount, nbVars);
+  return m_fullReaderIndex - oldIndex;
 }
 
-void
-Cadical::addClause(ClauseExchangePtr clause)
-{
-	unsigned int maxVar = solver->vars();
-	for (int lit : clause->lits) {
-		if (std::abs(lit) > maxVar) {
-			LOGERROR("[Cadical %d] literal %d is out of bound, maxVar is %d", this->getSolverId(), lit, maxVar);
-			return;
-		}
-	}
-
-	solver->clause(clause->lits, clause->size);
-	// for (int lit : clause->lits)
-	//     solver->add(lit);
-	// solver->add(0);
-}
-
-void
-Cadical::addClauses(const std::vector<ClauseExchangePtr>& clauses)
-{
-	for (auto clause : clauses)
-		this->addClause(clause);
-}
-
-/* Sharing */
+// ==================================================================
+// Sharing
+// ==================================================================
 
 bool
 Cadical::importClause(const ClauseExchangePtr& clause)
 {
-	assert(clause->size > 0);
-	m_clausesToImport->addClause(clause);
-	return true;
+  assert(clause->size > 0);
+  m_clausesToImport->addClause(clause);
+  return true;
+}
+
+// Learner
+// =======
+
+bool
+Cadical::learning(int size, int glue)
+{
+  if (size > 0) {
+    LOGD4("Cadical %d will export clause of size %d, glue %d",
+          this->getSolverId(),
+          size,
+          glue);
+    m_tempClause.reserve(size);
+    m_tempLbd = glue;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void
-Cadical::importClauses(const std::vector<ClauseExchangePtr>& clauses)
+Cadical::learn(int lit)
 {
-	for (auto cls : clauses) {
-		importClause(cls);
-	}
+  if (lit)
+    m_tempClause.push_back(lit);
+  else {
+    assert(m_tempClause.size() > 0 && m_tempLbd >= 0);
+    auto exportedClause =
+      ClauseExchange::create(m_tempClause, m_tempLbd, this->getSharingId());
+
+    assert(m_tempClause.size() == exportedClause->size);
+    assert((exportedClause->size > 1 && exportedClause->lbd > 0) ||
+           (exportedClause->size == 1 && exportedClause->lbd >= 0));
+
+    /* filtering defined by a sharing strategy, done here in case it checks its
+     * literals */
+    if (this->exportClause(exportedClause)) {
+      LOGDVECTOR4(exportedClause->lits,
+                  exportedClause->size,
+                  "Cadical %d exported Clause %p for sharing",
+                  this->getSolverId(),
+                  exportedClause.get());
+    }
+    m_tempClause.clear();
+  }
 }
 
-/* Variable Management */
-unsigned int
-Cadical::getVariablesCount()
+bool
+Cadical::hasClauseToImport()
 {
-	return solver->vars();
+  /* Always import any new clause added to painless to the importDB with the tag
+   * ORIGINAL for the .from attribute*/
+  // uint oldIndex = m_fullReaderIndex;
+  // m_fullReaderIndex = mcbk_fullReader(
+  // 	[this](clause_view_t clause) -> bool {
+  // 		if (!this->importClause(ClauseExchange::create(clause, 0,
+  // ClauseExchange::ORIGINAL))) {
+  // PABORT(PERR_BAD_BEHAVIOR, "An irredundant clause was not able to be
+  // imported");
+  // 		}
+  // 		return true;
+  // 	},
+  // 	m_fullReaderIndex);
+  // // m_fullReaderIndex is now equal to the number of clauses read in total
+
+  // if ((m_fullReaderIndex - oldIndex) > 0)
+  // 	LOGD2("CaDiCaL %u added %u irredundant clauses to its importDB",
+  // 		 getSolverTypeId(),
+  // 		 (m_fullReaderIndex - oldIndex));
+
+  if (this->m_clausesToImport->getOneClause(m_tempClauseToImport)) {
+    if (m_tempClauseToImport->lbd)
+      LOGD4("Cadical %u will import redundant clause %s",
+            this->getSharingId(),
+            m_tempClauseToImport->toString().c_str());
+    else
+      LOGD4("Cadical %u will import irredundant clause %s",
+            this->getSharingId(),
+            m_tempClauseToImport->toString().c_str());
+    return true;
+  } else {
+    m_clausesToImport->shrinkDatabase();
+    return false;
+  }
 }
 
-int
+void
+Cadical::getClauseToImport(std::vector<int>& clause, int& glue)
+{
+  assert(clause.empty());
+  clause.insert(
+    clause.end(), m_tempClauseToImport->begin(), m_tempClauseToImport->end());
+  assert(clause.size() && clause.size() == m_tempClauseToImport->size &&
+         clause[0] == m_tempClauseToImport->lits[0]);
+
+  glue = m_tempClauseToImport->lbd;
+  LOGDVECTOR4(clause.data(),
+              clause.size(),
+              "Cadical %d will import Clause (lbd:%u)",
+              this->getSolverId(),
+              glue);
+}
+
+// ==================================================================
+// Variable Management
+// ==================================================================
+
+uint
+Cadical::getVariableCount()
+{
+  return solver->vars();
+}
+
+var_t
 Cadical::getDivisionVariable()
 {
-	return (rand() % getVariablesCount()) + 1;
+  return (rand() % getVariableCount()) + 1;
 }
 
 void
-Cadical::setPhase(const unsigned int var, const bool phase)
+Cadical::setPhase(const var_t var, const bool phase)
 {
-	solver->phase((phase) ? var : -var);
+  solver->savePhase((phase) ? var : -var);
 }
 
 void
-Cadical::bumpVariableActivity(const int var, const int times)
+Cadical::bumpVariableActivity(const var_t var, const int times)
 {
-	LOGERROR("Not Implemented, yet");
-	exit(PERR_NOT_SUPPORTED);
+  LOGERROR("Not Implemented, yet");
+  exit(PERR_NOT_SUPPORTED);
 }
 
-/* Statistics And More */
-#include "cadical/src/stats.hpp"
-void
-Cadical::printStatistics()
-{
-	/* TODO get with prefix instead of print */
-	CaDiCaL::Stats* cstats = solver->getStatistics();
+// ==================================================================
+// Result & Solution
+// ==================================================================
 
-	std::cout << "c" << std::left << std::setw(15) << ("| C" + std::to_string(this->getSolverTypeId())) << std::setw(20)
-			  << ("| " + std::to_string(cstats->conflicts)) << std::setw(20)
-			  << ("| " + std::to_string(cstats->propagations.search)) << std::setw(17)
-			  << ("| " + std::to_string(cstats->restarts)) << std::setw(20)
-			  << ("| " + std::to_string(cstats->decisions)) << std::setw(20) << "|"
-			  << "\n";
-}
-
-void
-Cadical::printWinningLog()
-{
-	SolverCdclInterface::printWinningLog();
-	LOGSTAT("The winner is Cadical(%d, %d), type: %s",
-			this->getSolverId(),
-			this->getSolverTypeId(),
-			(this->getSolverTypeId() % 3 == 0)	 ? "UNSAT"
-			: (this->getSolverTypeId() % 3 == 1) ? "SAT"
-												 : "SWITCH");
-}
-
-std::vector<int>
+clause_t
 Cadical::getFinalAnalysis()
 {
-	LOGERROR("Not Implemented, yet");
-	exit(PERR_NOT_SUPPORTED);
+  LOGERROR("Not Implemented, yet");
+  exit(PERR_NOT_SUPPORTED);
 }
 
-std::vector<int>
+cube_t
 Cadical::getSatAssumptions()
 {
-	LOGERROR("Not Implemented, yet");
-	exit(PERR_NOT_SUPPORTED);
+  LOGERROR("Not Implemented, yet");
+  exit(PERR_NOT_SUPPORTED);
 }
 
-std::vector<int>
+model_t
 Cadical::getModel()
 {
-	std::vector<int> model;
-	unsigned int maxVar = this->getVariablesCount();
+  std::vector<int> model;
+  unsigned int maxVar = this->getVariableCount();
 
-	for (unsigned int i = 1; i <= maxVar; i++) {
-		int tmp = solver->val(i);
-		if (!tmp)
-			tmp = i;
-		model.push_back(tmp);
-	}
+  for (unsigned int i = 1; i <= maxVar; i++) {
+    int tmp = solver->val(i);
+    if (!tmp)
+      tmp = i;
+    model.push_back(tmp);
+  }
 
-	return model;
+  return model;
+}
+
+// ==================================================================
+// Statistics
+// ==================================================================
+
+std::string
+Cadical::statisticsToString()
+{
+  std::ostringstream oss;
+  /* TODO get with prefix instead of print */
+  CaDiCaL::Stats* cstats = solver->getStatistics();
+  SolverCDCLInterface::Statistics stats;
+
+  stats.conflicts = cstats->conflicts;
+  stats.propagations = cstats->propagations.search;
+  stats.restarts = cstats->restarts;
+  stats.decisions = cstats->decisions;
+
+  oss << stats.toString(getSolverId(), "CaDiCaL");
+
+  return oss.str();
 }

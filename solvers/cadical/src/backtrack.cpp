@@ -45,6 +45,9 @@ inline void Internal::unassign (int lit) {
 
 void Internal::update_target_and_best () {
 
+  if (opts.rephase == 2 && !stable)
+    return;
+
   bool reset = (rephased && stats.conflicts > last.rephase.conflicts);
 
   if (reset) {
@@ -74,20 +77,21 @@ void Internal::update_target_and_best () {
 /*------------------------------------------------------------------------*/
 
 void Internal::backtrack (int new_level) {
+  assert (new_level <= level);
+  if (new_level == level)
+    return;
+
+  update_target_and_best ();
+  backtrack_without_updating_phases (new_level);
+}
+
+void Internal::backtrack_without_updating_phases (int new_level) {
 
   assert (new_level <= level);
   if (new_level == level)
     return;
 
   stats.backtracks++;
-  update_target_and_best ();
-
-  // sometimes we do not use multitrail even with option enabled e.g. in
-  // probe
-  if (opts.reimply && !trails.empty ()) {
-    multi_backtrack (new_level);
-    return;
-  }
 
   assert (num_assigned == trail.size ());
 
@@ -105,7 +109,8 @@ void Internal::backtrack (int new_level) {
   int reassigned = 0;
 
   notify_backtrack (new_level);
-  if (external_prop && !external_prop_is_lazy && notified > assigned) {
+  if (external_prop && !external_prop_is_lazy && !private_steps &&
+      notified > assigned) {
     LOG ("external propagator is notified about some unassignments (trail: "
          "%zd, notified: %zd).",
          trail.size (), notified);
@@ -125,7 +130,8 @@ void Internal::backtrack (int new_level) {
       // backtracking.  It is possible to just keep out-of-order assigned
       // literals on the trail without breaking the solver (after some
       // modifications to 'analyze' - see 'opts.chrono' guarded code there).
-      assert (opts.chrono || external_prop || did_external_prop);
+      assert ((in_mode (BACKBONE)) || opts.chrono || external_prop ||
+              did_external_prop);
 #ifdef LOGGING
       if (!v.level)
         LOG ("reassign %d @ 0 unit clause %d", lit, lit);
@@ -134,9 +140,7 @@ void Internal::backtrack (int new_level) {
 #endif
       trail[j] = lit;
       v.trail = j++;
-#ifdef LOGGING
       reassigned++;
-#endif
     }
   }
   trail.resize (j);
@@ -161,100 +165,13 @@ void Internal::backtrack (int new_level) {
 
   control.resize (new_level + 1);
   level = new_level;
-  if (tainted_literal) {
+  if (changed_val) {
     assert (opts.ilb);
-    if (!val (tainted_literal)) {
-      tainted_literal = 0;
+    if (!val (changed_val)) {
+      changed_val = 0;
     }
   }
   assert (num_assigned == trail.size ());
-}
-
-void Internal::multi_backtrack (int new_level) {
-
-  assert (opts.reimply);
-  assert (0 <= new_level && new_level < level);
-
-  LOG ("backtracking on multitrail to decision level %d with decision %d",
-       new_level, control[new_level].decision);
-
-  int elevated = 0, unassigned = 0;
-
-  for (int i = new_level; i < level; i++) {
-    assert (level > 0);
-    assert (i >= 0); // check that loop is safe for level = INT_MAX
-    int l = i + 1;
-    LOG ("unassigning level %d", l);
-    auto &t = trails[i];
-    for (auto &lit : t) {
-      LOG ("unassigning literal %d", lit);
-      if (!lit) { // cannot happen
-        assert (false);
-        LOG ("empty space on trail level %d", l);
-        elevated++;
-        continue;
-      }
-      Var &v = var (lit);
-      if (v.level == l) {
-        unassign (lit);
-        unassigned++;
-      } else {
-        // after intelsat paper from 2022
-        LOG ("elevated literal %d on level %d", lit, v.level);
-        // assert (opts.chrono); probably not true anymore...
-        elevated++;
-      }
-    }
-  }
-
-  LOG ("unassigned %d literals %.0f%%", unassigned,
-       percent (unassigned, unassigned + elevated));
-  LOG ("elevated %d literals %.0f%%", elevated,
-       percent (elevated, unassigned + elevated));
-#ifndef LOGGING
-  (void) unassigned;
-#endif
-
-  stats.elevated += elevated;
-
-  if (external_prop && !external_prop_is_lazy) {
-    notify_backtrack (new_level);
-    notified = control[new_level + 1].trail;
-    assert (notified <= notify_trail.size ());
-    LOG ("external propagator is notified about some unassignments (trail: "
-         "%zd, notified: %zd).",
-         notify_trail.size (), notified);
-    size_t i = notified, j = i;
-    const size_t eot = notify_trail.size ();
-    while (i != eot) {
-      assert (i < eot);
-      const int lit = notify_trail[i++];
-      const signed char tmp = val (lit);
-      assert (tmp >= 0);
-      if (!tmp)
-        continue;
-      notify_trail[j++] = lit;
-    }
-    notify_trail.resize (j);
-    notify_assignments ();
-  } else {
-    notify_trail.clear ();
-  }
-
-  assert (new_level >= 0);
-  if (multitrail_dirty > new_level)
-    multitrail_dirty = new_level;
-  propergated = 0; // Always go back to root-level.
-  clear_trails (new_level);
-  multitrail.resize (new_level);
-  control.resize (new_level + 1);
-  level = new_level;
-  if (tainted_literal) {
-    assert (opts.ilb);
-    if (!val (tainted_literal)) {
-      tainted_literal = 0;
-    }
-  }
 }
 
 } // namespace CaDiCaL

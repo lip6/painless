@@ -77,12 +77,12 @@ BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeComma
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
-ColumnLimit:     120
+ColumnLimit:     80
 CommentPragmas:  '^ IWYU pragma:'
 QualifierAlignment: Leave
 CompactNamespaces: false
-ConstructorInitializerIndentWidth: 4
-ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
 Cpp11BracedListStyle: false
 DeriveLineEnding: true
 DerivePointerAlignment: false
@@ -124,7 +124,7 @@ IndentGotoLabels: true
 IndentPPDirectives: None
 IndentExternBlock: AfterExternBlock
 IndentRequiresClause: true
-IndentWidth:     4
+IndentWidth:     2
 IndentWrappedFunctionNames: false
 InsertBraces:    false
 InsertTrailingCommas: None
@@ -137,7 +137,7 @@ MacroBlockEnd:   ''
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCBinPackProtocolList: Auto
-ObjCBlockIndentWidth: 4
+ObjCBlockIndentWidth: 2
 ObjCBreakBeforeNestedBlockParam: true
 ObjCSpaceAfterProperty: true
 ObjCSpaceBeforeProtocolList: false
@@ -203,9 +203,9 @@ StatementAttributeLikeMacros:
 StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
-TabWidth:        4
+TabWidth:        8
 UseCRLF:         false
-UseTab:          true
+UseTab:          Never
 WhitespaceSensitiveMacros:
   - STRINGIZE
   - PP_STRINGIZE

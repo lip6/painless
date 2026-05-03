@@ -1,0 +1,17 @@
+#!/bin/bash
+# Wrapper script for Painless (Release)
+
+source "$(dirname $0)/painless_bin_path"
+
+if [ ! -f "$BINARY" ]; then
+    echo "Error: Painless release binary not found at: $BINARY" >&2
+    echo "Please build the release version with 'make release'." >&2
+    exit 1
+fi
+
+if [ ! -x "$BINARY" ]; then
+    echo "Error: Painless binary exists but is not executable: $BINARY" >&2
+    exit 1
+fi
+
+exec "$BINARY" "$@"

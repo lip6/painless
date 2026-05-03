@@ -20,11 +20,23 @@
 /** @brief Error code for unknown solver types */
 #define PERR_UNKNOWN_SOLVER -5
 
-/** @brief Error code for command-line argument parsing failures */
-#define PERR_ARGS_ERROR -6
+/** @brief Error code for argument errors */
+#define PERR_ARGS -6
 
 /** @brief Error code for possible out of bounds accesses */
-#define PERR_BOUND_ERROR -7
+#define PERR_BOUND -7
+
+#define PERR_UNHANDLED_EXCEPTION -8
+
+#define PERR_BAD_DATA -9
+
+#define PERR_BAD_BEHAVIOR -10
+
+/** @brief Error code for topology error */
+#define PERR_TOPOLOGY -11
+
+/** @brief Error code for unknown solver types */
+#define PERR_UNKNOWN_DATABASE -12
 
 /** @brief Warning code for CPU count mismatch in load strategy */
 #define PWARN_LSTRAT_CPU_COUNT 1

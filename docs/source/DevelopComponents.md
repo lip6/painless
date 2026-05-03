@@ -58,7 +58,7 @@ The interface provides default implementations for:
 
 > [!note]
 > - Use `initializeTypeId<Derived>()` function in most derived class' constructors to set up type IDs
-> - The solver type is set via the constructor using `SolverAlgorithmType`
+> - The solver type is set via the constructor using `SolverInterface::Type`
 
 
 ### CDCL Solver Interface
@@ -81,20 +81,21 @@ virtual std::vector<int> getSatAssumptions() = 0;
 
 - It inherits from both SolverInterface and SharingEntity for clause sharing. Thus the **virtual methods from SharingEntity must also be implemented**.
 - It includes a clause database (`m_clausesToImport`) shared pointer for importing received clauses
-- There is an enum SolverCdclType to identify specific CDCL solver implementations:
+- There is an enum `SolverCDCLType` to identify specific CDCL solver implementations:
 
   ```cpp
-  enum class SolverCdclType {
+  enum class SolverCDCLType {
       GLUCOSE = 0,
       LINGELING = 1,
       CADICAL = 2,
       MINISAT = 3,
       KISSAT = 4,
       MAPLECOMSPS = 5,
-      KISSATMAB = 6,
-      KISSATINC = 7
   };
   ```
+
+  The `KissatMAB` and `KissatINC` backends were removed; if you need them,
+  check out tag [`v1.24.10`](https://github.com/lip6/painless/tree/v1.24.10).
 
 ## 2. Implementing SharingEntity
 
@@ -235,25 +236,36 @@ Provides:
 
 ## Launching Working Strategies
 
-In `painless.cpp`, working strategies are initialized and launched:
+The legacy `if (test) ... else if (simple) ... else PortfolioPRS()` selection
+in `painless.cpp` is gone. The working strategy is now picked by name from the
+JSON topology file (see [@ref topologies](Topologies.md)) and built by
+[`WorkingStrategyRegistry::create`](@ref WorkingStrategyRegistry):
 
 ```cpp
-// Create working strategy
-if (__globalParameters__.test)
-    working = new Test();
-else if (__globalParameters__.simple)
-    working = new PortfolioSimple();
-else
-    working = new PortfolioPRS(); // The current default (will be changed)
-
-// Launch working strategy
-std::vector<int> cube;
-std::thread mainWorker(&WorkingStrategy::solve, working, std::ref(cube));
+// src/config/WorkingStrategyRegistry.cpp
+std::shared_ptr<WorkingStrategy>
+create(const std::string& name,
+       PainlessImpl& painless,
+       std::vector<std::shared_ptr<SolverInterface>>& solvers)
+{
+  std::string key = pl::str::toLower(name);
+  if (key == "portfoliosimple")
+    return std::make_shared<PortfolioSimple>(painless, solvers);
+  if (key == "divideandconquer")
+    return std::make_shared<DivideAndConquer>(painless, solvers);
+  PABORT(PERR_NOT_SUPPORTED, "Unknown working strategy: %s", name.c_str());
+}
 ```
+
+Currently registered strategies are `PortfolioSimple` and `DivideAndConquer`.
+The `PortfolioPRS` and `Test` strategies were removed; if you need them, check
+out tag [`v1.24.10`](https://github.com/lip6/painless/tree/v1.24.10). To plug
+in a new strategy, add a `make_shared<MyStrategy>(...)` branch here and select
+it from the topology JSON via `workingStrategy.name = "MyStrategy"`.
 
 ## Implementation Guidelines
 
-1. Reference existing implementations in `src/solvers/PortfolioSimple.cpp`, `src/solvers/AllgatherSharing.cpp`, ...
+1. Reference existing implementations in `src/working/PortfolioSimple.cpp`, `src/working/DivideAndConquer.cpp`, `src/sharing/LocalStrategies/HordeSatSharing.cpp`, ...
 2. Implement synchronization for thread safety
 3. Follow shared pointer memory management patterns
 4. Include logging for debugging

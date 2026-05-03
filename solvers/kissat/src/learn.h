@@ -9,11 +9,8 @@ unsigned kissat_determine_new_level (struct kissat *, unsigned jump);
 
 // Begin Painless
 #include <stdbool.h>
-
-bool
-kissat_import_from_painless(struct kissat*);
-bool
-kissat_import_unit_from_painless(struct kissat*);
+int kissat_external_learn_clauses (struct kissat *);
+bool kissat_external_learning (struct kissat *);
 // End Painless
 
 #endif

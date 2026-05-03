@@ -1,10 +1,12 @@
 #pragma once
 
-#include "SolverCdclInterface.hpp"
+#include "SolverCDCLInterface.hpp"
 #include "containers/ClauseBuffer.hpp"
 #include "containers/ClauseDatabase.hpp"
 #include "containers/ClauseUtils.hpp"
 #include "utils/Threading.hpp"
+
+#include <memory>
 
 #define GLUCOSE_
 
@@ -19,107 +21,122 @@ class Clause;
 
 /// Instance of a Glucose solver
 /// @ingroup solving_cdcl
-class GlucoseSyrup : public SolverCdclInterface
+class GlucoseSyrup
+  : public SolverCDCLInterface
 {
-  public:
-	/// Load formula from a given dimacs file, return false if failed.
-	void loadFormula(const char* filename);
+public:
+  /// Constructor.
+  GlucoseSyrup(int id,
+               const std::shared_ptr<ClauseDatabase>& clauseDB,
+               FullClauseReader fullReader);
 
-	/// Get the number of variables of the current resolution.
-	unsigned int getVariablesCount();
+  /// Destructor.
+  ~GlucoseSyrup();
 
-	/// Get a variable suitable for search splitting.
-	int getDivisionVariable();
+  /* Execution */
+  SatAnswer solve(cube_view_t cube) override;
+  void setSolverInterrupt() override;
+  void unsetSolverInterrupt() override;
+  void diversify(const SeedGenerator& getSeed) override;
 
-	/// Set initial phase for a given variable.
-	void setPhase(const unsigned int var, const bool phase);
+  /* Clause Management */
+  void loadFormula(const char* filename) override;
+  /**
+   * @brief Add an irredundant clause to the solver (not thread-safe!).
+   * @details The clause is directly added to the backend solver.
+   * @param clause The clause to add
+   * @warning This method is not thread safe, i.e. multiple threads cannot add
+   * clauses concurrently to this solver
+   */
+  bool addClause(clause_view_t clause) override;
+  /**
+   * @brief Load clauses into CaDiCaL using the FullReaderCallback function
+   * @return The number of clauses loaded during this call
+   */
+  uint loadClauses() override;
 
-	/// Bump activity of a given variable.
-	void bumpVariableActivity(const int var, const int times);
+  /* Sharing */
+  bool importClause(const ClauseExchangePtr& clause) override;
 
-	/// Interrupt resolution, solving cannot continue until interrupt is unset.
-	void setSolverInterrupt();
+  /* Variable Management */
+  uint getVariableCount() override;
+  var_t getDivisionVariable() override;
+  void setPhase(const var_t var, const bool phase) override;
+  void bumpVariableActivity(const var_t var, const int times) override;
 
-	/// Remove the SAT solving interrupt request.
-	void unsetSolverInterrupt();
+  /* Result & Solution */
+  clause_t getFinalAnalysis() override;
+  cube_t getSatAssumptions() override;
+  model_t getModel() override;
 
-	/// Solve the formula with a given cube.
-	SatResult solve(const std::vector<int>& cube);
+  /* Statistics And More */
+  std::string statisticsToString() override;
 
-	/// Add a permanent clause to the formula.
-	void addClause(ClauseExchangePtr clause);
+  void getHeuristicData(std::vector<int>** flipActivity,
+                        std::vector<int>** nbPropagations,
+                        std::vector<int>** nbDecisionVar);
 
-	/// Add a list of permanent clauses to the formula.
-	void addClauses(const std::vector<ClauseExchangePtr>& clauses);
+  void setHeuristicData(std::vector<int>* flipActivity,
+                        std::vector<int>* nbPropagations,
+                        std::vector<int>* nbDecisionVar);
 
-	void addInitialClauses(const lit_t* literals, unsigned int clsCount, unsigned int nbVars) override;
+protected:
+  /**
+   * @brief Sets a GlucoseSyrup solver configuration option by name.
+   *
+   * Translates a string-based key/value pair into the corresponding solver
+   * parameter.  Integer values are assigned directly to integer and boolean
+   * options; for floating-point options the value is divided by 1 000 so that
+   * callers can express fractions as integer thousandths
+   * (e.g. pass 500 for 0.5, pass 1100 for 1.1).
+   *
+   * @param key   Option name (kebab-case).
+   *
+   * @param value Integer-encoded value.  For double options, the actual solver
+   *              value is @p value / 1000.  For bool options, 0 is false and
+   *              any non-zero value is true.
+   *
+   * @note Unrecognised keys are logged as a warning via LOGWARN and silently
+   *       ignored.
+   */
+  void setOption(const std::string& key, int value) override;
 
-	/// Add a list of initial clauses to the formula.
-	void addInitialClauses(const std::vector<simpleClause>& clauses, unsigned int nbVars) override;
+  /// Pointer to a Glucose solver.
+  Glucose::ParallelSolver* solver;
 
-	/// Add a learned clause to the formula.
-	bool importClause(const ClauseExchangePtr& clause);
+  /// Buffer used to import units.
+  boost::lockfree::queue<int, boost::lockfree::fixed_sized<false>>
+    m_unitsToImport;
 
-	/// Add a list of learned clauses to the formula.
-	void importClauses(const std::vector<ClauseExchangePtr>& clauses);
+  /// @brief Database used to import shared clauses. Can be common with other
+  /// solvers
+  std::shared_ptr<ClauseDatabase> m_clausesToImport;
 
-	/// Get solver statistics.
-	void printStatistics();
+  /// The same vector is used to add clauses into minisat to reduce the number
+  /// of allocations
+  std::unique_ptr<Glucose::vec<Glucose::Lit>> gcls;
 
-	void printWinningLog() override;
+  /// @brief FullReader callback that has access to all the clauses
+  FullClauseReader mcbk_fullReader;
 
-	/// Return the model in case of SAT result.
-	std::vector<int> getModel();
+  /// @brief From which clause the solver will start reading
+  uint m_fullReaderIndex;
 
-	/// Native diversification.
-	void diversify(const SeedGenerator& getSeed) override;
+  /// Heuristic chosen
+  int heuristic;
 
-	void getHeuristicData(std::vector<int>** flipActivity,
-						  std::vector<int>** nbPropagations,
-						  std::vector<int>** nbDecisionVar);
+  /// Callback to export unit clauses.
+  friend void glucoseExportUnary(void*, Glucose::Lit&);
 
-	void setHeuristicData(std::vector<int>* flipActivity,
-						  std::vector<int>* nbPropagations,
-						  std::vector<int>* nbDecisionVar);
+  /// Callback to export clauses.
+  friend void glucoseExportClause(void*, Glucose::Clause&);
 
-	std::vector<int> getFinalAnalysis();
+  /// Callback to import unit clauses.
+  friend Glucose::Lit glucoseImportUnary(void*);
 
-	std::vector<int> getSatAssumptions();
-
-	/// Constructor.
-	GlucoseSyrup(int id,
-				 const std::shared_ptr<ClauseDatabase>& clauseDB);
-
-	/// Copy constructor.
-	GlucoseSyrup(const GlucoseSyrup& other,
-				 int id,
-				 const std::shared_ptr<ClauseDatabase>& clauseDB);
-
-	/// Destructor.
-	virtual ~GlucoseSyrup();
-
-  protected:
-	/// Pointer to a Glucose solver.
-	Glucose::ParallelSolver* solver;
-
-	/// Database used to import units. (TODO use a lockfree queue as in lingeling)
-	std::unique_ptr<ClauseDatabase> unitsToImport;	
-
-	/// Buffer used to add permanent clauses.
-	ClauseBuffer clausesToAdd;
-
-	/// Callback to export unit clauses.
-	friend void glucoseExportUnary(void*, Glucose::Lit&);
-
-	/// Callback to export clauses.
-	friend void glucoseExportClause(void*, Glucose::Clause&);
-
-	/// Callback to import unit clauses.
-	friend Glucose::Lit glucoseImportUnary(void*);
-
-	/// Callback to import clauses.
-	friend bool glucoseImportClause(void*, int*, int*, Glucose::vec<Glucose::Lit>&);
-
-  public:
-	;
+  /// Callback to import clauses.
+  friend bool glucoseImportClause(void*,
+                                  int*,
+                                  int*,
+                                  Glucose::vec<Glucose::Lit>&);
 };

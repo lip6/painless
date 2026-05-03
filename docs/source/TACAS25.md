@@ -1,5 +1,20 @@
 # Reproducing D-Painless SAT Solver Experiments from TACAS25
 
+> [!warning]
+> **This page describes the legacy CLI configuration used for the TACAS25 paper.**
+> The version of Painless used in the paper is the tag
+> [`v1.24.10`](https://github.com/lip6/painless/tree/v1.24.10) on the official
+> repository — check it out before trying to reproduce the runs:
+> ```sh
+> git clone https://github.com/lip6/painless.git
+> cd painless && git checkout v1.24.10
+> ```
+> The current `main` has since dropped several solvers (KissatMAB, KissatINC),
+> removed the `PortfolioPRS` working strategy and the legacy `-c`/`-shr-strat`/
+> `-portfolio` flags, and replaced the whole flag-driven configuration path with
+> the JSON topology system documented in [@ref topologies](Topologies.md). The
+> commands below will not work as-is on `main`.
+
 This guide details how to reproduce the experimental results presented in our TACAS25 paper. We evaluated four different configurations of Painless, each representing different sharing strategies and solver combinations.
 
 > [!important]

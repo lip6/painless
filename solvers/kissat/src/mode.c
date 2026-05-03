@@ -19,6 +19,9 @@ static const char *mode_string (kissat *solver) {
 void kissat_init_mode_limit (kissat *solver) {
   limits *limits = &solver->limits;
 
+  /* Only set a switching limit when mode-switching is enabled (stable ==
+   * 1). Values 0 and 2 keep the solver in a single mode forever, so no
+   * limit is needed. */
   if (GET_OPTION (stable) == 1) {
     assert (!solver->stable);
 
@@ -37,7 +40,7 @@ void kissat_init_mode_limit (kissat *solver) {
                          mode_string (solver),
                          FORMAT_COUNT (conflicts_limit),
                          FORMAT_COUNT (conflicts_delta));
-
+    // the solver->mode.* snapshot right after setting the initial limit
     solver->mode.ticks = solver->statistics.search_ticks;
 #ifndef QUIET
     solver->mode.conflicts = CONFLICTS;
@@ -67,6 +70,7 @@ void kissat_init_mode_limit (kissat *solver) {
 }
 
 static void update_mode_limit (kissat *solver, uint64_t delta_ticks) {
+  // This is called when the solver enters a new mode
   kissat_init_averages (solver, &AVERAGES);
 
   limits *limits = &solver->limits;
@@ -74,7 +78,11 @@ static void update_mode_limit (kissat *solver, uint64_t delta_ticks) {
 
   assert (GET_OPTION (stable) == 1);
 
+  // Odd -> stable mode: We just entered stable mode. Wait for as many
+  // search ticks as were spent in the focused mode we just left
+  // (delta_ticks was measured over the previous phase).
   if (limits->mode.count & 1) {
+    // Delta ticks are : statistics->search_ticks - solver->mode.ticks
     limits->mode.ticks = statistics->search_ticks + delta_ticks;
 #ifndef QUIET
     assert (solver->stable);
@@ -85,9 +93,14 @@ static void update_mode_limit (kissat *solver, uint64_t delta_ticks) {
                   FORMAT_COUNT (delta_ticks));
 #endif
   } else {
+    // Even -> focused mode wait for certain number of conflicts
     assert (limits->mode.ticks);
     const uint64_t interval = GET_OPTION (modeint);
+    // count = index of the focused phase we're about to enter (1 on first
+    // entry, 2 on the next, …). Used to grow the conflict budget
+    // super-linearly via nlogpown(count, 4).
     const uint64_t count = (statistics->switched + 1) / 2;
+    // interval * count * log10(count + 9)^4
     const uint64_t scaled = interval * kissat_nlogpown (count, 4);
     limits->mode.conflicts = statistics->conflicts + scaled;
 #ifndef QUIET
@@ -100,6 +113,9 @@ static void update_mode_limit (kissat *solver, uint64_t delta_ticks) {
 #endif
   }
 
+  // Record baseline counters at the start of the new mode, so the next call
+  // to report_switching_from_mode can compute deltas (ticks / conflicts /
+  // propagations) for this mode.
   solver->mode.ticks = statistics->search_ticks;
 #ifndef QUIET
   solver->mode.conflicts = statistics->conflicts;
@@ -189,9 +205,24 @@ bool kissat_switching_search_mode (kissat *solver) {
   if (GET_OPTION (stable) != 1)
     return false;
 
+  // solver->stable starts at 0 in switch mode according to start_search()
+  //   bool stable = (GET_OPTION (stable) == 2);
+
+  // mode.count even -> focused
+  // mode.count odd -> stable
+
   limits *limits = &solver->limits;
   statistics *statistics = &solver->statistics;
 
+  /* search_ticks is a proxy for memory-access work during search: bumped
+   * per watch traversed in propagation (see
+   * update_search_propagation_statistics), per non-binary reason-side
+   * clause visited in conflict analysis (analyze_reason_side_literal), and
+   * per clause walked during clause minimization (minimize_reference) and
+   * shrinking (shrink_along_large).*/
+
+  // When even(focused) we wait on conflicts
+  // When odd(stable) we wait on search ticks
   if (limits->mode.count & 1)
     return statistics->search_ticks >= limits->mode.ticks;
   else
@@ -203,6 +234,10 @@ void kissat_switch_search_mode (kissat *solver) {
 
   INC (switched);
   solver->limits.mode.count++;
+
+  // printf ("I was in %s; swichted = %lu, mode.count= %lu\n",
+  //         (solver->stable) ? "Stabled" : "Focused",
+  //         solver->statistics.switched, solver->limits.mode.count);
 
   if (solver->stable)
     switch_to_focused_mode (solver);

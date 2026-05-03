@@ -1,0 +1,17 @@
+#!/bin/bash
+# Wrapper script for Painless (Debug)
+
+source "$(dirname $0)/painless_bin_path"
+
+if [ ! -f "$BINARY_DEBUG" ]; then
+    echo "Error: Painless debug binary not found at: $BINARY_DEBUG" >&2
+    echo "Please build the debug version with 'make debug'." >&2
+    exit 1
+fi
+
+if [ ! -x "$BINARY_DEBUG" ]; then
+    echo "Error: Painless debug binary exists but is not executable: $BINARY_DEBUG" >&2
+    exit 1
+fi
+
+exec gdb --args "$BINARY_DEBUG" "$@"

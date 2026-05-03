@@ -14,6 +14,8 @@ usage: configure.sh [-h][-g][--no-mems][--no-double]
 --no-stats    disable computation of increment/decrement stats
 
 -O            disables '-g' and enables '--no-mems --no-stats' and
+
+-f   -fPIC flag is added to the compiler.
 EOF
 }
 die () {
@@ -24,6 +26,7 @@ opt=no
 mems=yes
 stats=yes
 debug=no
+fpic=no
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -32,6 +35,7 @@ do
     --no-stats) stats=no;;
     -O) opt=yes;;
     -g) debug=yes;;
+    -f) fpic=yes;;
     *) die "invalid command line option '$1'";;
   esac
   shift
@@ -51,6 +55,7 @@ else
 fi
 [ $mems = no ] && CFLAGS="$CFLAGS -DNYALSMEMS"
 [ $stats = no ] && CFLAGS="$CFLAGS -DNYALSTATS"
+[ $fpic = yes ] && CFLAGS="$CFLAGS -fPIC -fvisibility=hidden"
 LIBS="-lm"
 echo "$CC $CFLAGS $LIBS"
 rm -f makefile

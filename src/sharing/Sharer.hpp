@@ -3,97 +3,101 @@
 #include "sharing/SharingEntity.hpp"
 #include "sharing/SharingStrategy.hpp"
 #include "utils/Logger.hpp"
-#include "utils/Threading.hpp"
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
+class PainlessImpl;
 
 /**
  * @brief Function executed by each sharer thread.
  * @param arg Pointer to the associated Sharer object.
  * @return NULL if the thread exits correctly.
  */
-static void* mainThrSharing(void* arg);
+static void*
+mainThrSharing(void* arg);
 
 /**
- * @brief A sharer is a thread responsible for executing a list of SharingStrategies.
+ * @brief A sharer is a thread responsible for executing a list of
+ * SharingStrategies.
  * @ingroup sharing
  */
 class Sharer
 {
-  public:
-    /**
-     * @brief Constructor with multiple sharing strategies.
-     * @param id_ The ID of the sharer.
-     * @param sharingStrategies A vector of sharing strategies.
-     */
-    Sharer(int id_, std::vector<std::shared_ptr<SharingStrategy>>& sharingStrategies);
+public:
+  /**
+   * @brief Constructor with multiple sharing strategies.
+   * @param id_ The ID of the sharer.
+   * @param sharingStrategies A vector of sharing strategies.
+   */
+  Sharer(PainlessImpl& manager,
+         int id_,
+         std::vector<std::shared_ptr<SharingStrategy>>& sharingStrategies);
 
-    /**
-     * @brief Constructor with a single sharing strategy.
-     * @param id_ The ID of the sharer.
-     * @param sharingStrategy A single sharing strategy.
-     */
-    Sharer(int id_, std::shared_ptr<SharingStrategy> sharingStrategy);
+  /**
+   * @brief Constructor with a single sharing strategy.
+   * @param id_ The ID of the sharer.
+   * @param sharingStrategy A single sharing strategy.
+   */
+  Sharer(PainlessImpl& manager,
+         int id_,
+         std::shared_ptr<SharingStrategy> sharingStrategy);
 
-    /**
-     * @brief Destructor.
-     */
-    virtual ~Sharer();
+  /**
+   * @brief Destructor.
+   */
+  virtual ~Sharer();
 
-    /**
-     * @brief Print sharing statistics.
-     */
-    virtual void printStats();
+  /**
+   * @brief Print sharing statistics.
+   */
+  virtual void printStats();
 
-    /**
-     * @brief Join the thread of this sharer object.
-     */
-    inline void join()
-    {
-        if (sharer == nullptr)
-            return;
-        sharer->join();
-        delete sharer;
-        sharer = nullptr;
-        LOGDEBUG1("Sharer %d joined", this->getId());
-    }
+  /**
+   * @brief Get the ID of this sharer.
+   * @return The sharer's ID.
+   */
+  inline plid_t getId() { return this->m_sharerId; }
 
-    /**
-     * @brief Set the thread affinity for this sharer.
-     * @param coreId The ID of the core to set affinity to.
-     */
-    inline void setThreadAffinity(int coreId) { this->sharer->setThreadAffinity(coreId); }
+  /**
+   * @brief Set the ID of this sharer.
+   * @param id The new ID for the sharer.
+   */
+  inline void setId(plid_t id) { this->m_sharerId = id; }
 
-    /**
-     * @brief Get the ID of this sharer.
-     * @return The sharer's ID.
-     */
-    inline int getId() { return this->m_sharerId; }
+  void join();
 
-    /**
-     * @brief Set the ID of this sharer.
-     * @param id The new ID for the sharer.
-     */
-    inline void setId(int id) { this->m_sharerId = id; }
+  inline void asyncTerminate() { shouldTerminate = true; }
 
-  protected:
-    /// Pointer to the thread in charge of sharing.
-    Thread* sharer;
+protected:
+  /**
+   * @brief Working function that will call sharingStrategy doSharing()
+   * @param  sharer the sharer object
+   * @return NULL if well ended
+   */
+  friend void* mainThrSharing(void*);
 
-    /// @brief Heuristic for strategy implementation comparison
-    double totalSharingTime = 0;
+  /// Bool to notify the sharer to terminate
+  std::atomic<bool> shouldTerminate;
 
-    /// Number of sharing rounds completed.
-    unsigned int round;
+  std::mutex m_sharerMX;
+  std::condition_variable m_sharerCV;
 
-    /// Strategy/Strategies used to share clauses.
-    std::vector<std::shared_ptr<SharingStrategy>> sharingStrategies;
+  /// Pointer to the thread in charge of sharing.
+  std::thread m_thread;
 
-    /**
-     * @brief Working function that will call sharingStrategy doSharing()
-     * @param  sharer the sharer object
-     * @return NULL if well ended
-     */
-    friend void* mainThrSharing(void*);
+  /// @brief The manager defining the end
+  PainlessImpl& m_manager;
 
-    /// The ID of this sharer.
-    int m_sharerId;
+  /// @brief Heuristic for strategy implementation comparison
+  std::chrono::microseconds m_totalSharingTime;
+
+  /// Number of sharing rounds completed.
+  uint m_round;
+
+  /// Strategy/Strategies used to share clauses.
+  std::vector<std::shared_ptr<SharingStrategy>> m_sharingStrategies;
+
+  /// The ID of this sharer.
+  id_t m_sharerId;
 };

@@ -6,6 +6,15 @@
 
 #include <inttypes.h>
 
+/* Pick the next decision variable using the VMTF queue.
+ *
+ * Strategy: start at the cached search.idx and, if it is assigned,
+ * walk backward (toward queue.first, i.e. lower stamps) until an
+ * unassigned variable is found. Then advance the cache to that
+ * variable so the next call can resume from there.
+ *
+ * the returned variable is unassigned, and every variable with a strictly
+ * greater stamp is assigned. */
 static unsigned last_enqueued_unassigned_variable (kissat *solver) {
   assert (solver->unassigned);
   const links *const links = solver->links;

@@ -45,7 +45,12 @@ struct limits {
 
   struct {
     uint64_t conflicts;
-  } probe, randec, reduce, reorder, rephase, restart;
+  } probe, randec, reduce, rephase, restart;
+
+  struct {
+    uint64_t conflicts;
+    uint64_t units;
+  } reorder;
 
   struct {
     uint64_t conflicts;

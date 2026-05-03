@@ -1,130 +1,223 @@
 #include "HordeSatSharing.hpp"
-#include "painless.hpp"
 #include "sharing/Filters/BloomFilter.hpp"
-#include "solvers/SolverFactory.hpp"
 #include "utils/Logger.hpp"
-#include "utils/Parameters.hpp"
 
 #include <chrono>
 
-HordeSatSharing::HordeSatSharing(const std::shared_ptr<ClauseDatabase>& clauseDB,
-								 unsigned long literalsPerProducerPerRound,
-								 unsigned int initialLbdLimit,
-								 unsigned int roundsBeforeLbdIncrease,
-								 const std::vector<std::shared_ptr<SharingEntity>>& producers,
-								 const std::vector<std::shared_ptr<SharingEntity>>& consumers)
-	: SharingStrategy(producers, consumers, clauseDB)
-	, literalPerRound(literalsPerProducerPerRound)
-	, initialLbdLimit(initialLbdLimit)
-	, roundBeforeIncrease(roundsBeforeLbdIncrease)
+HordeSatSharing::HordeSatSharing(
+  const uint producerCount,
+  const ulong literalsPerProducerPerRound,
+  const lbd_t initialLbdLimit,
+  const uint roundsBeforeLbdIncrease,
+  const std::chrono::microseconds sleepTime,
+  const std::shared_ptr<ClauseDatabase>& clauseDB,
+  const std::vector<std::shared_ptr<SharingEntity>>& clients)
+  : SharingStrategy(clients)
+  , m_producerCount(producerCount)
+  , m_literalsPerProducerPerRound(literalsPerProducerPerRound)
+  , m_initialLbdLimit(initialLbdLimit)
+  , m_roundsBeforeIncrease(roundsBeforeLbdIncrease)
+  , m_sleepTime(sleepTime)
+  , m_clauseDB(clauseDB)
+  , m_stats(std::make_unique<SharingStrategy::Statistics>())
 {
-	this->round = 0;
+  this->m_round = 0;
 
-	for (auto& weakProducer : m_producers) {
-		if (auto producer = weakProducer.lock()) {
-			this->lbdLimitPerProducer.emplace(producer->getSharingId(), initialLbdLimit);
-			this->literalsPerProducer.emplace(producer->getSharingId(), 0);
-		}
-	}
-
-	LOGSTAT("[HordeSat] Producers: %d, Consumers: %d, Initial Lbd limit: %u, round "
-			"before increase: %d, literals per round: %d",
-			m_producers.size(),
-			this->getClientCount(),
-			initialLbdLimit,
-			this->roundBeforeIncrease,
-			literalPerRound);
-	if (literalPerRound <= 0) {
-		LOGERROR(
-			"LiteralPerRound is to be positive in order to correctly compute the percentage used in lbd limit update.");
-		std::abort();
-	}
+  LOGSTAT("[HordeSat] Consumers: %d, Initial Lbd limit: %u, round "
+          "before increase: %d, literals per round: %d",
+          getClientCount(),
+          m_initialLbdLimit,
+          m_roundsBeforeIncrease,
+          m_literalsPerProducerPerRound);
 }
 
-HordeSatSharing::~HordeSatSharing() {}
+HordeSatSharing::HordeSatSharing(
+  const std::shared_ptr<ClauseDatabase>& clauseDB,
+  const std::vector<std::shared_ptr<SharingEntity>>& clients)
+  : SharingStrategy(clients)
+  , m_producerCount(0)
+  , m_clauseDB(clauseDB)
+  , m_stats(std::make_unique<SharingStrategy::Statistics>())
+{
+  this->m_round = 0;
+}
+
+HordeSatSharing::~HordeSatSharing()
+{
+  std::stringstream sstr;
+  sstr << "\n";
+  for (uint pid = 0; pid < m_producerCount; pid++) {
+    sstr << "c Producer " << pid << " : " << m_producerMeanLbd[pid] << std::endl;
+  }
+  LOGSTAT("%s", sstr.str().c_str());
+}
 
 bool
 HordeSatSharing::importClause(const ClauseExchangePtr& clause)
 {
-	assert(clause->size > 0 && clause->from != -1);
+  assert(clause->size > 0 && clause->from != -1);
 
-	int id = clause->from;
+  // The producer id
+  uint pidx = clause->from;
+  assert(m_producerCount > pidx);
 
-	LOGDEBUG3("Solver %d: Clause with lbd %d is tested against limit %d",
-			  id,
-			  clause->lbd,
-			  this->lbdLimitPerProducer[id].load());
+  LOGD4("Producer %d: Clause with lbd %d is tested against limit %d",
+        clause->from,
+        clause->lbd,
+        m_lbdLimitPerProducer[pidx].load());
 
-	if (clause->lbd <= this->lbdLimitPerProducer[id]) {
-		this->stats.receivedClauses++;
-		if (m_clauseDB->addClause(clause)) {
-			this->literalsPerProducer.at(clause->from) += clause->size;
-			return true;
-		} else
-			return false;
-	} else {
-		this->stats.filteredAtImport++;
-		return false;
-	}
+  if (!m_producerMeanLbd[pidx])
+    m_producerMeanLbd[pidx] = clause->lbd;
+  else
+    m_producerMeanLbd[pidx] = (m_producerMeanLbd[pidx] + clause->lbd) / 2;
+
+  if (clause->lbd <= m_lbdLimitPerProducer[pidx]) {
+    m_stats->receivedClauses++;
+    if (m_clauseDB->addClause(clause)) {
+      m_literalsPerProducer[pidx] += clause->size;
+      return true;
+    } else
+      return false;
+  } else {
+    m_stats->filteredAtImport++;
+    return false;
+  }
 }
 
 bool
 HordeSatSharing::doSharing()
 {
+  // Step 1: Get new clause selection
+  this->m_clauseDB->giveSelection(
+    m_selection, m_literalsPerProducerPerRound * m_producerCount);
 
-	// Check for global termination condition
-	if (globalEnding)
-		return true;
+  // Step 2: Process producers
+  for (uint pidx = 0; pidx < m_producerCount; pidx++) {
+    const ulong produced = m_literalsPerProducer[pidx].load();
+    const ulong producedPercent =
+      (100 * produced) / m_literalsPerProducerPerRound;
 
-	// Step 1: Get new clause selection
-	this->m_clauseDB->giveSelection(selection, literalPerRound * m_producers.size());
+    LOG3("[HordeSat] Production rate of %d = %d", pidx, producedPercent);
 
-	std::shared_lock<std::shared_mutex> lock(m_producersMutex);
+    // Adjust production based on utilization
+    if (m_roundsBeforeIncrease < m_round &&
+        producedPercent < HordeSatSharing::UNDER_UTILIZATION_THRESHOLD) {
+      // Increase clause production
+      m_lbdLimitPerProducer[pidx].fetch_add(1);
+      LOG3("[HordeSat] production increase for entity %d.", pidx);
+    } else if (producedPercent > HordeSatSharing::OVER_UTILIZATION_THRESHOLD) {
+      // Decrease clause production (one writer, one reader scenario)
+      lbd_t currentLimit = m_lbdLimitPerProducer[pidx].load();
+      if (currentLimit > 2) {
+        m_lbdLimitPerProducer[pidx].store(currentLimit - 1);
+        LOG3("[HordeSat] production decrease for entity %d.", pidx);
+      }
+    }
 
-	// Step 2: Process producers
-	for (auto& weakProducer : m_producers) {
-		if (auto producer = weakProducer.lock()) {
-			int produced, producedPercent;
-			int id = producer->getSharingId();
-			produced = this->literalsPerProducer.at(id);
-			producedPercent = (100 * produced) / literalPerRound;
-			LOG3("[HordeSat] Production rate of %d = %d", id, producedPercent);
+    // Substraction instead of reset for better consistency
+    m_literalsPerProducer[pidx] -= produced;
+  }
 
-			// Adjust production based on utilization
-			if (producedPercent < HordeSatSharing::UNDER_UTILIZATION_THRESHOLD) {
-				// Increase clause production
-				this->lbdLimitPerProducer.at(id).fetch_add(1);
-				LOG3("[HordeSat] production increase for entity %d.", id);
-			} else if (producedPercent > HordeSatSharing::OVER_UTILIZATION_THRESHOLD) {
-				// Decrease clause production (one writer, one reader scenario)
-				unsigned int currentLimit = this->lbdLimitPerProducer.at(id).load();
-				if (currentLimit > 2) {
-					this->lbdLimitPerProducer.at(id).store(currentLimit - 1);
-					LOG3("[HordeSat] production decrease for entity %d.", id);
-				}
-			}
+  m_stats->sharedClauses += m_selection.size();
+  LOGD4("TotalSize: %ld => selectedClauses: %ld",
+        m_literalsPerProducerPerRound * m_producerCount,
+        m_selection.size());
 
-			// Reset production for this round
-			this->literalsPerProducer.at(id) = 0;
-		}
-	}
-	lock.unlock();
+  // Step 3: Export clauses to clients
+  this->exportClauses(m_selection);
 
-	stats.sharedClauses += selection.size();
-	LOGDEBUG3("TotalSize: %ld => selectedClauses: %ld", literalPerRound * m_producers.size(), selection.size());
+  // Step 4: Clear selection vector
+  m_selection.clear();
 
-	// Step 3: Export clauses to clients
-	this->exportClauses(selection);
+  m_round++;
+  LOG2("[HordeSat] received cls %ld, shared cls %ld",
+       m_stats->receivedClauses.load(),
+       m_stats->sharedClauses);
 
-	// Step 4: Clear selection vector
-	selection.clear();
+  return true;
+}
 
-	round++;
-	LOG2("[HordeSat] received cls %ld, shared cls %ld", stats.receivedClauses.load(), stats.sharedClauses);
+void
+HordeSatSharing::setOption(const std::string& key, int value)
+{
+  // Dangerous to do it while other threads use doSharing / importClause
+  if (key == "literals-per-producer-per-round")
+    m_literalsPerProducerPerRound = value;
+  else if (key == "initial-lbd-limit")
+    m_initialLbdLimit = value;
+  else if (key == "rounds-before-increase")
+    m_roundsBeforeIncrease = value;
+  else if (key == "sleep-time-us")
+    m_sleepTime = std::chrono::microseconds(value);
+  else if (key == "sleep-time-s")
+    m_sleepTime = std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::seconds(value));
+  else
+    PABORT(PERR_ARGS,
+           "Int Option %s is not recognized by HordeSatSharing!",
+           key.c_str());
+}
+void
+HordeSatSharing::setOption(const std::string& key, double value)
+{
+  long castedValue = static_cast<long>(value);
+  if (key == "literals-per-producer-per-round")
+    m_literalsPerProducerPerRound = castedValue;
+  else if (key == "rounds-before-increase")
+    m_roundsBeforeIncrease = castedValue;
+  else if (key == "sleep-time-us")
+    m_sleepTime = std::chrono::microseconds(castedValue);
+  else
+    PABORT(PERR_ARGS,
+           "Double Option %s is not recognized by HordeSatSharing!",
+           key.c_str());
+}
 
-	// Check for global termination condition again
-	if (globalEnding)
-		return true;
+void
+HordeSatSharing::setOption(const std::string& key, const std::string& value)
+{
+  if (key == "producer-ids") {
+    m_producersList = value;
+  } else
+    PABORT(PERR_ARGS,
+           "String Option %s is not recognized by HordeSatSharing!",
+           key.c_str());
+}
 
-	return false;
+bool
+HordeSatSharing::onConfigured()
+{
+  std::vector<plid_t> producerIds;
+  std::string strNumber;
+
+  for (const char c : m_producersList) {
+    if (std::isdigit(c))
+      strNumber.push_back(c);
+    else {
+      // Add new id
+      producerIds.push_back(std::stoul(strNumber));
+      strNumber.clear();
+    }
+  }
+
+  m_producerCount = producerIds.size();
+
+  if (!m_producerCount) {
+    LOGERROR("Cannot initialize Hordesat with 0 producerCount");
+    return false;
+  }
+
+  m_producerMeanLbd.resize(m_producerCount, 0.f);
+
+  m_lbdLimitPerProducer =
+    std::make_unique<std::atomic<uint>[]>(m_producerCount);
+  m_literalsPerProducer =
+    std::make_unique<std::atomic<ulong>[]>(m_producerCount);
+
+  for (int i = 0; i < m_producerCount; i++) {
+    m_lbdLimitPerProducer[i] = m_initialLbdLimit;
+    m_literalsPerProducer[i] = 0;
+  }
+
+  return true;
 }

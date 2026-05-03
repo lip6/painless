@@ -11,6 +11,7 @@ VPATH=../src:../test
 # APPSRC=application.c handle.c parse.c witness.c
 APPSRC=application.c handle.c witness.c
 # End Painless
+
 LIBSRT=$(sort $(wildcard ../src/*.c))
 LIBSUB=$(subst ../src/,,$(LIBSRT))
 LIBSRC=$(filter-out main.c $(APPSRC),$(LIBSUB))

@@ -24,6 +24,8 @@ LFLAGS    ?= -Wall -lpthread
 
 COPTIMIZE ?= -O3
 
+GLUCOSE_DEBUG_FLAGS ?= -g
+
 CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
 LFLAGS    += -lz
 
@@ -41,15 +43,15 @@ libd:	lib$(LIB)_debug.a
 libr:	lib$(LIB)_release.a
 
 ## Compile options
-%.o:			CFLAGS +=$(COPTIMIZE) -g -D DEBUG
-%.op:			CFLAGS +=$(COPTIMIZE) -pg -g -D NDEBUG
-%.od:			CFLAGS +=-O0 -g -D DEBUG
-%.or:			CFLAGS +=$(COPTIMIZE) -g -D NDEBUG
+%.o:			CFLAGS +=$(COPTIMIZE) $(GLUCOSE_DEBUG_FLAGS) -D DEBUG
+%.op:			CFLAGS +=$(COPTIMIZE) -pg $(GLUCOSE_DEBUG_FLAGS) -D NDEBUG
+%.od:			CFLAGS +=-O0 $(GLUCOSE_DEBUG_FLAGS) -D DEBUG
+%.or:			CFLAGS +=$(COPTIMIZE) $(GLUCOSE_DEBUG_FLAGS) -D NDEBUG
 
 ## Link options
-$(EXEC):		LFLAGS += -g
-$(EXEC)_profile:	LFLAGS += -g -pg
-$(EXEC)_debug:		LFLAGS += -g
+$(EXEC):		LFLAGS += $(GLUCOSE_DEBUG_FLAGS)
+$(EXEC)_profile:	LFLAGS += $(GLUCOSE_DEBUG_FLAGS) -pg
+$(EXEC)_debug:		LFLAGS += $(GLUCOSE_DEBUG_FLAGS)
 #$(EXEC)_release:	LFLAGS += ...
 $(EXEC)_static:		LFLAGS += --static
 
@@ -60,10 +62,10 @@ $(EXEC)_debug:		$(DCOBJS)
 $(EXEC)_release:	$(RCOBJS)
 $(EXEC)_static:		$(RCOBJS)
 
-lib$(LIB)_standard.a:	$(filter-out */Main.o,  $(COBJS))
-lib$(LIB)_profile.a:	$(filter-out */Main.op, $(PCOBJS))
-lib$(LIB)_debug.a:	$(filter-out */Main.od, $(DCOBJS))
-lib$(LIB)_release.a:	$(filter-out */Main.or, $(RCOBJS))
+lib$(LIB)_standard.a:	$(filter-out %/Main.o,  $(COBJS))
+lib$(LIB)_profile.a:	$(filter-out %/Main.op, $(PCOBJS))
+lib$(LIB)_debug.a:	$(filter-out %/Main.od, $(DCOBJS))
+lib$(LIB)_release.a:	$(filter-out %/Main.or, $(RCOBJS))
 
 
 ## Build rule

@@ -6,6 +6,14 @@
 #include <stdbool.h>
 
 typedef struct averages averages;
+typedef struct common_averages common_averages;
+
+// Commong averages for all modes
+struct common_averages {
+    bool initialized;
+    smooth units, learned_units;
+    smooth med_glue;
+};
 
 struct averages {
   bool initialized;
@@ -20,6 +28,7 @@ struct averages {
 struct kissat;
 
 void kissat_init_averages (struct kissat *, averages *);
+void kissat_init_caverages (struct kissat *, common_averages *);
 
 #define AVERAGES (solver->averages[solver->stable])
 
@@ -29,5 +38,14 @@ void kissat_init_averages (struct kissat *, averages *);
 
 #define UPDATE_AVERAGE(NAME, VALUE) \
   kissat_update_smooth (solver, &EMA (NAME), VALUE)
+
+#define CAVERAGES (solver->common_averages)
+
+#define CEMA(NAME) (CAVERAGES.NAME)
+
+#define CAVERAGE(NAME) (CEMA (NAME).value)
+
+#define UPDATE_CAVERAGE(NAME, VALUE) \
+  kissat_update_smooth (solver, &CEMA (NAME), VALUE)
 
 #endif

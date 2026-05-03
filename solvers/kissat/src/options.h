@@ -47,18 +47,20 @@
   OPTION (eliminateocclim, 2e3, 0, INT_MAX, "elimination occurrence limit") \
   OPTION (eliminaterounds, 2, 1, 1e4, "elimination rounds limit") \
   OPTION (emafast, 33, 10, 1e6, "fast exponential moving average window") \
+  OPTION (emamed, 100, 33, 1e6, "medium exponential moving average window") \
   OPTION (emaslow, 1e5, 100, 1e6, "slow exponential moving average window") \
   EMBOPT (embedded, 1, 0, 1, "parse and apply embedded options") \
   OPTION (equivalences, 1, 0, 1, "extract and eliminate equivalence gates") \
   OPTION (extract, 1, 0, 1, "extract gates in variable elimination") \
   OPTION (factor, 1, 0, 1, "bounded variable addition") \
   OPTION (factorcandrounds, 2, 0, INT_MAX, "candidates reduction rounds") \
+  OPTION (factordelay, 4, 0, 12, "delaying factor") \
   OPTION (factoreffort, 50, 0, 1e6, "bounded variable effort in per mille") \
   OPTION (factorhops, 3, 1, 10, "structural factoring heuristic hops") \
   OPTION (factoriniticks, 700, 1, 1000000, "initial ticks ticks in millions") \
   OPTION (factorsize, 5, 2, INT_MAX, "bounded variable addition clause size") \
   OPTION (factorstructural, 0, 0, 1, "structural bounded variable addition") \
-  OPTION (fastel, 1, 0, 1, "initial fast variable elimination") \
+  OPTION (fastel, 0, 0, 1, "initial fast variable elimination") \
   OPTION (fastelclslim, 100, 1, INT_MAX, "fast elimination clause length limit") \
   OPTION (fastelim, 8, 1, 1000, "fast elimination resolvents limit") \
   OPTION (fasteloccs, 100, 1, 1000, "fast elimination occurrence limit") \
@@ -70,8 +72,8 @@
   OPTION (forward, 1, 0, 1, "forward subsumption in BVE") \
   OPTION (forwardeffort, 100, 0, 1e6, "effort in per mille") \
   OPTION (ifthenelse, 1, 0, 1, "extract and eliminate if-then-else gates") \
+  OPTION (importmaxglue, 0, 0, INT_MAX, "max glue to accept at clause import") \
   OPTION (incremental, 0, 0, 1, "enable incremental solving") \
-  OPTION (initshuffle, 0, 0, 1, "(Begin Painless)enable an initial shuffle on variables for phase initialization")                    \
   OPTION (jumpreasons, 1, 0, 1, "jump binary reasons") \
   LOGOPT (log, 0, 0, 5, "logging level (1=on,2=more,3=check,4/5=mem)") \
   OPTION (lucky, 1, 0, 1, "try some lucky assignments") \
@@ -114,10 +116,15 @@
   OPTION (reluctant, 1, 0, 1, "stable reluctant doubling restarting") \
   OPTION (reluctantint, 1 << 10, 2, 1 << 15, "reluctant interval") \
   OPTION (reluctantlim, 1 << 20, 0, 1 << 30, "reluctant limit (0=unlimited)") \
-  OPTION (reorder, 2, 0, 2, "reorder decisions (1=stable-mode-only)") \
+  OPTION (reorder, 2, 0, 2, "reorder decisions (1=stable-mode-only, 2=both-modes)") \
+  OPTION (reorderalgo, 0, 0, 2, "reorder algorithm (0=jw, 1=moms, 2=np)") \
+  OPTION (reordercond, 0, 0, 1, "reorder condition (0: conflicts threshold, 1: at new units)") \
   OPTION (reorderinit, 1e4, 0, 1e5, "initial reorder interval") \
+  OPTION (reorderinitscale, 1, 0, 1, "scale or not the reorder interval") \
   OPTION (reorderint, 1e4, 1, 1e5, "base reorder interval") \
   OPTION (reordermaxsize, 100, 2, 256, "reorder maximum clause size") \
+  OPTION (reorderstop, 0, 0, 1, "stop reorder 0: never, 1: units plateau") \
+  OPTION (reorderusetrail, 0, 0, 1, "reorder on all levels") \
   OPTION (rephase, 1, 0, 1, "reinitialization of decision phases") \
   OPTION (rephaseinit, 1e3, 10, 1e5, "initial rephase interval") \
   OPTION (rephaseint, 1e3, 10, 1e5, "base rephase interval") \
@@ -156,7 +163,7 @@
   OPTION (transitiveeffort, 20, 0, 2e3, "effort in per mille") \
   OPTION (transitivekeep, 1, 0, 1, "keep transitivity candidates") \
   OPTION (tumble, 1, 0, 1, "tumbled external indices order") \
-  NQTOPT (verbose, 0, 0, 3, "verbosity level") \
+  NQTOPT (verbose, -1, -1, 3, "verbosity level(-1 disable reports)") \
   OPTION (vivify, 1, 0, 1, "vivify clauses") \
   OPTION (vivifyeffort, 100, 0, 1e3, "effort in per mille") \
   OPTION (vivifyfocusedtiers, 1, 0, 1, "use focused tier limits") \

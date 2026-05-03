@@ -22,11 +22,11 @@
 #include "trail.h"
 #include "walk.h"
 
-#include <inttypes.h>
-
 // Begin Painless
 #include "learn.h"
 // End Painless
+
+#include <inttypes.h>
 
 static void init_tiers (kissat *solver) {
   for (unsigned stable = 0; stable != 2; stable++) {
@@ -58,6 +58,7 @@ static void start_search (kissat *solver) {
                 (stable ? "stable" : "focus"), CONFLICTS);
 
   kissat_init_averages (solver, &AVERAGES);
+  kissat_init_caverages (solver, &CAVERAGES);
 
   kissat_classify (solver);
 
@@ -196,14 +197,6 @@ int kissat_search (kissat *solver) {
   if (!res && searching (solver)) {
     start_search (solver);
     while (!res) {
-      // Begin Painless
-      if (0 == solver->level) {
-        if (false == kissat_import_unit_from_painless (solver))
-          return 20;
-        if (false == kissat_import_from_painless (solver))
-          return 20;
-      }
-      // End Painless
       clause *conflict = kissat_search_propagate (solver);
       if (conflict)
         res = kissat_analyze (solver, conflict);
@@ -213,6 +206,10 @@ int kissat_search (kissat *solver) {
         res = 10;
       else if (TERMINATED (search_terminated_1))
         break;
+      // Begin Painless
+      else if (kissat_external_learning (solver))
+        res = kissat_external_learn_clauses (solver);
+      // End Painless
       else if (kissat_reducing (solver))
         res = kissat_reduce (solver);
       else if (kissat_switching_search_mode (solver))

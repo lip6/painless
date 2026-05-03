@@ -1,8 +1,9 @@
 /**
  * @file SystemResourceMonitor.h
- * @brief Provides utilities for monitoring system resources such as memory and time (Memory monitoring is still in early development).
- * @details This header file declares functions and variables for tracking system memory usage,
- *          setting memory limits, and measuring elapsed time.
+ * @brief Provides utilities for monitoring system resources such as memory and
+ * time (Memory monitoring is still in early development).
+ * @details This header file declares functions and variables for tracking
+ * system memory usage, setting memory limits, and measuring elapsed time.
  */
 
 #pragma once
@@ -22,25 +23,57 @@
  * - Measuring elapsed time
  */
 namespace SystemResourceMonitor {
+
+// ============================================================================
+// PER-INSTANCE TIMING
+// ============================================================================
+
+class Timer final
+{
+public:
+  Timer();
+  ~Timer() = default;
+
+  /**
+   * @brief Get the relative time in microseconds since the timer was
+   * instantiated.
+   * @return std::chrono::microseconds representing the elapsed time in
+   * microseconds.
+   */
+  std::chrono::microseconds getRelativeTimeMicro() const;
+
+  /**
+   * @brief Get the absolute time in microseconds since the epoch.
+   * @return std::chrono::microseconds representing the current time in
+   * microseconds.
+   */
+  static std::chrono::microseconds getAbsoluteTimeMicro();
+
+  /**
+   * @brief Get the relative time in microseconds since the process started.
+   * @return std::chrono::microseconds representing the elapsed time in
+   * microseconds.
+   */
+  static std::chrono::microseconds getProcessRelativeTimeMicro();
+
+  /**
+   * @brief Reset the timer to current time
+   */
+  void reset();
+
+private:
+  /** @brief The start time of the program. */
+  std::chrono::steady_clock::time_point m_startTime;
+
+  static std::chrono::steady_clock::time_point s_processStartTime;
+};
+
+// ============================================================================
+// GLOBAL RESOURCES (global variable)
+// ============================================================================
+
 /** @brief The current memory limit for the process in kilobytes. */
 extern std::atomic<rlim_t> memoryLimitKB;
-
-/** @brief The start time of the program. */
-extern const std::chrono::steady_clock::time_point startTime;
-
-/**
- * @brief Get the relative time in seconds since the program started.
- * @return Double representing the elapsed time in seconds.
- */
-double
-getRelativeTimeSeconds();
-
-/**
- * @brief Get the absolute time in seconds since the epoch.
- * @return Double representing the current time in seconds.
- */
-double
-getAbsoluteTimeSeconds();
 
 /**
  * @brief Parse a specific key from /proc/meminfo.
@@ -66,14 +99,16 @@ long
 getUsedMemoryKB();
 
 /**
- * @brief Get the free system memory in kilobytes(totally free memory, not even used for cache).
+ * @brief Get the free system memory in kilobytes(totally free memory, not even
+ * used for cache).
  * @return Long representing the free memory in KB.
  */
 long
 getFreeMemoryKB();
 
 /**
- * @brief Get the available system memory in kilobytes(accounts page cache as available).
+ * @brief Get the available system memory in kilobytes(accounts page cache as
+ * available).
  * @return Long representing the available memory in KB.
  */
 long

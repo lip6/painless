@@ -38,11 +38,7 @@
 
 void kissat_report (kissat *solver, bool verbose, char type) {
   statistics *statistics = &solver->statistics;
-  // Begin Painless (disable report while keeping debug logs)
-  // const int verbosity = kissat_verbosity (solver); 
-  const int verbosity = -1;
-  return; 
-  // End Painless
+  const int verbosity = kissat_verbosity (solver);
   if (verbosity < 0)
     return;
   if (verbose && verbosity < 2)

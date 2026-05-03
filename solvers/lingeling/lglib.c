@@ -13321,7 +13321,12 @@ RESTART:
 		   len);
 	lgl->stats->sync.cls.consumed.actual++;
 	lgldrupligaddcls(lgl, 0); // TODO?
-	lgladdcls(lgl, REDCS, newglue, !numtrue);
+	// Begin Painless
+	if(glue == 0)
+		lgladdcls(lgl, 0, 0, 1);
+	else
+		lgladdcls(lgl, REDCS, newglue, !numtrue);
+	// End Painless
 	consumed++;
 	if (lgl->mt)
 		res = 0;

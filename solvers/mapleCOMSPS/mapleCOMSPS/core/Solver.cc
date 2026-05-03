@@ -448,19 +448,24 @@ Solver::importClauses()
 		} else if (importedClause.size() == 1) {
 			uncheckedEnqueue(importedClause[0]);
 		} else {
-			CRef cr = ca.alloc(importedClause, true);
-			lbd = importedClause.size();
-			ca[cr].set_lbd(lbd);
-			if (lbd <= core_lbd_cut) {
-				learnts_core.push(cr);
-				ca[cr].mark(CORE);
-			} else if (lbd <= 6) {
-				learnts_tier2.push(cr);
-				ca[cr].mark(TIER2);
-				ca[cr].touched() = conflicts;
-			} else {
-				learnts_local.push(cr);
-				claBumpActivity(ca[cr]);
+			CRef cr = CRef_Undef;
+			if (lbd == 0) // irredundant clause import
+				cr = ca.alloc(importedClause, false);
+			else {
+				cr = ca.alloc(importedClause, true);
+				lbd = importedClause.size();
+				ca[cr].set_lbd(lbd);
+				if (lbd <= core_lbd_cut) {
+					learnts_core.push(cr);
+					ca[cr].mark(CORE);
+				} else if (lbd <= 6) {
+					learnts_tier2.push(cr);
+					ca[cr].mark(TIER2);
+					ca[cr].touched() = conflicts;
+				} else {
+					learnts_local.push(cr);
+					claBumpActivity(ca[cr]);
+				}
 			}
 			attachClause(cr);
 		}

@@ -616,7 +616,7 @@ static bool parse_options (application *application, int argc,
   if (kissat_get_option (solver, "quiet")) {
     if (kissat_get_option (solver, "statistics"))
       ERROR ("can not use '--quiet' ('-q') with '--statistics' ('-s')");
-    if (kissat_get_option (solver, "verbose"))
+    if (kissat_get_option (solver, "verbose") > 0)
       ERROR ("can not use '--quiet' ('-q') with '--verbose' ('-v')");
   }
 #endif
@@ -718,7 +718,8 @@ static void print_option (kissat *solver, int value, const opt *o) {
 #ifndef NOPTIONS
 static void print_options (kissat *solver) {
   const int verbosity = kissat_verbosity (solver);
-  if (verbosity < 0)
+  // Show options without report
+  if (verbosity < -1)
     return;
   size_t printed = 0;
   for (all_options (o)) {
@@ -810,6 +811,7 @@ static int run_application (kissat *solver, int argc, char **argv,
 #endif
   kissat_section (solver, "result");
   if (application.output_path && !strcmp (application.output_path, "-")) {
+#ifndef QUIET
     const char *status;
     if (res == 20)
       status = "UNSATISFIABLE";
@@ -821,6 +823,7 @@ static int run_application (kissat *solver, int argc, char **argv,
                     "not printing 's %s' status line "
                     "when writing DIMACS to '<stdout>'",
                     status);
+#endif
   } else {
     if (res == 20) {
       printf ("s UNSATISFIABLE\n");
@@ -841,7 +844,6 @@ static int run_application (kissat *solver, int argc, char **argv,
     }
   }
   if (application.output_path) {
-    // TODO want to use 'struct file' from 'file.h'?
     const char *path = application.output_path;
     bool close_file;
     FILE *file;

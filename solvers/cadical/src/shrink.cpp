@@ -68,12 +68,21 @@ int inline Internal::shrink_literal (int lit, int blevel,
   assert (val (lit) < 0);
 
   Flags &f = flags (lit);
-  const Var &v = var (lit);
+  Var &v = var (lit);
   assert (v.level <= blevel);
 
   if (!v.level) {
     LOG ("skipping root level assigned %d", (lit));
     return 0;
+  }
+
+  if (v.reason == external_reason) {
+    assert (!opts.exteagerreasons);
+    v.reason = learn_external_reason_clause (-lit, 0, true);
+    if (!v.reason) {
+      assert (!v.level);
+      return 0;
+    }
   }
   assert (v.reason != external_reason);
   if (f.shrinkable) {
@@ -100,9 +109,8 @@ int inline Internal::shrink_literal (int lit, int blevel,
   f.shrinkable = true;
   f.poison = false;
   shrinkable.push_back (lit);
-  if (opts.shrinkreap) { // different assertion for multitrail
-    assert (!opts.reimply || max_trail < trails[blevel - 1].size ());
-    assert (opts.reimply || max_trail < trail.size ());
+  if (opts.shrinkreap) {
+    assert (max_trail < trail.size ());
     const unsigned dist = max_trail - v.trail;
     reap.push (dist);
   }
@@ -190,7 +198,8 @@ void Internal::push_literals_of_block (
 
 unsigned inline Internal::shrink_next (int blevel, unsigned &open,
                                        unsigned &max_trail) {
-  const auto &t = next_trail (blevel);
+  const auto &t = &trail;
+  (void) blevel;
   if (opts.shrinkreap) {
     assert (!reap.empty ());
     const unsigned dist = reap.pop ();
@@ -200,7 +209,8 @@ unsigned inline Internal::shrink_next (int blevel, unsigned &open,
     assert (pos < t->size ());
     const int uip = (*t)[pos];
     assert (val (uip) > 0);
-    LOG ("trying to shrink literal %d at trail[%u]", uip, pos);
+    LOG ("trying to shrink literal %d at trail[%u] and level %d", uip, pos,
+         blevel);
     return uip;
   } else {
     int uip;
@@ -212,7 +222,7 @@ unsigned inline Internal::shrink_next (int blevel, unsigned &open,
       uip = (*t)[max_trail--];
     } while (!flags (uip).shrinkable);
     --open;
-    LOG ("open is now %d, uip = %d", open, uip);
+    LOG ("open is now %d, uip = %d, level %d", open, uip, blevel);
     return uip;
   }
 }
@@ -231,6 +241,9 @@ unsigned inline Internal::shrink_along_reason (int uip, int blevel,
   assert (f.shrinkable);
   assert (v.level == blevel);
   assert (v.reason);
+
+  if (opts.minimizeticks)
+    stats.ticks.search[stable]++;
 
   if (resolve_large_clauses || v.reason->size == 2) {
     const Clause &c = *v.reason;
@@ -266,20 +279,21 @@ Internal::shrink_block (std::vector<int>::reverse_iterator &rbegin_lits,
   assert (rbegin_lits >= clause.rbegin ());
   assert (rend_block < clause.rend ());
   assert (rbegin_lits < rend_block);
+  assert (opts.shrink);
 
 #ifdef LOGGING
 
   LOG ("trying to shrink %u literals on level %u", open, blevel);
 
-  const auto &t = next_trail (blevel);
+  const auto &t = &trail;
 
   LOG ("maximum trail position %zd on level %u", t->size (), blevel);
   if (opts.shrinkreap)
     LOG ("shrinking up to %u", max_trail);
 #endif
 
-  const bool resolve_large_clauses = (opts.shrink > 2);
-  bool failed = (opts.shrink == 0);
+  const bool resolve_large_clauses = (opts.shrink > 1);
+  bool failed = false;
   unsigned block_shrunken = 0;
   std::vector<int>::size_type minimized_start = minimized.size ();
   int uip = uip0;
@@ -426,7 +440,7 @@ void Internal::shrink_and_minimize_clause () {
   auto rend_block = clause.rbegin ();
   const int uip0 = clause[0];
 
-  // for direct lrat we remember how the clause used to look
+  // for direct LRAT we remember how the clause used to look
   vector<int> old_clause_lrat;
   assert (minimize_chain.empty ());
   if (lrat)
@@ -444,6 +458,7 @@ void Internal::shrink_and_minimize_clause () {
 #if defined(LOGGING) || !defined(NDEBUG)
   const unsigned old_size = clause.size ();
 #endif
+  std::vector<int> stack;
   {
     std::vector<int>::size_type i = 1;
     for (std::vector<int>::size_type j = 1; j < clause.size (); ++j) {
@@ -453,7 +468,7 @@ void Internal::shrink_and_minimize_clause () {
         assert (j < old_clause_lrat.size ());
         assert (mini_chain.empty ());
         if (clause[j] != old_clause_lrat[j]) {
-          calculate_minimize_chain (-old_clause_lrat[j]);
+          calculate_minimize_chain (-old_clause_lrat[j], stack);
           for (auto p : mini_chain) {
             minimize_chain.push_back (p);
           }

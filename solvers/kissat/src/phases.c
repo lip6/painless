@@ -55,12 +55,14 @@ static void save_phases (kissat *solver, value *phases) {
   assert (v == values + LITS);
 }
 
+/* Saves current values as best phases */
 void kissat_save_best_phases (kissat *solver) {
   assert (sizeof (value) == 1);
   LOG ("saving %u best values", VARS);
   save_phases (solver, solver->phases.best);
 }
 
+/* Saves current values as target phases */
 void kissat_save_target_phases (kissat *solver) {
   assert (sizeof (value) == 1);
   LOG ("saving %u target values", VARS);
