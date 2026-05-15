@@ -6,16 +6,20 @@
 #include <stdio.h>
 #include <string.h>
 
-ClauseDatabasePerSize::ClauseDatabasePerSize() {}
+ClauseDatabasePerSize::ClauseDatabasePerSize()
+  : m_size(0)
+  , m_maxClauseSize(0)
+{
+}
 
 ClauseDatabasePerSize::ClauseDatabasePerSize(int maxClauseSize)
   : m_maxClauseSize(maxClauseSize)
+  , m_size(0)
 {
   if (maxClauseSize <= 0) {
     PABORT(PERR_BAD_BEHAVIOR,
            "The value %d for maxClauseSize is not supported by "
-           "ClauseDatabasePerSize, it will be "
-           "set to 80",
+           "ClauseDatabasePerSize",
            maxClauseSize);
   }
   markConfigured();
@@ -32,9 +36,12 @@ ClauseDatabasePerSize::addClause(ClauseExchangePtr clause)
     return false;
   }
   if (clsSize <= m_maxClauseSize) {
-    if (clauses[clsSize - 1]->addClause(clause)) {
+    // pre increment to not have negative size if it consumed directly
+    m_size++;
+    if (m_clausesPerSize[clsSize - 1]->addClause(clause)) {
       return true;
-    }
+    } else
+      m_size--;
   }
   return false;
 }
@@ -44,16 +51,25 @@ ClauseDatabasePerSize::giveSelection(
   std::vector<ClauseExchangePtr>& selectedCls,
   unsigned int literalCountLimit)
 {
-  int used = 0;
-  ClauseExchangePtr tmp_clause;
+  UNIQUE_LOCK(std::mutex, m_consumeMX, consume);
+  unsigned int used = 0;
 
-  for (unsigned int i = 0;
-       i < m_maxClauseSize && literalCountLimit - used >= i + 1;
-       ++i) {
-    while (clauses[i]->getClause(tmp_clause) &&
-           (literalCountLimit <= 0 || literalCountLimit - used >= i + 1)) {
-      selectedCls.push_back(std::move(tmp_clause));
-      used += i + 1;
+  for (unsigned int i = 0; i < m_maxClauseSize; ++i) {
+    const unsigned int clauseLits = i + 1;
+    while (true) {
+      if ((clauseLits + used) > literalCountLimit)
+        return used;
+
+      ClauseExchangePtr cls;
+
+      if (!m_clausesPerSize[i]->getClause(cls)) {
+        break;
+      }
+      // Post decrement to not have -1 as size value if empty
+      m_size--;
+      // No need to increment and decrement the refcount
+      selectedCls.push_back(std::move(cls));
+      used += clauseLits;
     }
   }
 
@@ -63,8 +79,10 @@ ClauseDatabasePerSize::giveSelection(
 bool
 ClauseDatabasePerSize::getOneClause(ClauseExchangePtr& cls)
 {
-  for (size_t i = 0; i < clauses.size(); ++i) {
-    if (clauses[i]->getClause(cls)) {
+  UNIQUE_LOCK(std::mutex, m_consumeMX, consume);
+  for (size_t i = 0; i < m_clausesPerSize.size(); ++i) {
+    if (m_clausesPerSize[i]->getClause(cls)) {
+      m_size--;
       return true;
     }
   }
@@ -74,7 +92,9 @@ ClauseDatabasePerSize::getOneClause(ClauseExchangePtr& cls)
 void
 ClauseDatabasePerSize::getClauses(std::vector<ClauseExchangePtr>& v_cls)
 {
-  for (auto& clauseBuffer : clauses) {
+  UNIQUE_LOCK(std::mutex, m_consumeMX, consume);
+  for (auto& clauseBuffer : m_clausesPerSize) {
+    m_size -= clauseBuffer->size();
     clauseBuffer->getClauses(v_cls);
   }
 }
@@ -82,20 +102,16 @@ ClauseDatabasePerSize::getClauses(std::vector<ClauseExchangePtr>& v_cls)
 size_t
 ClauseDatabasePerSize::getSize() const
 {
-  return std::accumulate(
-    clauses.begin(),
-    clauses.end(),
-    0u,
-    [](unsigned int sum, const std::unique_ptr<ClauseBuffer>& buffer) {
-      return sum + (buffer ? buffer->size() : 0);
-    });
+  return m_size;
 }
 
 void
 ClauseDatabasePerSize::clearDatabase()
 {
-  for (size_t i = 0; i < clauses.size(); ++i) {
-    clauses[i]->clear();
+  UNIQUE_LOCK(std::mutex, m_consumeMX, consume);
+  for (size_t i = 0; i < m_clausesPerSize.size(); ++i) {
+    m_size -= m_clausesPerSize[i]->size();
+    m_clausesPerSize[i]->clear();
   }
 }
 
@@ -109,10 +125,10 @@ ClauseDatabasePerSize::onConfigured()
     return false;
   }
 
-  clauses.reserve(m_maxClauseSize);
+  m_clausesPerSize.reserve(m_maxClauseSize);
 
   for (unsigned int i = 0; i < m_maxClauseSize; ++i) {
-    clauses.emplace_back(std::make_unique<ClauseBuffer>());
+    m_clausesPerSize.emplace_back(std::make_unique<ClauseBuffer>());
   }
 
   return true;

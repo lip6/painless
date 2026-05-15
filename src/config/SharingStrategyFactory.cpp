@@ -76,7 +76,6 @@ SharingStrategyFactory::instantiateLocalStrategies(
   if (strategyNumber == 1) {
     LOG0("LSTRAT>> HordeSatSharing(1Grp)");
     auto strat = std::make_shared<HordeSatSharing>(
-      allEntities.size(),
       m_parameters.sharedLiteralsPerProducer,
       m_parameters.hordeInitialLbdLimit,
       m_parameters.hordeInitRound,
@@ -106,7 +105,6 @@ SharingStrategyFactory::instantiateLocalStrategies(
     LOG0("LSTRAT>> HordeSatSharing (2Grp of producers, Common Per Size "
          "Database)");
     auto stratOne = std::make_shared<HordeSatSharing>(
-      firstHalf.size(),
       m_parameters.sharedLiteralsPerProducer,
       m_parameters.hordeInitialLbdLimit,
       m_parameters.hordeInitRound,
@@ -122,7 +120,6 @@ SharingStrategyFactory::instantiateLocalStrategies(
     stratOne->markConfigured();
 
     auto stratTwo = std::make_shared<HordeSatSharing>(
-      secondHalf.size(),
       m_parameters.sharedLiteralsPerProducer,
       m_parameters.hordeInitialLbdLimit,
       m_parameters.hordeInitRound,

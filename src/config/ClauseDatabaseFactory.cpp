@@ -1,6 +1,5 @@
 #include "ClauseDatabaseFactory.hpp"
 
-#include "containers/ClauseDatabases/ClauseDatabaseBufferPerEntity.hpp"
 #include "containers/ClauseDatabases/ClauseDatabaseMallob.hpp"
 #include "containers/ClauseDatabases/ClauseDatabasePerSize.hpp"
 #include "containers/ClauseDatabases/ClauseDatabaseSingleBuffer.hpp"
@@ -30,9 +29,6 @@ ClauseDatabaseFactory::createDatabase(const std::string& originalDBName)
   } else if (name == "persize") {
     LOG2("DB>> Creating PerSize database");
     return std::make_shared<ClauseDatabasePerSize>();
-  } else if (name == "bufferperentity") {
-    LOG2("DB>> Creating PerEntity database");
-    return std::make_shared<ClauseDatabaseBufferPerEntity>();
   } else if (name == "mallob") {
     LOG2("DB>> Creating Mallob database");
     return std::make_shared<ClauseDatabaseMallob>();
@@ -54,12 +50,6 @@ ClauseDatabaseFactory::createDatabase(char dbTypeChar)
       LOG2("DB>> Creating PerSize database with max clause size %u",
            m_maxClauseSize);
       return std::make_shared<ClauseDatabasePerSize>(m_maxClauseSize);
-    }
-
-    case 'e': {
-      LOG2("DB>> Creating PerEntity database with max clause size %u",
-           m_maxClauseSize);
-      return std::make_shared<ClauseDatabaseBufferPerEntity>(m_maxClauseSize);
     }
 
     case 'm': {

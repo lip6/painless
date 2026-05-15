@@ -299,7 +299,7 @@ private:
  */
 #define LOGDVECTOR4(lits, size, ...)                                           \
   do {                                                                         \
-    Logger::getInstance().logClause(5, CYAN, lits, size, __VA_ARGS__);         \
+    Logger::getInstance().logClause(4, CYAN, lits, size, __VA_ARGS__);         \
   } while (0)
 
 /**

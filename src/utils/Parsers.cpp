@@ -5,7 +5,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "ErrorCodes.hpp"
 #include "Logger.hpp"
 #include "NumericConstants.hpp"
 #include <unordered_set>
@@ -147,7 +146,8 @@ parseClause(FILE* f, clause_t& cls)
       }
       cls.push_back(num);
     } else {
-      PABORT(PERR_PARSING,"Unexpected character, %c", c);
+      LOGERROR("Unexpected character, %c", c);
+      return false;
     }
   }
   return false;
@@ -174,7 +174,7 @@ loadCNF(const char* filename,
     if (!processor->initMembers(parsedVarCount, parsedClauseCount)) {
       LOGERROR("Error at member initialization of processor %s",
                typeid(*processor).name());
-      exit(PERR_PARSING);
+      return false;
     }
   }
 
@@ -238,7 +238,7 @@ parseCNF(const char* filename,
     if (!processor->initMembers(parsedVarCount, parsedClauseCount)) {
       LOGERROR("Error at member initialization of processor %s",
                typeid(*processor).name());
-      exit(PERR_PARSING);
+      return false;
     }
   }
 
@@ -299,7 +299,7 @@ parseCNF(const char* filename,
     if (!processor->initMembers(parsedVarCount, parsedClauseCount)) {
       LOGERROR("Error at member initialization of processor %s",
                typeid(*processor).name());
-      exit(PERR_PARSING);
+      return false;
     }
   }
 

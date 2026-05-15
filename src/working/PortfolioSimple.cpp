@@ -145,6 +145,7 @@ PortfolioSimple::join(WorkingStrategy* strat,
 
     if (strat != this) {
       SequentialWorker* winner = (SequentialWorker*)strat;
+      LOGSTAT("Winner is %u", winner->solver->getSolverId());
     }
 
     m_manager.pushResult(res, model);

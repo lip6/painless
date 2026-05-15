@@ -41,7 +41,7 @@ namespace topology {
 /**
  * @brief Template for an importDB / sharing DB (entry of `databaseTemplates`).
  *
- * `name` is the database type ("persize", "bufferperentity", "singlebuffer",
+ * `name` is the database type ("persize", "singlebuffer",
  * "mallob"). One concrete ::ClauseDatabase instance is created from the
  * template per consuming entity (each CDCL solver and each sharing strategy
  * that references it gets its own clone).

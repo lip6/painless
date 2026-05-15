@@ -47,12 +47,10 @@ main(int argc, char** argv)
   PainlessImpl painless;
   PainlessConfigurator::configurePainlessFromCLI(argc, argv, painless);
 
+  // Todo check all configurable instances are configured by using
+  // requireConfigured.
+
   setupExitHandlers();
-
-  // Init timeout detection before starting the solvers and sharers
-
-  unsigned int varCount;
-  // int receivedFinalResultBcast = 0;
 
   if (!painless.loadDIMACS(painless.parameters().filename.c_str())) {
     PABORT(PERR_PARSING, "Error at parsing!");
@@ -61,32 +59,6 @@ main(int argc, char** argv)
   result_t result = painless.solve();
 
   assert(!painless.popResult(result));
-
-  // // To be abstracted inside PainlessImpl and its sub classes
-  // if (painless.mpiRank() == painless.mpiWinner()) {
-  // 	if (painless.result() == SatAnswer::SAT) {
-  // 		Logger::getInstance().logSolution("SATISFIABLE");
-
-  // 		if (!painless.parameters().noModel) {
-  // 			model_t model;
-  // 			painless.popModel(model.data(), model.size());
-  // 			Logger::getInstance().logModel(model);
-  // 		}
-  // 	} else if (painless.result() == SatAnswer::UNSAT) {
-  // 		Logger::getInstance().logSolution("UNSATISFIABLE");
-  // 	} else // if timeout or unknown
-  // 	{
-  // 		Logger::getInstance().logSolution("UNKNOWN");
-  // 		painless.result() = SatAnswer::UNKNOWN;
-  // 	}
-
-  // 	LOGSTAT("Resolution time: %f s", painless.getRelativeTimeMicro());
-  // } else
-  // 	painless.result() = SatAnswer::UNKNOWN; /* mpi will be forced to suspend
-  // job only by the winner */
-
-  // LOGD1("Mpi process %d returns %d", painless.mpiRank(),
-  // static_cast<int>(painless.result().load()));
 
   if (result.answer == SatAnswer::SAT) {
     Logger::getInstance().logSolution("SATISFIABLE");

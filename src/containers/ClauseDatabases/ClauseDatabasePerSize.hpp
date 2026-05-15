@@ -12,6 +12,10 @@
  *
  * This class implements the ClauseDatabase interface, storing clauses in
  * separate buffers based on their size.
+ * 
+ * Cannot change the number of buckets (clause buffers) concurrently.
+ * ClauseBuffers are boost MPMC queue buffers.
+ * 
  *
  * @ingroup pl_containers_db
  * @todo resize by changing maxClauseSize for dynamically managing the maximum
@@ -39,7 +43,7 @@ public:
   ~ClauseDatabasePerSize();
 
   /**
-   * @brief Adds a clause to the appropriate size-based buffer.
+   * @brief Adds a clause to the appropriate size-based buffer. The number of buffers is static. The buffers are lock free
    * @param clause The clause to be added.
    * @return true if the clause was successfully added, false otherwise.
    */
@@ -75,12 +79,12 @@ public:
 
   /**
    * @brief Does nothing in this implementation.
-   * @return The maximum size_t value.
+   * @return The 0 value.
    */
   size_t shrinkDatabase() override
   {
     LOGD4("This does nothing!");
-    return (size_t)-1;
+    return 0;
   };
 
   /**
@@ -89,12 +93,6 @@ public:
   void clearDatabase() override;
 
 private:
-  /**
-   * @brief Initializes the clause buffers for each clause size.
-   * @param maxClsSize The maximum clause size to initialize buffers for.
-   */
-  void initializeQueues(unsigned int maxClsSize);
-
   void setOption(const std::string& key, int value) override;
   bool onConfigured() override;
 
@@ -102,9 +100,9 @@ private:
   /**
    * @brief Vector of clause buffers, one for each possible clause size.
    */
-  std::vector<std::unique_ptr<ClauseBuffer>> clauses;
-
-public:
+  std::vector<std::unique_ptr<ClauseBuffer>> m_clausesPerSize;
+  std::mutex m_consumeMX;
+  std::atomic<size_t> m_size;
   /**
    * @brief The maximum clause size accepted in this clause database.
    */

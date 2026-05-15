@@ -296,7 +296,7 @@ Kissat::initKissatOptions()
   this->setOption("reluctant", 1);      // stable reluctant doubling restarting
 
   // Clause and Literal Related Heuristic
-  // In Kissat glue = 1 means lbd = 2 with one of the levels being 0
+  // glue = 1 is lbd = 2 since the conflict level (uip) is not counted at learn
   this->setOption("tier1", 2); // glue limit for tier1
   this->setOption("tier2", 6); // glue limit for tier2
 
@@ -305,11 +305,7 @@ Kissat::initKissatOptions()
   this->setOption("phasesaving", 1);
   this->setOption("rephase",
                   1); // reinitialization of decision phases, have two
-                      // suboptions that are never accessed outside of tests
-  // this->setOption("forcephase",
-  //                 0); // force initial phase, forces the target option to
-  //                 false
-
+                      
   /*----------------------------------------------------------------------------*/
 
   // Diverse (used in mallob diversification)

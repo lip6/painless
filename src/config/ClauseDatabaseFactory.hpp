@@ -35,7 +35,7 @@ public:
    * @brief [legacy] Create a database from a single-character type code.
    *
    * @param dbTypeChar Database type code:
-   *        `'s'` - SingleBuffer, `'d'` - PerSize, `'e'` - BufferPerEntity,
+   *        `'s'` - SingleBuffer, `'d'` - PerSize,
    *        `'m'` - Mallob. Any other value logs a warning and returns a
    *        PerSize database.
    *

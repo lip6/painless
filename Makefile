@@ -52,7 +52,7 @@ endif
 COMMON_FLAGS += $(CPP_STD_FLAG) -fvisibility=hidden -fvisibility-inlines-hidden -DIPASIR_SHARED_LIB -DBUILDING_IPASIR_SHARED_LIB
 
 # Define debug and release flags 
-DEBUG_FLAGS := $(COMMON_FLAGS) -fPIC -g3 -O0 -DBUILDING_PAINLESS #-fanalyzer -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS#-fsanitize=undefined#-Wall -Wextra
+DEBUG_FLAGS := $(COMMON_FLAGS) -fPIC -g3 -O0 -DBUILDING_PAINLESS -D_GLIBCXX_DEBUG -D_GLIBCXX_ASSERTIONS#-fanalyzer -fsanitize=undefined#-Wall -Wextra
 RELEASE_FLAGS := $(COMMON_FLAGS) -fPIC -O3 -DNDEBUG -DBUILDING_PAINLESS
 
 

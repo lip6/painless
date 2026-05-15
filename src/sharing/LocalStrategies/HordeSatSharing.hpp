@@ -4,9 +4,8 @@
 #include "sharing/SharingStrategy.hpp"
 
 #include <atomic>
-#include <unordered_map>
+#include "containers/ClauseBuffer.hpp"
 #include <vector>
-
 /**
  * @defgroup local_sharing Intra-Process Sharing Strategies
  * @ingroup sharing
@@ -42,7 +41,6 @@ public:
    * @param clients Vector of shared pointers to client entities.
    */
   HordeSatSharing(
-    const uint producerCount,
     const ulong literalsPerProducerPerRound,
     const lbd_t initialLbdLimit,
     const uint roundsBeforeLbdIncrease,
@@ -117,26 +115,23 @@ protected:
   /// Round Number
   uint m_round;
 
-  std::vector<double> m_producerMeanLbd;
-
-  // Static Constants
-  // ----------------
-
-  static constexpr int UNDER_UTILIZATION_THRESHOLD = 75;
-  static constexpr int OVER_UTILIZATION_THRESHOLD = 98;
-
-  uint m_producerCount;
+  uint m_underUtilizationThreshold;
+  uint m_overUtilizationThreshold;
 
   std::string m_producersList;
 
   // Data accessible from other threads via importClause
   // ---------------------------------------------------
 
-  /// Producers' lbdLimit
-  std::unique_ptr<std::atomic<uint>[]> m_lbdLimitPerProducer;
+  struct ProducerMeta
+  {
+    std::atomic<lbd_t> lbdLimit;
+    ClauseBuffer clauses;
+  };
 
-  /// Producers' production
-  std::unique_ptr<std::atomic<ulong>[]> m_literalsPerProducer;
+  std::shared_mutex m_producersMX;
+  std::vector<std::unique_ptr<ProducerMeta>> m_producersMeta;
+  std::unordered_map<plid_t, uint> m_producerIdToIndex;
 };
 
 /**

@@ -40,19 +40,20 @@ mainThrSharing(void* arg)
 
     // Sharing phase
     sharingTime = SystemResourceMonitor::Timer::getAbsoluteTimeMicro();
-    shr->m_sharingStrategies[lastStrategy]->doSharing();
-    sharingTime =
-      SystemResourceMonitor::Timer::getAbsoluteTimeMicro() - sharingTime;
+    if (shr->m_sharingStrategies[lastStrategy]->doSharing()) {
+      sharingTime =
+        SystemResourceMonitor::Timer::getAbsoluteTimeMicro() - sharingTime;
 
-    shr->m_totalSharingTime += sharingTime;
+      shr->m_totalSharingTime += sharingTime;
 
-    sleepTime = shr->m_sharingStrategies[lastStrategy]->getSleepingTime();
-    LOG2("[Sharer %d] Sharing round %u done in %lu us. Will sleep for %llu us",
-         shr->getId(),
-         shr->m_round,
-         sharingTime.count(),
-         sleepTime.count());
-
+      sleepTime = shr->m_sharingStrategies[lastStrategy]->getSleepingTime();
+      LOG2(
+        "[Sharer %d] Sharing round %u done in %lu us. Will sleep for %llu us",
+        shr->getId(),
+        shr->m_round,
+        sharingTime.count(),
+        sleepTime.count());
+    }
     if (!shr->m_manager.shouldEndSolving()) {
       UNIQUE_LOCK(std::mutex, shr->m_sharerMX, sleep);
       shr->m_sharerCV.wait_for(lsleep, sleepTime);
